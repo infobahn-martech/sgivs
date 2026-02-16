@@ -24,7 +24,7 @@ const Header = () => {
   // ✅ Static profile data (edit as you like)
   const profileData = useMemo(
     () => ({
-      name: 'Admin User',
+      name: 'Yudeep',
       user: {
         imageThumb: '', // put image url if you want
       },

@@ -64,8 +64,9 @@ const Login = () => {
               {/* ✅ Remove emoji for enterprise seriousness */}
               <div className="title">Welcome Back</div>
               <div className="desc">
-                Today is a new day. It's your day. You shape it.
-                <br /> Sign in to start managing your projects.
+                Step into a productive day.
+                <br />
+                Sign in to manage your operations seamlessly.
               </div>
             </div>
 

@@ -19,7 +19,7 @@ const Dashboard = () => {
 
   // ✅ STATIC profile
   const profileData = {
-    name: 'Admin',
+    name: 'Yudeep',
   };
 
   // ✅ STATIC counters
@@ -142,8 +142,8 @@ const Dashboard = () => {
             <div className="greetings-blk">
               <div className="greetings-title">Hi {profileData?.name} 👋</div>
               <div className="greetings-txt">
-                Today is a new day. It's your day. You shape it.
-                <br /> Sign in to start managing your projects.
+                Step into a productive day.
+                <br /> Sign in to manage your operations seamlessly.
               </div>
             </div>
           </div>
