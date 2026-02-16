@@ -17,7 +17,7 @@ import useDesignationReducer from '../../stores/DesignationReducer';
 
 const DesignationManagement = () => {
   // ✅ Toggle mock/static data
-  const USE_MOCK = true;
+  const USE_MOCK = false;
 
   const {
     getData,

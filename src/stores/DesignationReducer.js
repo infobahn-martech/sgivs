@@ -9,9 +9,7 @@ const useDesignationReducer = create((set) => ({
   isLoadingDelete: false,
   errorMessage: '',
   successMessage: '',
-  designationData: null,
-  roles: [],
-  designations: [],
+  designationData: [],
 
   postData: async (payload, cb) => {
     try {
@@ -62,9 +60,10 @@ const useDesignationReducer = create((set) => ({
     try {
       set({ isLoadingGet: true, successMessage: '' });
       const { data } = await designationService.getData(params);
-      const datas = data;
+      const list = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [];
+      const total = data?.total ?? list?.length ?? 0;
       set({
-        designationData: datas?.data,
+        designationData: { data: list, total },
         // successMessage: data?.response?.data?.message ?? data?.message,
         isLoadingGet: false,
       });
@@ -77,40 +76,9 @@ const useDesignationReducer = create((set) => ({
       error(err?.response?.data?.message ?? err.message);
     }
   },
-  getAllCenter: async () => {
-    try {
-      set({ isLoadingGet: true });
-      const { data } = await designationService.getAllCenter();
-      const datas = data;
-      set({
-        roles: datas?.data?.data,
-        isLoadingGet: false,
-      });
-    } catch (err) {
-      set({
-        isLoadingGet: false,
-      });
-    }
-  },
-  getAllCounter: async (id) => {
-    try {
-      set({ isLoadingGet: true });
-      const {
-        data: { data },
-      } = await designationService.getAllCounter(id);
-      set({
-        designations: data?.data,
-        isLoadingGet: false,
-      });
-    } catch (err) {
-      set({
-        isLoadingGet: false,
-      });
-    }
-  },
   clearCounterData: () => {
     set({
-      designations: [],
+      designationData: [],
       errorMessage: '',
       successMessage: '',
     });
@@ -119,9 +87,10 @@ const useDesignationReducer = create((set) => ({
     try {
       set({ isLoadingDelete: true });
       const { data } = await designationService.deleteData(id);
-      const datas = data;
+      const list = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [];
+      const total = data?.total ?? list?.length ?? 0;
       set({
-        designationData: datas?.data,
+        designationData: { data: list, total },
         successMessage: data?.response?.data?.message ?? data?.message,
         isLoadingDelete: false,
       });
