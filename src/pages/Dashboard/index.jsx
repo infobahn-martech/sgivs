@@ -30,7 +30,6 @@ const Dashboard = () => {
     { label: 'Passport', value: 259 },
     { label: 'Attestation', value: 130 },
     { label: 'OCI', value: 0 },
-    { label: 'Total', value: 403 },
   ];
 
   // ✅ Number Of applications accepted Today (green header; Walk-in has red header)
@@ -39,7 +38,6 @@ const Dashboard = () => {
     { label: 'Passport', value: 63 },
     { label: 'Attestation', value: '31 (28)' },
     { label: 'OCI', value: 0 },
-    { label: 'Total', value: '96 (93)' },
   ];
 
   // ✅ Summary MTD / YTD
@@ -72,6 +70,10 @@ const Dashboard = () => {
               />
             ))}
           </div>
+        </div>
+
+        <div className="dash-table-wrp">
+          <DashboardSectionTable />
         </div>
 
         {/* All Centers dropdown + left/right counter sections (same style as 1st image KPI cards) */}
@@ -117,22 +119,18 @@ const Dashboard = () => {
 
           <div className="dash-stat-summary">
             <StatCard
-              label="Total Applications MTD (Month To Date)"
+              label="Totals"
               value={totalApplicationsMTD}
               initial="M"
               size="large"
             />
             <StatCard
-              label="Total Applications YTD (Year To Date)"
+              label="Totals"
               value={totalApplicationsYTD}
               initial="Y"
               size="large"
             />
           </div>
-        </div>
-
-        <div className="dash-table-wrp">
-          <DashboardSectionTable />
         </div>
       </div>
     </>
