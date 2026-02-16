@@ -12,7 +12,7 @@ import useAuthReducer from '../../stores/AuthReducer';
 import { Link, useNavigate } from 'react-router-dom';
 import { Spinner } from 'react-bootstrap';
 import SignUp from '../SignUp';
-import logoImg from '../../assets/images/MLO.png';
+import logoImg from '../../assets/images/mainLogo.png';
 
 const loginSchema = z.object({
   username: z.string().nonempty('Username is required'),

@@ -4,7 +4,7 @@ import { Tooltip } from 'react-tooltip';
 
 import '../../assets/scss/sidebar.scss';
 
-import MainLogo from '../../assets/images/MLO.png';
+import MainLogo from '../../assets/images/mainLogo.png';
 import DashboardIcon from '../../assets/images/dashboard-1.svg';
 import UserManageIcon from '../../assets/images/dashboard-2.svg';
 import InventoryManageIcon from '../../assets/images/dashboard-3.svg';

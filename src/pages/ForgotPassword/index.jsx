@@ -6,7 +6,7 @@ import '../../assets/scss/common.scss';
 import '../../assets/scss/forms.scss';
 import '../../assets/scss/footer.scss';
 import '../../assets/scss/signin.scss';
-import logoImg from '../../assets/images/MLO.png';
+import logoImg from '../../assets/images/mainLogo.png';
 import useAuthReducer from '../../stores/AuthReducer';
 import { Link, useNavigate } from 'react-router-dom';
 import { Spinner } from 'react-bootstrap';
@@ -54,8 +54,8 @@ const ForgotPassword = () => {
               <div style={{ width: '100%', textAlign: 'left' }}>
                 <div className="title">Forgot Password</div>
                 <div className="desc">
-                  Step into a productive day.
-                  <br /> Sign in to manage your operations seamlessly.
+                  Forgot your password? No problem.
+                  <br /> Enter your email and we'll send you a link to reset it.
                 </div>
               </div>
             </div>
