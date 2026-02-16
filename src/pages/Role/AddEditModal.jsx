@@ -46,7 +46,7 @@ export function AddEditModal({ showModal, closeModal, onRefreshRole }) {
       closeModal();
     };
     if (showModal?.employee_role_id) {
-      patchData({ employee_role_id: showModal.employee_role_id, employee_role: data.employee_role }, onSuccess);
+      patchData({ employee_role_id: showModal?.employee_role_id, employee_role: data?.employee_role }, onSuccess);
     } else {
       postData({ employee_role: data.employee_role }, onSuccess);
     }

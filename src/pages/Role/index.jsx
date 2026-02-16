@@ -117,12 +117,12 @@ const Role = () => {
 
   const columns = [
     {
-      name: 'Role Name',
-      selector: 'name',
+      name: 'Name',
+      selector: 'employee_role',
       contentClass: 'user-pic',
     },
     {
-      name: 'Role Created Date',
+      name: 'Created Date',
       selector: 'createdAt',
       cell: (row) => <span>{formatDate(row?.createdAt)}</span>,
     },
@@ -162,7 +162,7 @@ const Role = () => {
   };
 
   // ✅ Decide dataset
-  const tableData = USE_MOCK ? mockRoleData : roleData;
+  const tableData = USE_MOCK ? true : roleData;
   const loading = USE_MOCK ? false : isLoadingRole;
 
   return (
@@ -193,9 +193,9 @@ const Role = () => {
 
       <CustomTable
         pagination={{ currentPage: params.page, limit: params.limit }}
-        count={tableData?.total || 0}
+        count={tableData?.length || 0}
         columns={columns}
-        data={tableData?.data || []}
+        data={tableData || []}
         isLoading={loading}
         onPageChange={(page) => setParams({ ...params, page })}
         setLimit={(limit) => setParams({ ...params, limit })}
@@ -217,7 +217,7 @@ const Role = () => {
           isLoading={USE_MOCK ? false : isLoadingDelete}
           showModal={deleteModalOpen}
           closeModal={() => setDeleteModalOpen(false)}
-          message={`Are you sure you want to delete this ${deleteModalOpen?.name}?`}
+          message={`Are you sure you want to delete this ${deleteModalOpen?.employee_role}?`}
           onCancel={() => setDeleteModalOpen(false)}
           onSubmit={handleDelete}
         />

@@ -33,9 +33,7 @@ const useRoleRudcer = create((set) => ({
   patchData: async (payload, cb) => {
     try {
       set({ isLoading: true });
-
-      const { employee_role_id, ...rest } = payload;
-      const { data } = await roleService.patchData(employee_role_id, rest);
+      const { data } = await roleService.patchData(payload);
 
       const { success } = useAlertReducer.getState();
       success(data?.response?.data?.message ?? data?.message);
@@ -58,10 +56,8 @@ const useRoleRudcer = create((set) => ({
     try {
       set({ isLoadingGet: true });
       const { data } = await roleService.getData(params);
-      const datas = data;
       set({
-        roleData: datas?.data,
-        // successMessage: data?.response?.data?.message ?? data?.message,
+        roleData: data?.data,
         isLoadingGet: false,
       });
     } catch (err) {
