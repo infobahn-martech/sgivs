@@ -6,7 +6,7 @@ import '../../assets/scss/common.scss';
 import '../../assets/scss/forms.scss';
 import '../../assets/scss/footer.scss';
 import '../../assets/scss/signin.scss';
-import logo from '../../assets/images/logo.svg';
+import logoImg from '../../assets/images/MLO.png';
 import useAuthReducer from '../../stores/AuthReducer';
 import { Link, useNavigate } from 'react-router-dom';
 import { Spinner } from 'react-bootstrap';
@@ -47,14 +47,16 @@ const ForgotPassword = () => {
         </div>
         <div class="panel-right">
           <div class="form-wrp-center login">
-            <div class="top-blk reset">
-              <div class="title">
-                Forgot Password
-                {/* Welcome Back <span class="icon">👋</span> */}
+            <div className="top-blk reset">
+              <div className="login-v2__logo-wrap">
+                <img src={logoImg} alt="SGIVS GLOBAL" className="login-v2__logo" />
               </div>
-              <div class="desc">
-                Step into a productive day.
-                <br /> Sign in to manage your operations seamlessly.
+              <div style={{ width: '100%', textAlign: 'left' }}>
+                <div className="title">Forgot Password</div>
+                <div className="desc">
+                  Step into a productive day.
+                  <br /> Sign in to manage your operations seamlessly.
+                </div>
               </div>
             </div>
             <div class="form-sec-wrp">
