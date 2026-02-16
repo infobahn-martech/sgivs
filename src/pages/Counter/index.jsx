@@ -27,6 +27,8 @@ const CounterManagement = () => {
     isLoadingDelete,
   } = useCounterReducer((state) => state);
 
+  console.log('counterData', counterData);
+
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [modal, setModal] = useState(false);
 
@@ -130,16 +132,14 @@ const CounterManagement = () => {
   const columns = [
     {
       name: 'Center Name',
-      selector: 'centerName',
+      selector: 'center_name',
       contentClass: 'user-pic',
-      cell: (row) => <span>{row?.centerName || '-'}</span>,
       sort: true,
     },
     {
       name: 'Counter',
-      selector: 'counterName',
+      selector: 'counter_name',
       contentClass: 'user-pic',
-      cell: (row) => <span>{row?.counterName || '-'}</span>,
     },
     {
       name: 'Created Date',
@@ -214,7 +214,7 @@ const CounterManagement = () => {
         pagination={{ currentPage: params.page, limit: params.limit }}
         count={tableData?.total || 0}
         columns={columns}
-        data={tableData?.data || []}
+        data={counterData || []}
         isLoading={loading}
         onPageChange={(page) => setParams({ ...params, page })}
         setLimit={(limit) => setParams({ ...params, limit })}
