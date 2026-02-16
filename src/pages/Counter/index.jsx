@@ -17,7 +17,7 @@ import useCounterReducer from '../../stores/CounterReducer';
 
 const CounterManagement = () => {
   // ✅ Toggle mock/static data
-  const USE_MOCK = true;
+  const USE_MOCK = false;
 
   const {
     getData,
@@ -38,7 +38,6 @@ const CounterManagement = () => {
     toDate: null,
     sortBy: 'createdAt',
     sortOrder: 'DESC',
-    isExcelExport: 'false',
   };
 
   const [params, setParams] = useState(initialParams);
