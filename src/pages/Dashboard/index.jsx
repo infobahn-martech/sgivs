@@ -1,5 +1,4 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
 
 import CommonHeader from '../../components/common/CommonHeader';
 
@@ -8,131 +7,44 @@ import inventoryCountIcon from '../../assets/images/inventory-count.svg';
 import returnedCountIcon from '../../assets/images/returned-count.svg';
 import downloadCountIcon from '../../assets/images/download-count.svg';
 
-import inventoryMangIcon from '../../assets/images/inventory-dash.svg';
-import userMangIcon from '../../assets/images/User_Management.svg';
-
 import DashboardSectionTable from './DashboardTable';
 import CountBlock from './CountBlock';
 
 const Dashboard = () => {
-  const navigate = useNavigate();
-
   // ✅ STATIC profile
-  const profileData = {
-    name: 'Yudeep',
-  };
+  const profileData = { name: 'Yudeep' };
 
-  // ✅ STATIC counters
+  // ✅ STATIC counters (top cards)
   const dashLoading = false;
   const counters = [
-    {
-      icon: userCountIcon,
-      label: 'Users count',
-      count: 24,
-      className: 'user',
-    },
-    {
-      icon: inventoryCountIcon,
-      label: 'Applications MTD count',
-      count: 128,
-      className: 'inventory',
-    },
-    {
-      icon: returnedCountIcon,
-      label: 'Applications MTD count',
-      count: 7,
-      className: 'returned',
-    },
-    {
-      icon: downloadCountIcon,
-      label: 'Appointments for Current Day',
-      count: 19,
-      className: 'borrowed',
-    },
+    { icon: userCountIcon, label: 'Employee count', count: 24, className: 'user' },
+    { icon: inventoryCountIcon, label: 'Applications MTD count', count: 128, className: 'inventory' },
+    { icon: returnedCountIcon, label: 'Applications MTD count', count: 7, className: 'returned' },
+    { icon: downloadCountIcon, label: 'Appointments for Current Day', count: 19, className: 'borrowed' },
   ];
 
-  // ✅ STATIC users table columns
-  const usersColumns = [
-    { name: 'Name', selector: 'name', titleClasses: '', colClassName: '' },
-    { name: 'Email', selector: 'email', titleClasses: '', colClassName: '' },
-    { name: 'Role', selector: 'role', titleClasses: '', colClassName: '' },
-    { name: 'Status', selector: 'status', titleClasses: '', colClassName: '' },
+  // ✅ Appointments For Current Day (orange header boxes)
+  const appointmentsToday = [
+    { label: 'Visa', value: 14 },
+    { label: 'Passport', value: 259 },
+    { label: 'Attestation', value: 130 },
+    { label: 'OCI', value: 0 },
+    { label: 'Total', value: 403 },
   ];
 
-  // ✅ STATIC users data
-  const usersData = {
-    data: [
-      {
-        name: 'John Mathew',
-        email: 'john@gmail.com',
-        role: 'Admin',
-        status: 'Active',
-      },
-      { name: 'Anju', email: 'anju@gmail.com', role: 'User', status: 'Active' },
-      {
-        name: 'Dennis',
-        email: 'dennis@gmail.com',
-        role: 'User',
-        status: 'Inactive',
-      },
-      {
-        name: 'Admin',
-        email: 'admin@gmail.com',
-        role: 'Admin',
-        status: 'Active',
-      },
-    ],
-  };
-
-  // ✅ STATIC inventory columns
-  const inventoryColumns = [
-    { name: 'Item', selector: 'item', titleClasses: '', colClassName: '' },
-    {
-      name: 'Category',
-      selector: 'category',
-      titleClasses: '',
-      colClassName: '',
-    },
-    { name: 'Status', selector: 'status', titleClasses: '', colClassName: '' },
-    {
-      name: 'Updated',
-      selector: 'updated',
-      titleClasses: '',
-      colClassName: '',
-    },
+  // ✅ Number Of applications accepted Today (green header; Walk-in has red header)
+  const applicationsAcceptedToday = [
+    { label: 'Visa', value: 2 },
+    { label: 'Passport', value: 63 },
+    { label: 'Attestation', value: '31 (28)' },
+    { label: 'OCI', value: 0 },
+    { label: 'Total', value: '96 (93)' },
+    { label: 'Walk-in Applicants', value: 19, variant: 'walkin' },
   ];
 
-  // ✅ STATIC inventory data
-  const inventoryList = [
-    {
-      item: 'Laptop - Dell',
-      category: 'Electronics',
-      status: 'Borrowed',
-      updated: '05 Feb 2026',
-    },
-    {
-      item: 'Projector',
-      category: 'Electronics',
-      status: 'Available',
-      updated: '04 Feb 2026',
-    },
-    {
-      item: 'Office Chair',
-      category: 'Furniture',
-      status: 'Returned',
-      updated: '03 Feb 2026',
-    },
-    {
-      item: 'Router',
-      category: 'Networking',
-      status: 'Available',
-      updated: '02 Feb 2026',
-    },
-  ];
-
-  // ✅ STATIC loading flags
-  const isUsersLoading = false;
-  const isListLoading = false;
+  // ✅ Summary MTD / YTD
+  const totalApplicationsMTD = 4067;
+  const totalApplicationsYTD = 11588;
 
   return (
     <>
@@ -162,26 +74,55 @@ const Dashboard = () => {
           </div>
         </div>
 
-        <div className="dash-table-wrp">
-          {/* ✅ USER MANAGEMENT */}
-          <DashboardSectionTable
-            title="User Management"
-            icon={userMangIcon}
-            columns={usersColumns}
-            data={usersData?.data || []}
-            isLoading={isUsersLoading}
-            onViewAll={() => navigate('/user-management')}
-          />
+        {/* All Centers dropdown + counter sections from image 1 */}
+        <div className="dash-stats-sections">
+          <div className="dash-stats-dropdown-wrp">
+            <select className="dash-stats-dropdown" defaultValue="">
+              <option value="">All Centers</option>
+            </select>
+          </div>
 
-          {/* ✅ INVENTORY MANAGEMENT */}
-          <DashboardSectionTable
-            title="Inventory Management"
-            icon={inventoryMangIcon}
-            columns={inventoryColumns}
-            data={inventoryList || []}
-            isLoading={isListLoading}
-            onViewAll={() => navigate('/inventory-management')}
-          />
+          <div className="dash-stat-row">
+            <div className="dash-stat-row-title">Appointments For Current Day</div>
+            <div className="dash-stat-boxes">
+              {appointmentsToday.map((item, idx) => (
+                <div key={idx} className="dash-stat-box dash-stat-box--orange">
+                  <div className="dash-stat-box-header">{item.label}</div>
+                  <div className="dash-stat-box-value">{item.value}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="dash-stat-row">
+            <div className="dash-stat-row-title">Number Of applications accepted Today</div>
+            <div className="dash-stat-boxes">
+              {applicationsAcceptedToday.map((item, idx) => (
+                <div
+                  key={idx}
+                  className={`dash-stat-box ${item.variant === 'walkin' ? 'dash-stat-box--walkin' : 'dash-stat-box--green'}`}
+                >
+                  <div className="dash-stat-box-header">{item.label}</div>
+                  <div className="dash-stat-box-value">{item.value}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="dash-stat-summary">
+            <div className="dash-stat-box dash-stat-box--orange dash-stat-box--large">
+              <div className="dash-stat-box-header">Total Applications MTD (Month To Date)</div>
+              <div className="dash-stat-box-value">{totalApplicationsMTD}</div>
+            </div>
+            <div className="dash-stat-box dash-stat-box--orange dash-stat-box--large">
+              <div className="dash-stat-box-header">Total Applications YTD (Year To Date)</div>
+              <div className="dash-stat-box-value">{totalApplicationsYTD}</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="dash-table-wrp">
+          <DashboardSectionTable />
         </div>
       </div>
     </>
