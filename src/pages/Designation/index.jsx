@@ -49,40 +49,34 @@ const DesignationManagement = () => {
     data: [
       {
         id: 1,
-        roleName: 'Role A',
-        designationName: 'Designation A',
+        designationName: 'Country Manager',
         createdAt: '2025-01-12T10:00:00Z',
       },
       {
         id: 2,
-        roleName: 'Role B',
-        designationName: 'Designation B',
+        designationName: 'Counter Staff',
         createdAt: '2025-01-15T11:20:00Z',
       },
-      {
-        id: 3,
-        roleName: 'Role C',
-        designationName: 'Designation 1',
-        createdAt: '2025-02-02T09:10:00Z',
-      },
-      {
-        id: 4,
-        roleName: 'Role D',
-        designationName: 'Designation 3',
-        createdAt: '2025-02-20T14:45:00Z',
-      },
-      {
-        id: 5,
-        roleName: 'Role E',
-        designationName: 'Designation X',
-        createdAt: '2025-03-01T08:35:00Z',
-      },
-      {
-        id: 6,
-        roleName: 'Role F',
-        designationName: 'Designation Z',
-        createdAt: '2025-03-10T16:05:00Z',
-      },
+      // {
+      //   id: 3,
+      //   designationName: 'Designation 1',
+      //   createdAt: '2025-02-02T09:10:00Z',
+      // },
+      // {
+      //   id: 4,
+      //   designationName: 'Designation 3',
+      //   createdAt: '2025-02-20T14:45:00Z',
+      // },
+      // {
+      //   id: 5,
+      //   designationName: 'Designation X',
+      //   createdAt: '2025-03-01T08:35:00Z',
+      // },
+      // {
+      //   id: 6,
+      //   designationName: 'Designation Z',
+      //   createdAt: '2025-03-10T16:05:00Z',
+      // },
     ],
   };
 
@@ -129,13 +123,13 @@ const DesignationManagement = () => {
 
   // ✅ Replace table fields with: Center Name + Counter
   const columns = [
-    {
-      name: 'Role Name',
-      selector: 'roleName',
-      contentClass: 'user-pic',
-      cell: (row) => <span>{row?.roleName || '-'}</span>,
-      sort: true,
-    },
+    // {
+    //   name: 'Role Name',
+    //   selector: 'roleName',
+    //   contentClass: 'user-pic',
+    //   cell: (row) => <span>{row?.roleName || '-'}</span>,
+    //   sort: true,
+    // },
     {
       name: 'Designation',
       selector: 'designationName',
