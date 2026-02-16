@@ -1,24 +1,14 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+
 import CustomModal from '../../components/common/CustomModal';
-import useDesignationReducer from '../../stores/CounterReducer';
+import useDesignationReducer from '../../stores/DesignationReducer';
 import CustomSelect from './Select';
+import useRoleRudcer from '../../stores/RoleReducer';
 
-const USE_MOCK = true;
-
-// ✅ Dummy centers list (Select Center dropdown)
-const mockRoles = [
-  { id: '1', name: 'Role A' },
-  { id: '2', name: 'Role B' },
-  { id: '3', name: 'Role C' },
-  { id: '4', name: 'Role D' },
-  { id: '5', name: 'Role E' },
-  { id: '6', name: 'Role F' },
-];
-
-const nameSchema = z.object({
+const schema = z.object({
   name: z
     .string()
     .nonempty('Name is required')
@@ -35,68 +25,81 @@ export function AddEditModal({ showModal, closeModal, onRefreshDesignation }) {
     reset,
     watch,
   } = useForm({
-    resolver: zodResolver(nameSchema),
+    resolver: zodResolver(schema),
     defaultValues: {
       name: '',
       roleId: '',
     },
   });
 
-  const { postData, patchData, isLoading, getAllRole, roles } =
-    useDesignationReducer((state) => state);
+  const { postData, patchData, isLoading } = useDesignationReducer((state) => state);
+
+  // ✅ Role list API
+  const { getData, roleData, isLoadingRole } = useRoleRudcer((state) => state);
 
   const selectedRoleId = watch('roleId');
 
-  // ✅ Load center list (API mode only)
+  // ✅ Load roles dynamically
   useEffect(() => {
-    if (!USE_MOCK) getAllRole();
-  }, []);
+    getData();
+  }, [getData]);
+
+  // ✅ Convert API roles to select options
+  // API role object:
+  // { employee_role_id: "3", employee_role: "TEST" }
+  const roleOptions = useMemo(() => {
+    return (roleData || []).map((item) => ({
+      label: item?.employee_role,
+      value: String(item?.employee_role_id),
+    }));
+  }, [roleData]);
 
   // ✅ Fill form for edit / clear for add
   useEffect(() => {
-    const roles = USE_MOCK ? mockRoles : roles;
+    if (showModal?.id) {
+      // name key might be "name" or "designation_name" depending on your API
+      setValue('name', showModal?.name || showModal?.designation_name || '', {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
 
-    if (showModal?.id && (roles?.length || 0) > 0) {
-      // Your listing page now uses counterName/centerName.
-      // For edit modal, accept both old & new keys safely.
-      setValue('name', showModal?.roleName || showModal?.name || '');
+      // role id could be in different keys depending on your list API
+      // try these common ones safely
       setValue(
         'roleId',
-        String(showModal?.roleId || showModal?.role?.id || showModal?.roleId || '')
+        String(
+          showModal?.employee_role_id ||
+          showModal?.roleId ||
+          showModal?.employeeRoleId ||
+          showModal?.role?.employee_role_id ||
+          ''
+        ),
+        { shouldDirty: true, shouldValidate: true }
       );
-    } else if (!showModal?.id) {
-      reset();
+    } else {
+      reset({ name: '', roleId: '' });
     }
-  }, [showModal?.id, roles, reset, setValue]);
+  }, [showModal, reset, setValue]);
 
-  // ✅ Options for select
-  const roleOptions = useMemo(() => {
-    const roles = USE_MOCK ? mockRoles : roles || [];
-    return roles.map((item) => ({
-      label: item.name,
-      value: String(item.id),
-    }));
-  }, [roles]);
-
-  // ✅ Dummy submit (no API)
   const onSubmit = (data) => {
-    if (USE_MOCK) {
-      // Just close modal + refresh UI
-      onRefreshDesignation?.();
-      closeModal?.();
-      return;
-    }
+    // If your backend expects employee_role_id instead of roleId, map here.
+    // ✅ Change this if needed:
+    const payload = {
+      ...data,
+      // employee_role_id: data.roleId, // <-- uncomment if API expects this
+    };
 
     if (showModal?.id) {
-      patchData({ id: showModal.id, ...data }, () => {
+      patchData({ id: showModal.id, ...payload }, () => {
         onRefreshDesignation?.();
+        closeModal?.();
       });
     } else {
-      postData(data, () => {
+      postData(payload, () => {
         onRefreshDesignation?.();
+        closeModal?.();
       });
     }
-    closeModal?.();
   };
 
   const renderHeader = () => (
@@ -126,21 +129,22 @@ export function AddEditModal({ showModal, closeModal, onRefreshDesignation }) {
             <CustomSelect
               options={roleOptions}
               value={
-                roleOptions.find(
-                  (option) => option.value === String(selectedRoleId || '')
-                ) || null
+                roleOptions.find((opt) => opt.value === String(selectedRoleId || '')) ||
+                null
               }
               onChange={(selected) => {
-                setValue('roleId', selected?.value || '');
+                setValue('roleId', selected?.value || '', {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                });
               }}
-              placeholder="Select Role"
+              placeholder={isLoadingRole ? 'Loading roles...' : 'Select Role'}
+              isDisabled={isLoadingRole}
               showIndicator={false}
               className="form-select form-control"
             />
 
-            {errors.roleId && (
-              <span className="error">{errors.roleId.message}</span>
-            )}
+            {errors.roleId && <span className="error">{errors.roleId.message}</span>}
           </div>
         </div>
 
@@ -158,9 +162,7 @@ export function AddEditModal({ showModal, closeModal, onRefreshDesignation }) {
               placeholder="Enter designation name"
               {...register('name')}
             />
-            {errors.name && (
-              <span className="error">{errors.name.message}</span>
-            )}
+            {errors.name && <span className="error">{errors.name.message}</span>}
           </div>
         </div>
       </div>
@@ -172,13 +174,14 @@ export function AddEditModal({ showModal, closeModal, onRefreshDesignation }) {
       <button type="button" className="btn btn-cancel" onClick={closeModal}>
         Cancel
       </button>
+
       <button
         type="button"
         className="btn btn-submit"
-        disabled={USE_MOCK ? false : isLoading}
+        disabled={isLoading}
         onClick={handleSubmit(onSubmit)}
       >
-        {USE_MOCK ? 'Save' : isLoading ? 'Loading...' : 'Save'}
+        {isLoading ? 'Loading...' : 'Save'}
       </button>
     </div>
   );
