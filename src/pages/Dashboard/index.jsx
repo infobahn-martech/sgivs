@@ -9,6 +9,7 @@ import downloadCountIcon from '../../assets/images/download-count.svg';
 
 import DashboardSectionTable from './DashboardTable';
 import CountBlock from './CountBlock';
+import StatCard from './StatCard';
 
 const Dashboard = () => {
   // ✅ STATIC profile
@@ -20,7 +21,7 @@ const Dashboard = () => {
     { icon: userCountIcon, label: 'Employee count', count: 24, className: 'user' },
     { icon: inventoryCountIcon, label: 'Applications MTD count', count: 128, className: 'inventory' },
     { icon: returnedCountIcon, label: 'Applications MTD count', count: 7, className: 'returned' },
-    { icon: downloadCountIcon, label: 'Appointments for Current Day', count: 19, className: 'borrowed' },
+    { icon: downloadCountIcon, label: 'Walk-in Applicants', count: 19, className: 'borrowed' },
   ];
 
   // ✅ Appointments For Current Day (orange header boxes)
@@ -39,7 +40,6 @@ const Dashboard = () => {
     { label: 'Attestation', value: '31 (28)' },
     { label: 'OCI', value: 0 },
     { label: 'Total', value: '96 (93)' },
-    { label: 'Walk-in Applicants', value: 19, variant: 'walkin' },
   ];
 
   // ✅ Summary MTD / YTD
@@ -84,39 +84,29 @@ const Dashboard = () => {
 
           <div className="dash-stat-row">
             <div className="dash-stat-row-title">Appointments For Current Day</div>
-            <div className="dash-stat-boxes">
+            <div className="dash-stat-cards">
               {appointmentsToday.map((item, idx) => (
-                <div key={idx} className="dash-stat-box dash-stat-box--orange">
-                  <div className="dash-stat-box-header">{item.label}</div>
-                  <div className="dash-stat-box-value">{item.value}</div>
-                </div>
+                <StatCard
+                  key={idx}
+                  label={item.label}
+                  value={item.value}
+                  initial={item.label.charAt(0)}
+                />
               ))}
             </div>
           </div>
 
           <div className="dash-stat-row">
             <div className="dash-stat-row-title">Number Of applications accepted Today</div>
-            <div className="dash-stat-boxes">
+            <div className="dash-stat-cards">
               {applicationsAcceptedToday.map((item, idx) => (
-                <div
+                <StatCard
                   key={idx}
-                  className={`dash-stat-box ${item.variant === 'walkin' ? 'dash-stat-box--walkin' : 'dash-stat-box--green'}`}
-                >
-                  <div className="dash-stat-box-header">{item.label}</div>
-                  <div className="dash-stat-box-value">{item.value}</div>
-                </div>
+                  label={item.label}
+                  value={item.value}
+                  initial={item.label.charAt(0)}
+                />
               ))}
-            </div>
-          </div>
-
-          <div className="dash-stat-summary">
-            <div className="dash-stat-box dash-stat-box--orange dash-stat-box--large">
-              <div className="dash-stat-box-header">Total Applications MTD (Month To Date)</div>
-              <div className="dash-stat-box-value">{totalApplicationsMTD}</div>
-            </div>
-            <div className="dash-stat-box dash-stat-box--orange dash-stat-box--large">
-              <div className="dash-stat-box-header">Total Applications YTD (Year To Date)</div>
-              <div className="dash-stat-box-value">{totalApplicationsYTD}</div>
             </div>
           </div>
         </div>
