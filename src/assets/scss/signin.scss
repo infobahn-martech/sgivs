@@ -222,6 +222,13 @@
                     margin-bottom: 34px;
                     display: flex;
                     flex-direction: column;
+                    align-items: flex-end;
+
+                    .login-v2__logo {
+                        max-height: 48px;
+                        margin-bottom: 1rem;
+                        object-fit: contain;
+                    }
 
                     .title {
                         margin-bottom: 14px;

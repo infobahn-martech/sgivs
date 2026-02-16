@@ -12,6 +12,7 @@ import useAuthReducer from '../../stores/AuthReducer';
 import { Link, useNavigate } from 'react-router-dom';
 import { Spinner } from 'react-bootstrap';
 import SignUp from '../SignUp';
+import logoImg from '../../assets/images/MLO.png';
 
 const loginSchema = z.object({
   username: z.string().nonempty('Username is required'),
@@ -61,12 +62,14 @@ const Login = () => {
         <div className="panel-right login-v2__right">
           <div className="form-wrp-center login login-v2__form-card">
             <div className="top-blk">
-              {/* ✅ Remove emoji for enterprise seriousness */}
-              <div className="title">Welcome Back</div>
-              <div className="desc">
-                Step into a productive day.
-                <br />
-                Sign in to manage your operations seamlessly.
+              <img src={logoImg} alt="SGIVS GLOBAL" className="login-v2__logo" />
+              <div style={{ width: '100%', textAlign: 'left' }}>
+                <div className="title">Welcome Back</div>
+                <div className="desc">
+                  Step into a productive day.
+                  <br />
+                  Sign in to manage your operations seamlessly.
+                </div>
               </div>
             </div>
 
