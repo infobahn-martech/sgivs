@@ -39,7 +39,7 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
     // Employee Management
     {
       name: 'Employee Management',
-      icon: MessagesIcon,
+      icon: UserManageIcon,
       path: '/employee-management',
       activeRoutes: ['/employee-management', '/role-management', '/designation-management'],
       subMenu: [
@@ -109,7 +109,7 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
     // Service Management
     {
       name: 'Service Management',
-      icon: EZIcon,
+      icon: MessagesIcon,
       path: '/service-management',
       activeRoutes: [
         '/service-management',
