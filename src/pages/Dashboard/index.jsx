@@ -28,7 +28,7 @@ const Dashboard = () => {
   const appointmentsToday = [
     { label: 'Visa', value: 14 },
     { label: 'Passport', value: 259 },
-    { label: 'Attestation', value: 130 },
+    { label: 'Attestation', value: "130 (127)" },
     { label: 'OCI', value: 0 },
   ];
 
