@@ -222,11 +222,18 @@
                     margin-bottom: 34px;
                     display: flex;
                     flex-direction: column;
-                    align-items: flex-end;
+                    align-items: flex-start;
+
+                    .login-v2__logo-wrap {
+                        background: #051a53;
+                        padding: 10px 16px;
+                        border-radius: 12px;
+                        margin-bottom: 1rem;
+                    }
 
                     .login-v2__logo {
                         max-height: 48px;
-                        margin-bottom: 1rem;
+                        display: block;
                         object-fit: contain;
                     }
 

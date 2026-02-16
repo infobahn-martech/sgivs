@@ -62,7 +62,9 @@ const Login = () => {
         <div className="panel-right login-v2__right">
           <div className="form-wrp-center login login-v2__form-card">
             <div className="top-blk">
-              <img src={logoImg} alt="SGIVS GLOBAL" className="login-v2__logo" />
+              <div className="login-v2__logo-wrap">
+                <img src={logoImg} alt="SGIVS GLOBAL" className="login-v2__logo" />
+              </div>
               <div style={{ width: '100%', textAlign: 'left' }}>
                 <div className="title">Welcome Back</div>
                 <div className="desc">
