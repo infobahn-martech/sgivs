@@ -74,7 +74,7 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* All Centers dropdown + counter sections from image 1 */}
+        {/* All Centers dropdown + left/right counter sections (same style as 1st image KPI cards) */}
         <div className="dash-stats-sections">
           <div className="dash-stats-dropdown-wrp">
             <select className="dash-stats-dropdown" defaultValue="">
@@ -82,32 +82,52 @@ const Dashboard = () => {
             </select>
           </div>
 
-          <div className="dash-stat-row">
-            <div className="dash-stat-row-title">Appointments For Current Day</div>
-            <div className="dash-stat-cards">
-              {appointmentsToday.map((item, idx) => (
-                <StatCard
-                  key={idx}
-                  label={item.label}
-                  value={item.value}
-                  initial={item.label.charAt(0)}
-                />
-              ))}
+          <div className="dash-stats-two-col">
+            <div className="dash-stats-col dash-stats-col--left">
+              <div className="dash-stat-row">
+                <div className="dash-stat-row-title">Appointments For Current Day</div>
+                <div className="dash-stat-cards">
+                  {appointmentsToday.map((item, idx) => (
+                    <StatCard
+                      key={idx}
+                      label={item.label}
+                      value={item.value}
+                      initial={item.label.charAt(0)}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="dash-stats-col dash-stats-col--right">
+              <div className="dash-stat-row">
+                <div className="dash-stat-row-title">Number Of applications accepted Today</div>
+                <div className="dash-stat-cards">
+                  {applicationsAcceptedToday.map((item, idx) => (
+                    <StatCard
+                      key={idx}
+                      label={item.label}
+                      value={item.value}
+                      initial={item.label.charAt(0)}
+                    />
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
 
-          <div className="dash-stat-row">
-            <div className="dash-stat-row-title">Number Of applications accepted Today</div>
-            <div className="dash-stat-cards">
-              {applicationsAcceptedToday.map((item, idx) => (
-                <StatCard
-                  key={idx}
-                  label={item.label}
-                  value={item.value}
-                  initial={item.label.charAt(0)}
-                />
-              ))}
-            </div>
+          <div className="dash-stat-summary">
+            <StatCard
+              label="Total Applications MTD (Month To Date)"
+              value={totalApplicationsMTD}
+              initial="M"
+              size="large"
+            />
+            <StatCard
+              label="Total Applications YTD (Year To Date)"
+              value={totalApplicationsYTD}
+              initial="Y"
+              size="large"
+            />
           </div>
         </div>
 

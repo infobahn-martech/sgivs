@@ -466,6 +466,30 @@
                 width: 100%;
                 margin-top: 24px;
 
+                .dash-stats-two-col {
+                    display: flex;
+                    gap: 24px;
+                    width: 100%;
+                    margin-top: 4px;
+
+                    @media ($sm-991) {
+                        flex-direction: column;
+                        gap: 20px;
+                    }
+                }
+
+                .dash-stats-col {
+                    flex: 1;
+                    min-width: 0;
+
+                    &.dash-stats-col--left,
+                    &.dash-stats-col--right {
+                        .dash-stat-row {
+                            margin-bottom: 0;
+                        }
+                    }
+                }
+
                 .dash-stats-dropdown-wrp {
                     margin-bottom: 20px;
 
@@ -502,11 +526,11 @@
                     }
                 }
 
-                // Stat cards: same style as Employee count / Applications MTD (KPI) cards
+                // Stat cards: same style as 1st image (Employee count / Applications MTD KPI cards)
                 .dash-stat-card {
                     border-radius: 17px;
                     padding: 24px 22px;
-                    background-color: #F7FAFC;
+                    background-color: #F0F9FD;
                     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
                     min-width: 120px;
                     position: relative;
@@ -519,6 +543,30 @@
                     @media ($sm-1199) {
                         padding: 18px 16px;
                         min-width: 100px;
+                    }
+
+                    // Faded background initial (same as 1st image background icon effect)
+                    &::after {
+                        content: attr(data-initial);
+                        position: absolute;
+                        right: 10%;
+                        bottom: 5%;
+                        font-size: 72px;
+                        font-weight: 700;
+                        color: $primaryColor;
+                        opacity: 0.08;
+                        line-height: 1;
+                        pointer-events: none;
+
+                        @media ($sm-1679) {
+                            font-size: 56px;
+                        }
+
+                        @media ($sm-1199) {
+                            font-size: 48px;
+                            right: 5%;
+                            bottom: 2%;
+                        }
                     }
 
                     &.dash-stat-card--large {
