@@ -135,6 +135,7 @@ const DesignationManagement = () => {
       selector: 'designationName',
       contentClass: 'user-pic',
       cell: (row) => <span>{row?.designationName || '-'}</span>,
+      sort: true,
     },
     {
       name: 'Created Date',

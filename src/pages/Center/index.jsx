@@ -99,14 +99,17 @@ const Center = () => {
       name: 'Center Name',
       selector: 'center_name',
       contentClass: 'user-pic',
+      sort: true,
     },
     {
       name: 'Country',
       selector: 'country_name',
+      sort: true,
     },
     {
       name: 'Mission',
       selector: 'mission_name',
+      sort: true,
     },
     {
       name: 'Action',

@@ -120,11 +120,13 @@ const Role = () => {
       name: 'Name',
       selector: 'employee_role',
       contentClass: 'user-pic',
+      sort: true,
     },
     {
       name: 'Created Date',
       selector: 'createdAt',
       cell: (row) => <span>{formatDate(row?.createdAt)}</span>,
+      sort: true,
     },
     {
       name: 'Action',

@@ -23,6 +23,7 @@ const getUserTableColumns = ({
       selector: 'firstName',
       titleClasses: isDashboard ? 'th-name' : 'tw1',
       contentClass: 'user-pic',
+      sort: true,
       cell: (row) => (
         <>
           <InitialsAvatar name={row.firstName} />
@@ -34,17 +35,20 @@ const getUserTableColumns = ({
       name: 'Last Name',
       selector: 'lastName',
       titleClasses: isDashboard ? 'th-last-name' : 'tw2',
+      sort: true,
     },
     {
       name: 'Email',
       selector: 'email',
       titleClasses: isDashboard ? 'th-email' : 'tw3',
+      sort: true,
     },
     {
       name: 'Phone',
       selector: 'phone',
       titleClasses: isDashboard ? 'th-phone' : 'tw4',
       cell: (row) => `${row?.countryCode || ''} ${row?.phone || ''}`.trim(),
+      sort: true,
     },
     {
       name: 'Joined Date',

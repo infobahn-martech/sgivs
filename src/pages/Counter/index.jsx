@@ -140,6 +140,7 @@ const CounterManagement = () => {
       name: 'Counter',
       selector: 'counter_name',
       contentClass: 'user-pic',
+      sort: true,
     },
     {
       name: 'Created Date',
