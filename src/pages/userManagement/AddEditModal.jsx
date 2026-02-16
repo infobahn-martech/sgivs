@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import CustomModal from '../../components/common/CustomModal';
 import CustomSelect from '../../components/common/CustomSelect';
 import useAuthReducer from '../../stores/AuthReducer'; // ✅ change to your store
+import dummyIcon from '../../assets/images/Profile-PIC.png';
 
 const USE_MOCK = true;
 
@@ -312,7 +313,7 @@ export default function EmployeeAddEditModal({
                         <img src={imagePreview} alt="Employee" />
                     ) : (
                         <div className="employee-avatar-placeholder">
-                            <span>+</span>
+                            <img src={dummyIcon} alt="Employee" className="employee-avatar-placeholder-img" />
                         </div>
                     )}
                 </div>
