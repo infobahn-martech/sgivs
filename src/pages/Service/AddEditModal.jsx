@@ -128,7 +128,7 @@ export function AddEditModal({ showModal, closeModal, onRefreshService }) {
 
     // ✅ Don't close immediately. Close ONLY after success callback.
     if (showModal?.service_id) {
-      patchData({ id: showModal.service_id, ...payload }, () => {
+      patchData({ service_id: showModal.service_id, ...payload }, () => {
         onRefreshService?.();
         closeModal?.();
       });

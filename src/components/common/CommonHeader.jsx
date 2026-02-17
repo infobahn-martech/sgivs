@@ -88,9 +88,9 @@ const CommonHeader = ({
         item.path !== '/')
   ) ||
     headerConfig.find((item) => currentPath?.startsWith(item.path)) || {
-      title: 'Page Not Found',
-      icon: 'img/default.svg',
-    };
+    title: 'Page Not Found',
+    icon: 'img/default.svg',
+  };
 
   const renderAddButton = (type) => {
     switch (type) {

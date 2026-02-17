@@ -36,9 +36,7 @@ const useServiceReducer = create((set) => ({
   patchData: async (payload, cb) => {
     try {
       set({ isLoading: true });
-
-      const { id, ...rest } = payload;
-      const { data } = await serviceService.patchData(id, rest); // Updated call
+      const { data } = await serviceService.patchData(payload); // Updated call
 
       const { success } = useAlertReducer.getState();
       success(data?.response?.data?.message ?? data?.message);
