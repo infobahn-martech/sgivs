@@ -64,6 +64,8 @@ export function AddEditModal({ showModal, closeModal, onRefreshService }) {
     },
   });
 
+  console.log("showModal", showModal);
+
   const { postData, patchData, isLoading, getAllServiceType, serviceTypes } = useServiceReducer(
     (state) => state
   );
@@ -78,7 +80,7 @@ export function AddEditModal({ showModal, closeModal, onRefreshService }) {
 
   // ✅ Fill form for edit / clear for add
   useEffect(() => {
-    if (showModal?.id) {
+    if (showModal?.service_id) {
       setValue('service_name', showModal?.serviceName || showModal?.service_name || '');
 
       const stId =
@@ -125,8 +127,8 @@ export function AddEditModal({ showModal, closeModal, onRefreshService }) {
     };
 
     // ✅ Don't close immediately. Close ONLY after success callback.
-    if (showModal?.id) {
-      patchData({ id: showModal.id, ...payload }, () => {
+    if (showModal?.service_id) {
+      patchData({ id: showModal.service_id, ...payload }, () => {
         onRefreshService?.();
         closeModal?.();
       });
@@ -140,7 +142,7 @@ export function AddEditModal({ showModal, closeModal, onRefreshService }) {
 
   const renderHeader = () => (
     <>
-      <h4 className="modal-title">{showModal?.id ? 'Edit Service' : 'Add Service'}</h4>
+      <h4 className="modal-title">{showModal?.service_id ? 'Edit Service' : 'Add Service'}</h4>
       <button
         type="button"
         className="btn-close"
