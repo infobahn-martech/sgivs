@@ -1,7 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { Tooltip } from 'react-tooltip';
-import moment from 'moment';
-
 import '../../assets/scss/usermanagement.scss';
 
 import deleteIcon from '../../assets/images/delete.svg';
@@ -9,96 +7,40 @@ import editIcon from '../../assets/images/edit.svg';
 
 import CommonHeader from '../../components/common/CommonHeader';
 import CustomTable from '../../components/common/CustomTable';
-import useCenterReducer from '../../stores/CenterReducer';
-import { formatDate } from '../../config/config';
 import { AddEditModal } from './AddEditModal';
 import { debounce } from 'lodash';
 import CustomActionModal from '../../components/common/CustomActionModal';
 import useAppointmentTypeReducer from '../../stores/AppointmentTypeReducer';
 
 const AppointmentType = () => {
-  // ✅ Toggle this (VERY useful for large admin projects)
-  const USE_MOCK = true;
-
   const { getData, appointmentTypeData, isLoadingGet, deleteData, isLoadingDelete } =
     useAppointmentTypeReducer((state) => state);
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [modal, setModal] = useState(false);
 
-  const initialParams = {
-    search: '',
-    page: 1,
-    limit: 10,
-    fromDate: null,
-    toDate: null,
-    sortBy: 'createdAt',
-    sortOrder: 'DESC',
-    isExcelExport: 'false',
-  };
-
-  const [params, setParams] = useState(initialParams);
-
-  // ✅ Dummy Data
-  const mockAppointmentTypeData = {
-    total: 5,
-    data: [
-      {
-        id: 1,
-        name: 'Appointment Type 1',
-        createdAt: '2025-01-10T09:30:00Z',
-      },
-      {
-        id: 2,
-        name: 'Appointment Type 2',
-        createdAt: '2025-02-14T12:15:00Z',
-      },
-      {
-        id: 3,
-        name: 'Appointment Type 3',
-        createdAt: '2025-03-05T08:45:00Z',
-      },
-      {
-        id: 4,
-        name: 'Appointment Type 4',
-        createdAt: '2025-03-20T10:00:00Z',
-      },
-      {
-        id: 5,
-        name: 'Appointment Type 5',
-        createdAt: '2025-04-02T11:20:00Z',
-      },
-    ],
-  };
-
   const onRefreshAppointmentType = () => {
-    if (!USE_MOCK) {
-      getData(params);
-    }
+    getData(); // ✅ no params
     setModal(false);
     setDeleteModalOpen(false);
   };
 
-  // ✅ Call API only if not mock
+  // ✅ Load once
   useEffect(() => {
-    if (!USE_MOCK) {
-      getData(params);
-    }
-  }, [params]);
-
-  const handleSortChange = (selector) => {
-    setParams((prevParams) => ({
-      ...prevParams,
-      sortBy: selector,
-      sortOrder: prevParams.sortOrder === 'ASC' ? 'DESC' : 'ASC',
-    }));
-  };
+    getData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const renderAction = (row) => {
     return (
       <>
         <Tooltip id="edit" place="bottom" content="Edit" style={{ backgroundColor: '#051a53' }} />
-        <Tooltip id="delete" place="bottom" content="Delete" style={{ backgroundColor: '#051a53' }} />
+        <Tooltip
+          id="delete"
+          place="bottom"
+          content="Delete"
+          style={{ backgroundColor: '#051a53' }}
+        />
 
         <img
           src={editIcon}
@@ -120,13 +62,8 @@ const AppointmentType = () => {
   const columns = [
     {
       name: 'Name',
-      selector: 'name',
+      selector: 'appointment_type',
       contentClass: 'user-pic',
-    },
-    {
-      name: 'Created Date',
-      selector: 'createdAt',
-      cell: (row) => <span>{formatDate(row?.createdAt)}</span>,
     },
     {
       name: 'Action',
@@ -137,35 +74,28 @@ const AppointmentType = () => {
     },
   ];
 
-  // ✅ Stable debounce
+  // ✅ Search only (no params state) — if your API supports: getData({ search })
   const debouncedSearch = useMemo(
     () =>
       debounce((searchValue) => {
-        setParams((prevParams) => ({
-          ...prevParams,
-          search: searchValue,
-          page: 1,
-        }));
+        getData({ search: searchValue });
       }, 500),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     []
   );
 
-  const handleDelete = () => {
-    if (USE_MOCK) {
-      setDeleteModalOpen(false);
-      return;
-    }
+  useEffect(() => {
+    return () => debouncedSearch.cancel?.();
+  }, [debouncedSearch]);
 
-    if (deleteModalOpen?.id) {
-      deleteData(deleteModalOpen?.id, () => {
+  const handleDelete = () => {
+    const id = deleteModalOpen?.appointment_type_id || deleteModalOpen?.id;
+    if (id) {
+      deleteData(id, () => {
         onRefreshAppointmentType();
       });
     }
   };
-
-  // ✅ Decide dataset
-  const tableData = USE_MOCK ? mockAppointmentTypeData : appointmentTypeData;
-  const loading = USE_MOCK ? false : isLoadingGet;
 
   return (
     <>
@@ -177,31 +107,18 @@ const AppointmentType = () => {
         }}
         hideFilter
         onSearch={debouncedSearch}
-        submitFilter={(filters) => {
-          const { fromDate, toDate, ...rest } = filters;
-
-          setParams({
-            ...params,
-            ...rest,
-            fromDate: fromDate ? moment(fromDate).format('YYYY-MM-DD') : null,
-            toDate: toDate ? moment(toDate).format('YYYY-MM-DD') : null,
-            page: 1,
-          });
-        }}
         clearOptions={() => {
-          setParams(initialParams);
+          getData(); // reset search
         }}
       />
 
       <CustomTable
-        pagination={{ currentPage: params.page, limit: params.limit }}
-        count={tableData?.total || 0}
+        // ✅ no pagination props since params removed
+        pagination={{ currentPage: 1, limit: 10 }}
+        count={appointmentTypeData?.length || 0}
         columns={columns}
-        data={tableData?.data || []}
-        isLoading={loading}
-        onPageChange={(page) => setParams({ ...params, page })}
-        setLimit={(limit) => setParams({ ...params, limit })}
-        onSortChange={handleSortChange}
+        data={appointmentTypeData || []}
+        isLoading={isLoadingGet}
         wrapClasses="inventory-table-wrap"
       />
 
@@ -216,10 +133,11 @@ const AppointmentType = () => {
       {deleteModalOpen && (
         <CustomActionModal
           isDelete
-          isLoading={USE_MOCK ? false : isLoadingDelete}
+          isLoading={isLoadingDelete}
           showModal={deleteModalOpen}
           closeModal={() => setDeleteModalOpen(false)}
-          message={`Are you sure you want to delete this ${deleteModalOpen?.name}?`}
+          message={`Are you sure you want to delete this ${deleteModalOpen?.appointment_type || ''
+            }?`}
           onCancel={() => setDeleteModalOpen(false)}
           onSubmit={handleDelete}
         />

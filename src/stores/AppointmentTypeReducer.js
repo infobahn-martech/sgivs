@@ -58,12 +58,13 @@ const useAppointmentTypeReducer = create((set) => ({
     try {
       set({ isLoadingGet: true });
       const { data } = await appointmentTypeService.getData(params);
-      const datas = data;
+
       set({
-        appointmentTypeData: datas?.data,
+        appointmentTypeData: data?.data,
         // successMessage: data?.response?.data?.message ?? data?.message,
         isLoadingGet: false,
       });
+
     } catch (err) {
       const { error } = useAlertReducer.getState();
       set({
@@ -77,9 +78,8 @@ const useAppointmentTypeReducer = create((set) => ({
     try {
       set({ isLoadingDelete: true });
       const { data } = await appointmentTypeService.deleteData(id);
-      const datas = data;
       set({
-        appointmentTypeData: datas?.data,
+        appointmentTypeData: data?.data,
         successMessage: data?.response?.data?.message ?? data?.message,
         isLoadingDelete: false,
       });
