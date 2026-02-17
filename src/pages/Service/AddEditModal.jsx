@@ -1,20 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import CustomModal from '../../components/common/CustomModal';
 import useServiceReducer from '../../stores/ServiceReducer';
 import CustomSelect from './Select';
-
-const USE_MOCK = true;
-
-// ✅ Dummy centers list (Select Center dropdown)
-const mockServiceTypes = [
-  { id: '1', name: 'Attestation' },
-  { id: '2', name: 'Visa' },
-  { id: '3', name: 'Passport' },
-  { id: '4', name: 'OCI' },
-];
 
 const nameSchema = z.object({
   name: z
@@ -43,48 +33,48 @@ export function AddEditModal({ showModal, closeModal, onRefreshService }) {
   const { postData, patchData, isLoading, getAllServiceType, serviceTypes } =
     useServiceReducer((state) => state);
 
+  console.log("serviceTypes", serviceTypes);
+
   const selectedServiceTypeId = watch('serviceTypeId');
 
-  // ✅ Load center list (API mode only)
+  // ✅ Load service type list (always dynamic)
   useEffect(() => {
-    if (!USE_MOCK) getAllServiceType();
+    getAllServiceType();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ✅ Fill form for edit / clear for add
   useEffect(() => {
-    const serviceTypes = USE_MOCK ? mockServiceTypes : serviceTypes;
-
-    if (showModal?.id && (serviceTypes?.length || 0) > 0) {
-      // Your listing page now uses counterName/centerName.
-      // For edit modal, accept both old & new keys safely.
+    if (showModal?.id) {
       setValue('name', showModal?.serviceName || showModal?.name || '');
-      setValue(
-        'serviceTypeId',
-        String(showModal?.serviceTypeId || showModal?.serviceType?.id || showModal?.serviceTypeId || '')
-      );
-    } else if (!showModal?.id) {
-      reset();
-    }
-  }, [showModal?.id, serviceTypes, reset, setValue]);
 
-  // ✅ Options for select
+      // supports multiple possible shapes from API
+      const stId =
+        showModal?.serviceTypeId ??
+        showModal?.serviceType?.id ??
+        showModal?.serviceType?.serviceTypeId ??
+        showModal?.serviceType?.service_type_id ??
+        '';
+
+      setValue('serviceTypeId', stId !== null && stId !== undefined ? String(stId) : '');
+    } else {
+      reset({
+        name: '',
+        serviceTypeId: '',
+      });
+    }
+  }, [showModal, reset, setValue]);
+
+  // ✅ Options for select (based on API: service_type_id, service_type)
   const serviceTypeOptions = useMemo(() => {
-    const serviceTypes = USE_MOCK ? mockServiceTypes : serviceTypes || [];
-    return serviceTypes.map((item) => ({
-      label: item.name,
-      value: String(item.id),
+    const list = serviceTypes || [];
+    return list.map((item) => ({
+      label: item?.service_type || '-',
+      value: String(item?.service_type_id || ''),
     }));
   }, [serviceTypes]);
 
-  // ✅ Dummy submit (no API)
   const onSubmit = (data) => {
-    if (USE_MOCK) {
-      // Just close modal + refresh UI
-      onRefreshService?.();
-      closeModal?.();
-      return;
-    }
-
     if (showModal?.id) {
       patchData({ id: showModal.id, ...data }, () => {
         onRefreshService?.();
@@ -99,9 +89,7 @@ export function AddEditModal({ showModal, closeModal, onRefreshService }) {
 
   const renderHeader = () => (
     <>
-      <h4 className="modal-title">
-        {showModal?.id ? 'Edit Service' : 'Add Service'}
-      </h4>
+      <h4 className="modal-title">{showModal?.id ? 'Edit Service' : 'Add Service'}</h4>
       <button
         type="button"
         className="btn-close"
@@ -129,16 +117,14 @@ export function AddEditModal({ showModal, closeModal, onRefreshService }) {
                 ) || null
               }
               onChange={(selected) => {
-                setValue('serviceTypeId', selected?.value || '');
+                setValue('serviceTypeId', selected?.value || '', { shouldValidate: true });
               }}
               placeholder="Select Service Type"
               showIndicator={false}
               className="form-select form-control"
             />
 
-            {errors.serviceTypeId && (
-              <span className="error">{errors.serviceTypeId.message}</span>
-            )}
+            {errors.serviceTypeId && <span className="error">{errors.serviceTypeId.message}</span>}
           </div>
         </div>
 
@@ -156,9 +142,7 @@ export function AddEditModal({ showModal, closeModal, onRefreshService }) {
               placeholder="Enter service name"
               {...register('name')}
             />
-            {errors.name && (
-              <span className="error">{errors.name.message}</span>
-            )}
+            {errors.name && <span className="error">{errors.name.message}</span>}
           </div>
         </div>
       </div>
@@ -167,16 +151,17 @@ export function AddEditModal({ showModal, closeModal, onRefreshService }) {
 
   const renderFooter = () => (
     <div className="modal-footer bottom-btn-sec">
-      <button type="button" className="btn btn-cancel" onClick={closeModal}>
+      <button type="button" className="btn btn-cancel" onClick={closeModal} disabled={isLoading}>
         Cancel
       </button>
+
       <button
         type="button"
         className="btn btn-submit"
-        disabled={USE_MOCK ? false : isLoading}
+        disabled={isLoading}
         onClick={handleSubmit(onSubmit)}
       >
-        {USE_MOCK ? 'Save' : isLoading ? 'Loading...' : 'Save'}
+        {isLoading ? 'Loading...' : 'Save'}
       </button>
     </div>
   );

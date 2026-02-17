@@ -80,26 +80,11 @@ const useServiceReducer = create((set) => ({
   getAllServiceType: async () => {
     try {
       set({ isLoadingGet: true });
-      const { data } = await serviceService.getAllServiceType();
-      const datas = data;
-      set({
-        serviceTypes: datas?.data?.data,
-        isLoadingGet: false,
-      });
-    } catch (err) {
-      set({
-        isLoadingGet: false,
-      });
-    }
-  },
-  getAllServiceType: async () => {
-    try {
-      set({ isLoadingGet: true });
       const {
         data: { data },
       } = await serviceService.getAllServiceType();
       set({
-        serviceTypes: data?.data,
+        serviceTypes: data,
         isLoadingGet: false,
       });
     } catch (err) {

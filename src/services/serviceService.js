@@ -3,6 +3,7 @@ import Gateway from '../config/gateway';
 const postData = (payload) => Gateway.post('/service/add_service', payload);
 const patchData = (payload) => Gateway.post('/service/update_service', payload);
 const getData = (params) => Gateway.get('/service/get_all_services', { params });
+const getAllServiceType = (params) => Gateway.get('/service/get_all_service_type', { params });
 const deleteData = (id) => Gateway.delete(`/service/delete_service/${id}`);
 
 export default {
@@ -10,4 +11,5 @@ export default {
   patchData,
   getData,
   deleteData,
+  getAllServiceType,
 };
