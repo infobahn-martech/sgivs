@@ -81,9 +81,7 @@ export function AddEditModal({ showModal, closeModal, onRefreshService }) {
     if (showModal?.id) {
       setValue('service_name', showModal?.serviceName || showModal?.service_name || '');
 
-      // ✅ service type id support (common shapes)
       const stId =
-        showModal?.service_type_id ??
         showModal?.service_type_id ??
         showModal?.serviceType?.service_type_id ??
         showModal?.serviceType?.id ??
@@ -91,7 +89,6 @@ export function AddEditModal({ showModal, closeModal, onRefreshService }) {
 
       setValue('service_type_id', stId !== null && stId !== undefined ? String(stId) : '');
 
-      // ✅ Fees (support multiple keys just in case API differs)
       setValue('govtFee', showModal?.govtFee ?? showModal?.govt_fee ?? '');
       setValue('icwfFee', showModal?.icwfFee ?? showModal?.icwf_fee ?? '');
       setValue('serviceFee', showModal?.serviceFee ?? showModal?.service_fee ?? '');
@@ -118,8 +115,6 @@ export function AddEditModal({ showModal, closeModal, onRefreshService }) {
   }, [serviceTypes]);
 
   const onSubmit = (data) => {
-    // ✅ If backend expects snake_case, convert here.
-    // If backend already accepts camelCase, you can send `data` directly.
     const payload = {
       service_name: data.service_name,
       service_type_id: data.service_type_id,
@@ -129,17 +124,18 @@ export function AddEditModal({ showModal, closeModal, onRefreshService }) {
       urgentFee: data.urgentFee,
     };
 
+    // ✅ Don't close immediately. Close ONLY after success callback.
     if (showModal?.id) {
       patchData({ id: showModal.id, ...payload }, () => {
         onRefreshService?.();
+        closeModal?.();
       });
     } else {
       postData(payload, () => {
         onRefreshService?.();
+        closeModal?.();
       });
     }
-
-    closeModal?.();
   };
 
   const renderHeader = () => (
@@ -151,6 +147,7 @@ export function AddEditModal({ showModal, closeModal, onRefreshService }) {
         data-bs-dismiss="modal"
         aria-label="Close"
         onClick={closeModal}
+        disabled={isLoading}
       />
     </>
   );
@@ -178,9 +175,12 @@ export function AddEditModal({ showModal, closeModal, onRefreshService }) {
               placeholder="Select Service Type"
               showIndicator={false}
               className="form-select form-control"
+              isDisabled={isLoading}
             />
 
-            {errors.service_type_id && <span className="error">{errors.service_type_id.message}</span>}
+            {errors.service_type_id && (
+              <span className="error">{errors.service_type_id.message}</span>
+            )}
           </div>
         </div>
 
@@ -196,7 +196,8 @@ export function AddEditModal({ showModal, closeModal, onRefreshService }) {
               className="form-control"
               autoComplete="off"
               maxLength={20}
-              placeholder="Enter service service_name"
+              placeholder="Enter service name"
+              disabled={isLoading}
               {...register('service_name')}
             />
             {errors.service_name && <span className="error">{errors.service_name.message}</span>}
@@ -217,6 +218,7 @@ export function AddEditModal({ showModal, closeModal, onRefreshService }) {
               min={0}
               step="0.01"
               placeholder="Enter govt fee"
+              disabled={isLoading}
               {...register('govtFee')}
             />
             {errors.govtFee && <span className="error">{errors.govtFee.message}</span>}
@@ -237,6 +239,7 @@ export function AddEditModal({ showModal, closeModal, onRefreshService }) {
               min={0}
               step="0.01"
               placeholder="Enter ICWF fee"
+              disabled={isLoading}
               {...register('icwfFee')}
             />
             {errors.icwfFee && <span className="error">{errors.icwfFee.message}</span>}
@@ -257,6 +260,7 @@ export function AddEditModal({ showModal, closeModal, onRefreshService }) {
               min={0}
               step="0.01"
               placeholder="Enter service fee"
+              disabled={isLoading}
               {...register('serviceFee')}
             />
             {errors.serviceFee && <span className="error">{errors.serviceFee.message}</span>}
@@ -277,6 +281,7 @@ export function AddEditModal({ showModal, closeModal, onRefreshService }) {
               min={0}
               step="0.01"
               placeholder="Enter urgent fee"
+              disabled={isLoading}
               {...register('urgentFee')}
             />
             {errors.urgentFee && <span className="error">{errors.urgentFee.message}</span>}
