@@ -16,9 +16,6 @@ import CustomActionModal from '../../components/common/CustomActionModal';
 import useDesignationReducer from '../../stores/DesignationReducer';
 
 const DesignationManagement = () => {
-  // ✅ Toggle mock/static data
-  const USE_MOCK = false;
-
   const {
     getData,
     designationData,
@@ -38,57 +35,20 @@ const DesignationManagement = () => {
     toDate: null,
     sortBy: 'createdAt',
     sortOrder: 'DESC',
-    isExcelExport: 'false',
   };
 
   const [params, setParams] = useState(initialParams);
 
-  // ✅ Dummy data (fields: Center Name, Counter, Created Date, Action)
-  const mockDesignationData = {
-    total: 6,
-    data: [
-      {
-        id: 1,
-        designationName: 'Country Manager',
-        createdAt: '2025-01-12T10:00:00Z',
-      },
-      {
-        id: 2,
-        designationName: 'Counter Staff',
-        createdAt: '2025-01-15T11:20:00Z',
-      },
-      // {
-      //   id: 3,
-      //   designationName: 'Designation 1',
-      //   createdAt: '2025-02-02T09:10:00Z',
-      // },
-      // {
-      //   id: 4,
-      //   designationName: 'Designation 3',
-      //   createdAt: '2025-02-20T14:45:00Z',
-      // },
-      // {
-      //   id: 5,
-      //   designationName: 'Designation X',
-      //   createdAt: '2025-03-01T08:35:00Z',
-      // },
-      // {
-      //   id: 6,
-      //   designationName: 'Designation Z',
-      //   createdAt: '2025-03-10T16:05:00Z',
-      // },
-    ],
-  };
-
   const onRefreshDesignation = () => {
-    if (!USE_MOCK) getData(params);
+    getData(params);
     setModal(false);
     setDeleteModalOpen(false);
   };
 
-  // ✅ Call API only if not mock
+  // ✅ Call API always (dynamic)
   useEffect(() => {
-    if (!USE_MOCK) getData(params);
+    getData(params);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params]);
 
   const handleSortChange = (selector) => {
@@ -103,7 +63,12 @@ const DesignationManagement = () => {
     return (
       <>
         <Tooltip id="edit" place="bottom" content="Edit" style={{ backgroundColor: '#051a53' }} />
-        <Tooltip id="delete" place="bottom" content="Delete" style={{ backgroundColor: '#051a53' }} />
+        <Tooltip
+          id="delete"
+          place="bottom"
+          content="Delete"
+          style={{ backgroundColor: '#051a53' }}
+        />
 
         <img
           src={editIcon}
@@ -121,21 +86,16 @@ const DesignationManagement = () => {
     );
   };
 
-  // ✅ Replace table fields with: Center Name + Counter
   const columns = [
-    // {
-    //   name: 'Role Name',
-    //   selector: 'roleName',
-    //   contentClass: 'user-pic',
-    //   cell: (row) => <span>{row?.roleName || '-'}</span>,
-    //   sort: true,
-    // },
     {
       name: 'Designation',
-      selector: 'designationName',
+      selector: 'employee_designation',
       contentClass: 'user-pic',
-      cell: (row) => <span>{row?.designationName || '-'}</span>,
-      sort: true,
+    },
+    {
+      name: 'Role',
+      selector: 'employee_role',
+      contentClass: 'user-pic',
     },
     {
       name: 'Created Date',
@@ -165,12 +125,14 @@ const DesignationManagement = () => {
     []
   );
 
-  const handleDelete = () => {
-    if (USE_MOCK) {
-      setDeleteModalOpen(false);
-      return;
-    }
+  // ✅ cleanup debounce on unmount
+  useEffect(() => {
+    return () => {
+      debouncedSearch.cancel();
+    };
+  }, [debouncedSearch]);
 
+  const handleDelete = () => {
     if (deleteModalOpen?.id) {
       deleteData(deleteModalOpen?.id, () => {
         onRefreshDesignation();
@@ -178,9 +140,8 @@ const DesignationManagement = () => {
     }
   };
 
-  // ✅ Use mock data or API data
-  const tableData = USE_MOCK ? mockDesignationData : designationData;
-  const loading = USE_MOCK ? false : isLoadingGet;
+  const tableData = designationData;
+  const loading = isLoadingGet;
 
   return (
     <>
@@ -229,10 +190,11 @@ const DesignationManagement = () => {
       {deleteModalOpen && (
         <CustomActionModal
           isDelete
-          isLoading={USE_MOCK ? false : isLoadingDelete}
+          isLoading={isLoadingDelete}
           showModal={deleteModalOpen}
           closeModal={() => setDeleteModalOpen(false)}
-          message={`Are you sure you want to delete this ${deleteModalOpen?.designationName || deleteModalOpen?.name || ''}?`}
+          message={`Are you sure you want to delete this ${deleteModalOpen?.employee_designation || deleteModalOpen?.employee_designation || ''
+            }?`}
           onCancel={() => setDeleteModalOpen(false)}
           onSubmit={handleDelete}
         />

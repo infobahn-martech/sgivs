@@ -9,11 +9,11 @@ import CustomSelect from './Select';
 import useRoleRudcer from '../../stores/RoleReducer';
 
 const schema = z.object({
-  name: z
+  employee_designation: z
     .string()
-    .nonempty('Name is required')
-    .max(20, 'Name must be 20 characters or less'),
-  roleId: z.string().nonempty('Role is required'),
+    .nonempty('Designation is required')
+    .max(20, 'Designation must be 20 characters or less'),
+  employee_role_id: z.string().nonempty('Role is required'),
 });
 
 export function AddEditModal({ showModal, closeModal, onRefreshDesignation }) {
@@ -27,8 +27,8 @@ export function AddEditModal({ showModal, closeModal, onRefreshDesignation }) {
   } = useForm({
     resolver: zodResolver(schema),
     defaultValues: {
-      name: '',
-      roleId: '',
+      employee_designation: '',
+      employee_role_id: '',
     },
   });
 
@@ -37,7 +37,7 @@ export function AddEditModal({ showModal, closeModal, onRefreshDesignation }) {
   // ✅ Role list API
   const { getData, roleData, isLoadingRole } = useRoleRudcer((state) => state);
 
-  const selectedRoleId = watch('roleId');
+  const selectedRoleId = watch('employee_role_id');
 
   // ✅ Load roles dynamically
   useEffect(() => {
@@ -58,7 +58,7 @@ export function AddEditModal({ showModal, closeModal, onRefreshDesignation }) {
   useEffect(() => {
     if (showModal?.id) {
       // name key might be "name" or "designation_name" depending on your API
-      setValue('name', showModal?.name || showModal?.designation_name || '', {
+      setValue('employee_designation', showModal?.employee_designation || showModal?.designation_name || '', {
         shouldDirty: true,
         shouldValidate: true,
       });
@@ -66,7 +66,7 @@ export function AddEditModal({ showModal, closeModal, onRefreshDesignation }) {
       // role id could be in different keys depending on your list API
       // try these common ones safely
       setValue(
-        'roleId',
+        'employee_role_id',
         String(
           showModal?.employee_role_id ||
           showModal?.roleId ||
@@ -77,7 +77,7 @@ export function AddEditModal({ showModal, closeModal, onRefreshDesignation }) {
         { shouldDirty: true, shouldValidate: true }
       );
     } else {
-      reset({ name: '', roleId: '' });
+      reset({ employee_designation: '', employee_role_id: '' });
     }
   }, [showModal, reset, setValue]);
 
@@ -122,7 +122,7 @@ export function AddEditModal({ showModal, closeModal, onRefreshDesignation }) {
       <div className="row">
         <div className="col-sm-6">
           <div className="form-group forms-custom">
-            <label htmlFor="roleId" className="label">
+            <label htmlFor="employee_role_id" className="label">
               Select Role<span className="text-danger">*</span>
             </label>
 
@@ -133,7 +133,7 @@ export function AddEditModal({ showModal, closeModal, onRefreshDesignation }) {
                 null
               }
               onChange={(selected) => {
-                setValue('roleId', selected?.value || '', {
+                setValue('employee_role_id', selected?.value || '', {
                   shouldDirty: true,
                   shouldValidate: true,
                 });
@@ -144,25 +144,25 @@ export function AddEditModal({ showModal, closeModal, onRefreshDesignation }) {
               className="form-select form-control"
             />
 
-            {errors.roleId && <span className="error">{errors.roleId.message}</span>}
+            {errors.employee_role_id && <span className="error">{errors.employee_role_id.message}</span>}
           </div>
         </div>
 
         <div className="col-sm-6">
           <div className="form-group forms-custom">
-            <label htmlFor="name" className="label">
+            <label htmlFor="employee_designation" className="label">
               Designation Name<span className="text-danger">*</span>
             </label>
             <input
               type="text"
-              id="name"
+              id="employee_designation"
               className="form-control"
               autoComplete="off"
               maxLength={20}
               placeholder="Enter designation name"
-              {...register('name')}
+              {...register('employee_designation')}
             />
-            {errors.name && <span className="error">{errors.name.message}</span>}
+            {errors.employee_designation && <span className="error">{errors.employee_designation.message}</span>}
           </div>
         </div>
       </div>
