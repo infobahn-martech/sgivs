@@ -3,7 +3,7 @@ import Gateway from './gateway';
 import * as XLSX from 'xlsx';
 import UserManageIcon from '../assets/images/user.svg';
 import transactionICo from '../assets/images/transaction-header.svg';
-import EZIcon from '../assets/images/dashboard-5.svg';
+// import transactionICo from '../assets/images/dashboard-5.svg';
 import SettingsIcon from '../assets/images/dashboard-7.svg';
 import MessagesIcon from '../assets/images/message-icon.svg';
 import RentalManageIcon from '../assets/images/Loan_Management.svg';
@@ -14,7 +14,6 @@ export const headerConfig = [
   { title: 'Employee Management', icon: UserManageIcon, path: '/employee-management' },
   { title: 'Role Management', icon: UserManageIcon, path: '/role-management' },
   { title: 'Designation Management', icon: UserManageIcon, path: '/designation-management' },
-
   // Centers
   { title: 'Center Management', icon: InventoryManageIcon, path: '/center' },
   { title: 'Counter Management', icon: InventoryManageIcon, path: '/counter-management' },
@@ -34,78 +33,78 @@ export const headerConfig = [
   { title: 'Visa Service Management', icon: MessagesIcon, path: '/visa-service-management' },
 
   // Passport Manager
-  { title: 'Passport Applications', icon: EZIcon, path: '/passport-applications' },
-  { title: 'Deleted Application', icon: EZIcon, path: '/delete-application' },
-  { title: 'Outscanned From Spoke', icon: EZIcon, path: '/outscan' },
-  { title: 'Inscan At Hub', icon: EZIcon, path: '/inscan' },
-  { title: 'Out Scan to Mission', icon: EZIcon, path: '/outscan-to-mission' },
-  { title: 'Inscan From Mission', icon: EZIcon, path: '/inscan-from-mission' },
-  { title: 'Outscan To Spoke', icon: EZIcon, path: '/outscan-to-spoke' },
-  { title: 'Counter Delivery', icon: EZIcon, path: '/counter-delivery' },
-  { title: 'Outscan To Courier', icon: EZIcon, path: '/outscan-to-courier' },
-  { title: 'Passport Tracking', icon: EZIcon, path: '/passport-tracking' },
-  { title: 'Reference Number', icon: EZIcon, path: '/get-reference-numbers' },
+  { title: 'Passport Applications', icon: transactionICo, path: '/passport-applications' },
+  { title: 'Deleted Application', icon: transactionICo, path: '/delete-application' },
+  { title: 'Outscanned From Spoke', icon: transactionICo, path: '/outscan' },
+  { title: 'Inscan At Hub', icon: transactionICo, path: '/inscan' },
+  { title: 'Out Scan to Mission', icon: transactionICo, path: '/outscan-to-mission' },
+  { title: 'Inscan From Mission', icon: transactionICo, path: '/inscan-from-mission' },
+  { title: 'Outscan To Spoke', icon: transactionICo, path: '/outscan-to-spoke' },
+  { title: 'Counter Delivery', icon: transactionICo, path: '/counter-delivery' },
+  { title: 'Outscan To Courier', icon: transactionICo, path: '/outscan-to-courier' },
+  { title: 'Passport Tracking', icon: transactionICo, path: '/passport-tracking' },
+  { title: 'Reference Number', icon: transactionICo, path: '/get-reference-numbers' },
 
   // Visa Manager
-  { title: 'Visa Applications', icon: EZIcon, path: '/visa-applications' },
-  { title: 'Deleted Application', icon: EZIcon, path: '/visa-delete-application' },
-  { title: 'Inscan At Hub', icon: EZIcon, path: '/visa-inscan-hub' },
-  { title: 'Outscan To Mission', icon: EZIcon, path: '/visa-outscan-to-mission' },
-  { title: 'Inscan From Mission', icon: EZIcon, path: '/visa-inscan-from-mission' },
-  { title: 'Outscan To Spoke', icon: EZIcon, path: '/visa-outscan-to-spoke' },
-  { title: 'Counter Delivery', icon: EZIcon, path: '/visa-counter-delivery' },
-  { title: 'Outscan To Courier', icon: EZIcon, path: '/visa-outscan-to-courier' },
-  { title: 'Visa Tracking', icon: EZIcon, path: '/visa-tracking' },
-  { title: 'Visa Digitization', icon: EZIcon, path: '/visa-digitization' },
+  { title: 'Visa Applications', icon: transactionICo, path: '/visa-applications' },
+  { title: 'Deleted Application', icon: transactionICo, path: '/visa-delete-application' },
+  { title: 'Inscan At Hub', icon: transactionICo, path: '/visa-inscan-hub' },
+  { title: 'Outscan To Mission', icon: transactionICo, path: '/visa-outscan-to-mission' },
+  { title: 'Inscan From Mission', icon: transactionICo, path: '/visa-inscan-from-mission' },
+  { title: 'Outscan To Spoke', icon: transactionICo, path: '/visa-outscan-to-spoke' },
+  { title: 'Counter Delivery', icon: transactionICo, path: '/visa-counter-delivery' },
+  { title: 'Outscan To Courier', icon: transactionICo, path: '/visa-outscan-to-courier' },
+  { title: 'Visa Tracking', icon: transactionICo, path: '/visa-tracking' },
+  { title: 'Visa Digitization', icon: transactionICo, path: '/visa-digitization' },
 
   // OCI Manager
-  { title: 'OCI Applications', icon: EZIcon, path: '/oci-applications' },
-  { title: 'Deleted Application', icon: EZIcon, path: '/oci-delete-application' },
-  { title: 'InScan At Hub', icon: EZIcon, path: '/oci-inscan' },
-  { title: 'OutScan To Mission', icon: EZIcon, path: '/oci-outscan-to-mission' },
-  { title: 'InScan From Mission', icon: EZIcon, path: '/oci-inscan-from-mission' },
-  { title: 'OutScan To Spoke', icon: EZIcon, path: '/oci-outscan-to-spoke' },
-  { title: 'Counter Delivery', icon: EZIcon, path: '/oci-counter-delivery' },
-  { title: 'Out Scan to Courier', icon: EZIcon, path: '/oci-outscan-to-courier' },
-  { title: 'Tracking', icon: EZIcon, path: '/oci-tracking' },
+  { title: 'OCI Applications', icon: transactionICo, path: '/oci-applications' },
+  { title: 'Deleted Application', icon: transactionICo, path: '/oci-delete-application' },
+  { title: 'InScan At Hub', icon: transactionICo, path: '/oci-inscan' },
+  { title: 'OutScan To Mission', icon: transactionICo, path: '/oci-outscan-to-mission' },
+  { title: 'InScan From Mission', icon: transactionICo, path: '/oci-inscan-from-mission' },
+  { title: 'OutScan To Spoke', icon: transactionICo, path: '/oci-outscan-to-spoke' },
+  { title: 'Counter Delivery', icon: transactionICo, path: '/oci-counter-delivery' },
+  { title: 'Out Scan to Courier', icon: transactionICo, path: '/oci-outscan-to-courier' },
+  { title: 'Tracking', icon: transactionICo, path: '/oci-tracking' },
 
   // Attestation Manager
-  { title: 'Attestation Applications', icon: EZIcon, path: '/attestation-applications' },
-  { title: 'Deleted Application', icon: EZIcon, path: '/attestation-delete-application' },
-  { title: 'InScan At Hub', icon: EZIcon, path: '/attestation-in-scan' },
-  { title: 'OutScan To Mission', icon: EZIcon, path: '/attestation-outscan-to-mission' },
-  { title: 'InScan From Mission', icon: EZIcon, path: '/attestation-inscan-from-mission' },
-  { title: 'OutScan To Spoke', icon: EZIcon, path: '/attestation-outscan-to-spoke' },
-  { title: 'Counter Delivery', icon: EZIcon, path: '/attestation-counter-delivery' },
-  { title: 'Out Scan to Courier', icon: EZIcon, path: '/attestation-outscan-to-courier' },
-  { title: 'Tracking', icon: EZIcon, path: '/attestation-tracking' },
+  { title: 'Attestation Applications', icon: transactionICo, path: '/attestation-applications' },
+  { title: 'Deleted Application', icon: transactionICo, path: '/attestation-delete-application' },
+  { title: 'InScan At Hub', icon: transactionICo, path: '/attestation-in-scan' },
+  { title: 'OutScan To Mission', icon: transactionICo, path: '/attestation-outscan-to-mission' },
+  { title: 'InScan From Mission', icon: transactionICo, path: '/attestation-inscan-from-mission' },
+  { title: 'OutScan To Spoke', icon: transactionICo, path: '/attestation-outscan-to-spoke' },
+  { title: 'Counter Delivery', icon: transactionICo, path: '/attestation-counter-delivery' },
+  { title: 'Out Scan to Courier', icon: transactionICo, path: '/attestation-outscan-to-courier' },
+  { title: 'Tracking', icon: transactionICo, path: '/attestation-tracking' },
 
   // Courier Manager
-  { title: 'Elite Delivery', icon: EZIcon, path: '/elite-delivery' },
+  { title: 'Elite Delivery', icon: transactionICo, path: '/elite-delivery' },
 
   // Charge & Refunds
-  { title: 'Charge and Refunds', icon: EZIcon, path: '/charge-and-refunds' },
+  { title: 'Charge and Refunds', icon: transactionICo, path: '/charge-and-refunds' },
 
   // Return File Manager
-  { title: 'Return From Mission', icon: EZIcon, path: '/return-from-mission' },
-  { title: 'Return To Mission', icon: EZIcon, path: '/return-to-mission' },
+  { title: 'Return From Mission', icon: transactionICo, path: '/return-from-mission' },
+  { title: 'Return To Mission', icon: transactionICo, path: '/return-to-mission' },
 
   // Cash Collection
-  { title: 'Daily Cash Collection', icon: EZIcon, path: '/daily-cash-collection' },
+  { title: 'Daily Cash Collection', icon: transactionICo, path: '/daily-cash-collection' },
 
   // VAS Manager
-  { title: 'Passport VAS Applications', icon: EZIcon, path: '/passport-vas-applications' },
-  { title: 'Visa VAS Applications', icon: EZIcon, path: '/visa-vas-applications' },
-  { title: 'Attestation VAS Applications', icon: EZIcon, path: '/attestation-vas-applications' },
-  { title: 'OCI VAS Applications', icon: EZIcon, path: '/oci-vas-applications' },
+  { title: 'Passport VAS Applications', icon: transactionICo, path: '/passport-vas-applications' },
+  { title: 'Visa VAS Applications', icon: transactionICo, path: '/visa-vas-applications' },
+  { title: 'Attestation VAS Applications', icon: transactionICo, path: '/attestation-vas-applications' },
+  { title: 'OCI VAS Applications', icon: transactionICo, path: '/oci-vas-applications' },
 
   // AFS Manager
-  { title: 'AFS Manager', icon: EZIcon, path: '/afs-manager' },
-  { title: 'Daily AFS Report', icon: EZIcon, path: '/daily-afs-report' },
+  { title: 'AFS Manager', icon: transactionICo, path: '/afs-manager' },
+  { title: 'Daily AFS Report', icon: transactionICo, path: '/daily-afs-report' },
 
   // Appointments Manager
-  { title: 'ICAC Appointments', icon: EZIcon, path: '/icac-appointments' },
-  { title: 'ICAC Appointment Settings', icon: EZIcon, path: '/icac-appt-settings' },
+  { title: 'ICAC Appointments', icon: transactionICo, path: '/icac-appointments' },
+  { title: 'ICAC Appointment Settings', icon: transactionICo, path: '/icac-appt-settings' },
 
   // Appointment Settings
   { title: 'Appointment Settings', icon: RentalManageIcon, path: '/appointment-settings' },

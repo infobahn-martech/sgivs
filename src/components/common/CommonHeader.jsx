@@ -15,6 +15,7 @@ import searchIcon from '../../assets/images/blue-search-icon.svg';
 import CustomModal from './CustomModal';
 import Filter from './Filter';
 import BulkUpload from './BulkUpload';
+import EZIcon from '../../assets/images/dashboard-5.svg';
 
 const CommonHeader = ({
   exportExcel,
@@ -89,7 +90,7 @@ const CommonHeader = ({
   ) ||
     headerConfig.find((item) => currentPath?.startsWith(item.path)) || {
     title: 'Page Not Found',
-    icon: 'img/default.svg',
+    icon: EZIcon,
   };
 
   const renderAddButton = (type) => {
