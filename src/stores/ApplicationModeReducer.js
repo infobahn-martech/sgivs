@@ -54,13 +54,12 @@ const useApplicationModeReducer = create((set) => ({
     }
   },
 
-  getData: async (params) => {
+  getData: async () => {
     try {
       set({ isLoadingGet: true });
-      const { data } = await applicationModeService.getData(params);
-      const datas = data;
+      const { data } = await applicationModeService.getData();
       set({
-        applicationModeData: datas?.data,
+        applicationModeData: data?.data,
         // successMessage: data?.response?.data?.message ?? data?.message,
         isLoadingGet: false,
       });
