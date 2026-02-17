@@ -81,7 +81,7 @@ const Header = () => {
       <div className="header">
         <div className="header-inner">
           <div className="user-details">
-            <div className="notification">
+            {/* <div className="notification">
               <span
                 className="notification-icon cursor-pointer"
                 onClick={() => setShowNotification(!showNotification)}
@@ -159,7 +159,7 @@ const Header = () => {
                   )}
                 </div>
               )}
-            </div>
+            </div> */}
 
             <div className="dropdown user-drop">
               <a
