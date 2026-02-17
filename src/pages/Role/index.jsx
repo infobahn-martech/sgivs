@@ -16,72 +16,37 @@ import { debounce } from 'lodash';
 import CustomActionModal from '../../components/common/CustomActionModal';
 
 const Role = () => {
-  // ✅ Toggle this (VERY useful for large admin projects)
-  const USE_MOCK = false;
-
   const { getData, roleData, isLoadingRole, deleteData, isLoadingDelete } =
     useRoleRudcer((state) => state);
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [modal, setModal] = useState(false);
 
-  const initialParams = {
-    search: '',
-    page: 1,
-    limit: 10,
-    fromDate: null,
-    toDate: null,
-    sortBy: 'createdAt',
-    sortOrder: 'DESC',
-  };
+  const initialParams = useMemo(
+    () => ({
+      search: '',
+      page: 1,
+      limit: 10,
+      fromDate: null,
+      toDate: null,
+      sortBy: 'createdAt',
+      sortOrder: 'DESC',
+    }),
+    []
+  );
 
   const [params, setParams] = useState(initialParams);
 
-  // ✅ Dummy Data
-  const mockRoleData = {
-    total: 5,
-    data: [
-      {
-        id: 1,
-        name: 'Role 1',
-        createdAt: '2025-01-10T09:30:00Z',
-      },
-      {
-        id: 2,
-        name: 'Monitors',
-        createdAt: '2025-02-14T12:15:00Z',
-      },
-      {
-        id: 3,
-        name: 'Role 3',
-        createdAt: '2025-03-05T08:45:00Z',
-      },
-      {
-        id: 4,
-        name: 'Role 4',
-        createdAt: '2025-03-20T10:00:00Z',
-      },
-      {
-        id: 5,
-        name: 'Role 5',
-        createdAt: '2025-04-02T11:20:00Z',
-      },
-    ],
-  };
-
   const onRefreshRole = () => {
-    if (!USE_MOCK) {
-      getData(params);
-    }
+    getData(params);
     setModal(false);
     setDeleteModalOpen(false);
   };
 
-  // ✅ Call API only if not mock
+  // ✅ Always dynamic
   useEffect(() => {
-    if (!USE_MOCK) {
-      getData(params);
-    }
+    getData(params);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params]);
 
   const handleSortChange = (selector) => {
@@ -93,17 +58,18 @@ const Role = () => {
   };
 
   const renderAction = (row) => {
+    const roleName = row?.employee_role || row?.employeeRole || row?.role || 'role';
     return (
       <>
         <Tooltip id="edit" place="bottom" content="Edit" style={{ backgroundColor: '#051a53' }} />
-        <Tooltip id="delete" place="bottom" content="Delete" style={{ backgroundColor: '#051a53' }} />
-
-        <img
-          src={editIcon}
-          alt="edit"
-          data-tooltip-id="edit"
-          onClick={() => setModal(row)}
+        <Tooltip
+          id="delete"
+          place="bottom"
+          content="Delete"
+          style={{ backgroundColor: '#051a53' }}
         />
+
+        <img src={editIcon} alt="edit" data-tooltip-id="edit" onClick={() => setModal(row)} />
 
         <img
           src={deleteIcon}
@@ -123,12 +89,6 @@ const Role = () => {
       sort: true,
     },
     {
-      name: 'Created Date',
-      selector: 'createdAt',
-      cell: (row) => <span>{formatDate(row?.createdAt)}</span>,
-      sort: true,
-    },
-    {
       name: 'Action',
       contentClass: 'action-wrap',
       disableViewClick: true,
@@ -137,7 +97,7 @@ const Role = () => {
     },
   ];
 
-  // ✅ Stable debounce
+  // ✅ Stable debounce + cleanup
   const debouncedSearch = useMemo(
     () =>
       debounce((searchValue) => {
@@ -150,22 +110,29 @@ const Role = () => {
     []
   );
 
-  const handleDelete = () => {
-    if (USE_MOCK) {
-      setDeleteModalOpen(false);
-      return;
-    }
+  useEffect(() => {
+    return () => {
+      debouncedSearch.cancel();
+    };
+  }, [debouncedSearch]);
 
-    if (deleteModalOpen?.id) {
-      deleteData(deleteModalOpen?.id, () => {
-        onRefreshRole();
-      });
-    }
+  const handleDelete = () => {
+    const id =
+      deleteModalOpen?.employee_role_id ??
+      deleteModalOpen?.id ??
+      deleteModalOpen?.role_id ??
+      deleteModalOpen?.employeeRoleId;
+
+    if (!id) return;
+
+    deleteData(id, () => {
+      onRefreshRole();
+    });
   };
 
-  // ✅ Decide dataset
-  const tableData = USE_MOCK ? true : roleData;
-  const loading = USE_MOCK ? false : isLoadingRole;
+  // ✅ Decide dataset (dynamic)
+  const tableData = roleData;
+  const loading = isLoadingRole;
 
   return (
     <>
@@ -180,13 +147,13 @@ const Role = () => {
         submitFilter={(filters) => {
           const { fromDate, toDate, ...rest } = filters;
 
-          setParams({
-            ...params,
+          setParams((prev) => ({
+            ...prev,
             ...rest,
             fromDate: fromDate ? moment(fromDate).format('YYYY-MM-DD') : null,
             toDate: toDate ? moment(toDate).format('YYYY-MM-DD') : null,
             page: 1,
-          });
+          }));
         }}
         clearOptions={() => {
           setParams(initialParams);
@@ -195,12 +162,12 @@ const Role = () => {
 
       <CustomTable
         pagination={{ currentPage: params.page, limit: params.limit }}
-        count={tableData?.length || 0}
+        count={tableData?.total ?? tableData?.count ?? tableData?.length ?? 0}
         columns={columns}
-        data={tableData || []}
+        data={tableData?.data ?? tableData ?? []}
         isLoading={loading}
-        onPageChange={(page) => setParams({ ...params, page })}
-        setLimit={(limit) => setParams({ ...params, limit })}
+        onPageChange={(page) => setParams((prev) => ({ ...prev, page }))}
+        setLimit={(limit) => setParams((prev) => ({ ...prev, limit }))}
         onSortChange={handleSortChange}
         wrapClasses="inventory-table-wrap"
       />
@@ -216,10 +183,11 @@ const Role = () => {
       {deleteModalOpen && (
         <CustomActionModal
           isDelete
-          isLoading={USE_MOCK ? false : isLoadingDelete}
+          isLoading={isLoadingDelete}
           showModal={deleteModalOpen}
           closeModal={() => setDeleteModalOpen(false)}
-          message={`Are you sure you want to delete this ${deleteModalOpen?.employee_role}?`}
+          message={`Are you sure you want to delete this ${deleteModalOpen?.employee_role || deleteModalOpen?.employeeRole || ''
+            }?`}
           onCancel={() => setDeleteModalOpen(false)}
           onSubmit={handleDelete}
         />

@@ -98,12 +98,6 @@ const DesignationManagement = () => {
       contentClass: 'user-pic',
     },
     {
-      name: 'Created Date',
-      selector: 'createdAt',
-      cell: (row) => <span>{formatDate(row?.createdAt)}</span>,
-      sort: true,
-    },
-    {
       name: 'Action',
       disableViewClick: true,
       contentClass: 'action-wrap',
