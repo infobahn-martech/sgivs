@@ -2,6 +2,7 @@
 import { create } from 'zustand';
 import useAlertReducer from './AlertReducer';
 import counterService from '../services/counterService';
+import serviceService from '../services/serviceService';
 
 const useServiceReducer = create((set) => ({
   isLoading: false,

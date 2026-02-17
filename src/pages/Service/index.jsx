@@ -16,16 +16,10 @@ import CustomActionModal from '../../components/common/CustomActionModal';
 import useServiceReducer from '../../stores/ServiceReducer';
 
 const ServiceManagement = () => {
-  // ✅ Toggle mock/static data
-  const USE_MOCK = true;
-
-  const {
-    getData,
-    serviceData,
-    isLoadingGet,
-    deleteData,
-    isLoadingDelete,
-  } = useServiceReducer((state) => state);
+  const { getData, serviceData, isLoadingGet, deleteData, isLoadingDelete } = useServiceReducer(
+    (state) => state
+  );
+  console.log("serviceData", serviceData);
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [modal, setModal] = useState(false);
@@ -38,63 +32,20 @@ const ServiceManagement = () => {
     toDate: null,
     sortBy: 'createdAt',
     sortOrder: 'DESC',
-    isExcelExport: 'false',
   };
 
   const [params, setParams] = useState(initialParams);
 
-  // ✅ Dummy data (fields: Center Name, Counter, Created Date, Action)
-  const mockServiceData = {
-    total: 6,
-    data: [
-      {
-        id: 1,
-        serviceType: 'Attestation',
-        serviceName: 'Service A',
-        createdAt: '2025-01-12T10:00:00Z',
-      },
-      {
-        id: 2,
-        serviceType: 'Visa',
-        serviceName: 'Service B',
-        createdAt: '2025-01-15T11:20:00Z',
-      },
-      {
-        id: 3,
-        serviceType: 'Passport',
-        serviceName: 'Service 1',
-        createdAt: '2025-02-02T09:10:00Z',
-      },
-      {
-        id: 4,
-        serviceType: 'Visa',
-        serviceName: 'Service 3',
-        createdAt: '2025-02-20T14:45:00Z',
-      },
-      {
-        id: 5,
-        serviceType: 'Other',
-        serviceName: 'Service X',
-        createdAt: '2025-03-01T08:35:00Z',
-      },
-      {
-        id: 6,
-        serviceType: 'Other',
-        serviceName: 'Service Z',
-        createdAt: '2025-03-10T16:05:00Z',
-      },
-    ],
-  };
-
   const onRefreshService = () => {
-    if (!USE_MOCK) getData(params);
+    getData(params);
     setModal(false);
     setDeleteModalOpen(false);
   };
 
-  // ✅ Call API only if not mock
+  // ✅ Call API always (dynamic)
   useEffect(() => {
-    if (!USE_MOCK) getData(params);
+    getData(params);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params]);
 
   const handleSortChange = (selector) => {
@@ -109,14 +60,14 @@ const ServiceManagement = () => {
     return (
       <>
         <Tooltip id="edit" place="bottom" content="Edit" style={{ backgroundColor: '#051a53' }} />
-        <Tooltip id="delete" place="bottom" content="Delete" style={{ backgroundColor: '#051a53' }} />
-
-        <img
-          src={editIcon}
-          alt="edit"
-          data-tooltip-id="edit"
-          onClick={() => setModal(row)}
+        <Tooltip
+          id="delete"
+          place="bottom"
+          content="Delete"
+          style={{ backgroundColor: '#051a53' }}
         />
+
+        <img src={editIcon} alt="edit" data-tooltip-id="edit" onClick={() => setModal(row)} />
         <img
           src={deleteIcon}
           alt="delete"
@@ -127,19 +78,17 @@ const ServiceManagement = () => {
     );
   };
 
-  // ✅ Replace table fields with: Center Name + Counter
   const columns = [
     {
       name: 'Service Name',
-      selector: 'serviceName',
+      selector: 'service_name',
       contentClass: 'user-pic',
-      cell: (row) => <span>{row?.serviceName || '-'}</span>,
+      sort: true,
     },
     {
       name: 'Service Type',
-      selector: 'serviceType',
+      selector: 'service_type',
       contentClass: 'user-pic',
-      cell: (row) => <span>{row?.serviceType || '-'}</span>,
       sort: true,
     },
     {
@@ -170,22 +119,20 @@ const ServiceManagement = () => {
     []
   );
 
-  const handleDelete = () => {
-    if (USE_MOCK) {
-      setDeleteModalOpen(false);
-      return;
-    }
+  // ✅ cleanup debounce on unmount
+  useEffect(() => {
+    return () => {
+      debouncedSearch.cancel();
+    };
+  }, [debouncedSearch]);
 
+  const handleDelete = () => {
     if (deleteModalOpen?.id) {
       deleteData(deleteModalOpen?.id, () => {
         onRefreshService();
       });
     }
   };
-
-  // ✅ Use mock data or API data
-  const tableData = USE_MOCK ? mockServiceData : serviceData;
-  const loading = USE_MOCK ? false : isLoadingGet;
 
   return (
     <>
@@ -213,10 +160,10 @@ const ServiceManagement = () => {
 
       <CustomTable
         pagination={{ currentPage: params.page, limit: params.limit }}
-        count={tableData?.total || 0}
+        count={serviceData?.length || 0}
         columns={columns}
-        data={tableData?.data || []}
-        isLoading={loading}
+        data={serviceData || []}
+        isLoading={isLoadingGet}
         onPageChange={(page) => setParams({ ...params, page })}
         setLimit={(limit) => setParams({ ...params, limit })}
         onSortChange={handleSortChange}
@@ -234,10 +181,11 @@ const ServiceManagement = () => {
       {deleteModalOpen && (
         <CustomActionModal
           isDelete
-          isLoading={USE_MOCK ? false : isLoadingDelete}
+          isLoading={isLoadingDelete}
           showModal={deleteModalOpen}
           closeModal={() => setDeleteModalOpen(false)}
-          message={`Are you sure you want to delete this Service?`}
+          message={`Are you sure you want to delete this ${deleteModalOpen?.service_name || 'Service'
+            }?`}
           onCancel={() => setDeleteModalOpen(false)}
           onSubmit={handleDelete}
         />

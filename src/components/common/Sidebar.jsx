@@ -65,46 +65,46 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
       ],
     },
 
-    // Miscellaneous
-    {
-      name: 'Miscellaneous',
-      icon: transactionICo,
-      path: '/appointment-type-management',
-      activeRoutes: [
-        '/appointment-type-management',
-        '/collection-type-management',
-        '/application-mode-management',
-        '/application-type-management',
-        '/courier-type-management',
-        '/visa-duration-management',
-        '/visa-entry-management',
-      ],
-      subMenu: [
-        {
-          name: 'Appointment type',
-          path: '/appointment-type-management',
-          icon: MessagesIcon,
-        },
-        {
-          name: 'Collection type',
-          path: '/collection-type-management',
-          icon: MessagesIcon,
-        },
-        {
-          name: 'Application mode',
-          path: '/application-mode-management',
-          icon: MessagesIcon,
-        },
-        {
-          name: 'Application type',
-          path: '/application-type-management',
-          icon: MessagesIcon,
-        },
-        { name: 'Courier type', path: '/courier-type-management', icon: MessagesIcon },
-        { name: 'Visa Duration', path: '/visa-duration-management', icon: MessagesIcon },
-        { name: 'Visa Entry', path: '/visa-entry-management', icon: MessagesIcon },
-      ],
-    },
+    // // Miscellaneous
+    // {
+    //   name: 'Miscellaneous',
+    //   icon: transactionICo,
+    //   path: '/appointment-type-management',
+    //   activeRoutes: [
+    //     '/appointment-type-management',
+    //     '/collection-type-management',
+    //     '/application-mode-management',
+    //     '/application-type-management',
+    //     '/courier-type-management',
+    //     '/visa-duration-management',
+    //     '/visa-entry-management',
+    //   ],
+    //   subMenu: [
+    //     {
+    //       name: 'Appointment type',
+    //       path: '/appointment-type-management',
+    //       icon: MessagesIcon,
+    //     },
+    //     {
+    //       name: 'Collection type',
+    //       path: '/collection-type-management',
+    //       icon: MessagesIcon,
+    //     },
+    //     {
+    //       name: 'Application mode',
+    //       path: '/application-mode-management',
+    //       icon: MessagesIcon,
+    //     },
+    //     {
+    //       name: 'Application type',
+    //       path: '/application-type-management',
+    //       icon: MessagesIcon,
+    //     },
+    //     { name: 'Courier type', path: '/courier-type-management', icon: MessagesIcon },
+    //     { name: 'Visa Duration', path: '/visa-duration-management', icon: MessagesIcon },
+    //     { name: 'Visa Entry', path: '/visa-entry-management', icon: MessagesIcon },
+    //   ],
+    // },
 
     // Service Management
     {

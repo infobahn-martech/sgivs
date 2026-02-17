@@ -1,15 +1,13 @@
 import Gateway from '../config/gateway';
 
-const postData = (payload) => Gateway.post('/service', payload);
-const patchData = (id, payload) => Gateway.put(`/service/${id}`, payload);
-const getData = (params) => Gateway.get('/service', { params });
-const getAllServiceType = () => Gateway.get('/service-type');
-const deleteData = (id) => Gateway.delete(`/service/${id}`);
+const postData = (payload) => Gateway.post('/services/add_service', payload);
+const patchData = (payload) => Gateway.post('/services/update_service', payload);
+const getData = (params) => Gateway.get('/services/get_all_services', { params });
+const deleteData = (id) => Gateway.delete(`/services/delete_service/${id}`);
 
 export default {
   postData,
   patchData,
   getData,
   deleteData,
-  getAllServiceType,
 };
