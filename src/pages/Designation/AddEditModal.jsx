@@ -31,6 +31,7 @@ export function AddEditModal({ showModal, closeModal, onRefreshDesignation }) {
       employee_role_id: '',
     },
   });
+  console.log("showModal", showModal);
 
   const { postData, patchData, isLoading } = useDesignationReducer((state) => state);
 
@@ -56,7 +57,7 @@ export function AddEditModal({ showModal, closeModal, onRefreshDesignation }) {
 
   // ✅ Fill form for edit / clear for add
   useEffect(() => {
-    if (showModal?.id) {
+    if (showModal?.employee_designation_id) {
       // name key might be "name" or "designation_name" depending on your API
       setValue('employee_designation', showModal?.employee_designation || showModal?.designation_name || '', {
         shouldDirty: true,
@@ -89,8 +90,8 @@ export function AddEditModal({ showModal, closeModal, onRefreshDesignation }) {
       // employee_role_id: data.roleId, // <-- uncomment if API expects this
     };
 
-    if (showModal?.id) {
-      patchData({ id: showModal.id, ...payload }, () => {
+    if (showModal?.employee_designation_id) {
+      patchData({ employee_designation_id: showModal.employee_designation_id, ...payload }, () => {
         onRefreshDesignation?.();
         closeModal?.();
       });

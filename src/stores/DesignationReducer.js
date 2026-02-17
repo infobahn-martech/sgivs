@@ -35,8 +35,7 @@ const useDesignationReducer = create((set) => ({
     try {
       set({ isLoading: true });
 
-      const { id, ...rest } = payload;
-      const { data } = await designationService.patchData(id, rest); // Updated call
+      const { data } = await designationService.patchData(payload); // Updated call
 
       const { success } = useAlertReducer.getState();
       success(data?.response?.data?.message ?? data?.message);
