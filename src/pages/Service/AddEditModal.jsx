@@ -6,12 +6,42 @@ import CustomModal from '../../components/common/CustomModal';
 import useServiceReducer from '../../stores/ServiceReducer';
 import CustomSelect from './Select';
 
+// ✅ Schema (numbers from inputs come as string -> preprocess to Number)
 const nameSchema = z.object({
-  name: z
+  service_name: z
     .string()
     .nonempty('Name is required')
     .max(20, 'Name must be 20 characters or less'),
-  serviceTypeId: z.string().nonempty('Service Type is required'),
+
+  service_type_id: z.string().nonempty('Service Type is required'),
+
+  govtFee: z.preprocess(
+    (v) => (v === '' || v === null || v === undefined ? undefined : Number(v)),
+    z
+      .number({ invalid_type_error: 'Govt Fee is required' })
+      .min(0, 'Govt Fee must be 0 or more')
+  ),
+
+  icwfFee: z.preprocess(
+    (v) => (v === '' || v === null || v === undefined ? undefined : Number(v)),
+    z
+      .number({ invalid_type_error: 'ICWF Fee is required' })
+      .min(0, 'ICWF Fee must be 0 or more')
+  ),
+
+  serviceFee: z.preprocess(
+    (v) => (v === '' || v === null || v === undefined ? undefined : Number(v)),
+    z
+      .number({ invalid_type_error: 'Service Fee is required' })
+      .min(0, 'Service Fee must be 0 or more')
+  ),
+
+  urgentFee: z.preprocess(
+    (v) => (v === '' || v === null || v === undefined ? undefined : Number(v)),
+    z
+      .number({ invalid_type_error: 'Urgent Fee is required' })
+      .min(0, 'Urgent Fee must be 0 or more')
+  ),
 });
 
 export function AddEditModal({ showModal, closeModal, onRefreshService }) {
@@ -25,17 +55,20 @@ export function AddEditModal({ showModal, closeModal, onRefreshService }) {
   } = useForm({
     resolver: zodResolver(nameSchema),
     defaultValues: {
-      name: '',
-      serviceTypeId: '',
+      service_name: '',
+      service_type_id: '',
+      govtFee: '',
+      icwfFee: '',
+      serviceFee: '',
+      urgentFee: '',
     },
   });
 
-  const { postData, patchData, isLoading, getAllServiceType, serviceTypes } =
-    useServiceReducer((state) => state);
+  const { postData, patchData, isLoading, getAllServiceType, serviceTypes } = useServiceReducer(
+    (state) => state
+  );
 
-  console.log("serviceTypes", serviceTypes);
-
-  const selectedServiceTypeId = watch('serviceTypeId');
+  const selectedServiceTypeId = watch('service_type_id');
 
   // ✅ Load service type list (always dynamic)
   useEffect(() => {
@@ -46,21 +79,31 @@ export function AddEditModal({ showModal, closeModal, onRefreshService }) {
   // ✅ Fill form for edit / clear for add
   useEffect(() => {
     if (showModal?.id) {
-      setValue('name', showModal?.serviceName || showModal?.name || '');
+      setValue('service_name', showModal?.serviceName || showModal?.service_name || '');
 
-      // supports multiple possible shapes from API
+      // ✅ service type id support (common shapes)
       const stId =
-        showModal?.serviceTypeId ??
-        showModal?.serviceType?.id ??
-        showModal?.serviceType?.serviceTypeId ??
+        showModal?.service_type_id ??
+        showModal?.service_type_id ??
         showModal?.serviceType?.service_type_id ??
+        showModal?.serviceType?.id ??
         '';
 
-      setValue('serviceTypeId', stId !== null && stId !== undefined ? String(stId) : '');
+      setValue('service_type_id', stId !== null && stId !== undefined ? String(stId) : '');
+
+      // ✅ Fees (support multiple keys just in case API differs)
+      setValue('govtFee', showModal?.govtFee ?? showModal?.govt_fee ?? '');
+      setValue('icwfFee', showModal?.icwfFee ?? showModal?.icwf_fee ?? '');
+      setValue('serviceFee', showModal?.serviceFee ?? showModal?.service_fee ?? '');
+      setValue('urgentFee', showModal?.urgentFee ?? showModal?.urgent_fee ?? '');
     } else {
       reset({
-        name: '',
-        serviceTypeId: '',
+        service_name: '',
+        service_type_id: '',
+        govtFee: '',
+        icwfFee: '',
+        serviceFee: '',
+        urgentFee: '',
       });
     }
   }, [showModal, reset, setValue]);
@@ -75,15 +118,27 @@ export function AddEditModal({ showModal, closeModal, onRefreshService }) {
   }, [serviceTypes]);
 
   const onSubmit = (data) => {
+    // ✅ If backend expects snake_case, convert here.
+    // If backend already accepts camelCase, you can send `data` directly.
+    const payload = {
+      service_name: data.service_name,
+      service_type_id: data.service_type_id,
+      govtFee: data.govtFee,
+      icwfFee: data.icwfFee,
+      serviceFee: data.serviceFee,
+      urgentFee: data.urgentFee,
+    };
+
     if (showModal?.id) {
-      patchData({ id: showModal.id, ...data }, () => {
+      patchData({ id: showModal.id, ...payload }, () => {
         onRefreshService?.();
       });
     } else {
-      postData(data, () => {
+      postData(payload, () => {
         onRefreshService?.();
       });
     }
+
     closeModal?.();
   };
 
@@ -103,9 +158,10 @@ export function AddEditModal({ showModal, closeModal, onRefreshService }) {
   const renderBody = () => (
     <div className="modal-body">
       <div className="row">
+        {/* Service Type */}
         <div className="col-sm-6">
           <div className="form-group forms-custom">
-            <label htmlFor="serviceTypeId" className="label">
+            <label htmlFor="service_type_id" className="label">
               Select Service Type<span className="text-danger">*</span>
             </label>
 
@@ -117,32 +173,113 @@ export function AddEditModal({ showModal, closeModal, onRefreshService }) {
                 ) || null
               }
               onChange={(selected) => {
-                setValue('serviceTypeId', selected?.value || '', { shouldValidate: true });
+                setValue('service_type_id', selected?.value || '', { shouldValidate: true });
               }}
               placeholder="Select Service Type"
               showIndicator={false}
               className="form-select form-control"
             />
 
-            {errors.serviceTypeId && <span className="error">{errors.serviceTypeId.message}</span>}
+            {errors.service_type_id && <span className="error">{errors.service_type_id.message}</span>}
           </div>
         </div>
 
+        {/* Service Name */}
         <div className="col-sm-6">
           <div className="form-group forms-custom">
-            <label htmlFor="name" className="label">
+            <label htmlFor="service_name" className="label">
               Service Name<span className="text-danger">*</span>
             </label>
             <input
               type="text"
-              id="name"
+              id="service_name"
               className="form-control"
               autoComplete="off"
               maxLength={20}
-              placeholder="Enter service name"
-              {...register('name')}
+              placeholder="Enter service service_name"
+              {...register('service_name')}
             />
-            {errors.name && <span className="error">{errors.name.message}</span>}
+            {errors.service_name && <span className="error">{errors.service_name.message}</span>}
+          </div>
+        </div>
+
+        {/* Govt Fee */}
+        <div className="col-sm-6">
+          <div className="form-group forms-custom">
+            <label htmlFor="govtFee" className="label">
+              Govt Fee<span className="text-danger">*</span>
+            </label>
+            <input
+              type="number"
+              id="govtFee"
+              className="form-control"
+              autoComplete="off"
+              min={0}
+              step="0.01"
+              placeholder="Enter govt fee"
+              {...register('govtFee')}
+            />
+            {errors.govtFee && <span className="error">{errors.govtFee.message}</span>}
+          </div>
+        </div>
+
+        {/* ICWF Fee */}
+        <div className="col-sm-6">
+          <div className="form-group forms-custom">
+            <label htmlFor="icwfFee" className="label">
+              ICWF Fee<span className="text-danger">*</span>
+            </label>
+            <input
+              type="number"
+              id="icwfFee"
+              className="form-control"
+              autoComplete="off"
+              min={0}
+              step="0.01"
+              placeholder="Enter ICWF fee"
+              {...register('icwfFee')}
+            />
+            {errors.icwfFee && <span className="error">{errors.icwfFee.message}</span>}
+          </div>
+        </div>
+
+        {/* Service Fee */}
+        <div className="col-sm-6">
+          <div className="form-group forms-custom">
+            <label htmlFor="serviceFee" className="label">
+              Service Fee<span className="text-danger">*</span>
+            </label>
+            <input
+              type="number"
+              id="serviceFee"
+              className="form-control"
+              autoComplete="off"
+              min={0}
+              step="0.01"
+              placeholder="Enter service fee"
+              {...register('serviceFee')}
+            />
+            {errors.serviceFee && <span className="error">{errors.serviceFee.message}</span>}
+          </div>
+        </div>
+
+        {/* Urgent Fee */}
+        <div className="col-sm-6">
+          <div className="form-group forms-custom">
+            <label htmlFor="urgentFee" className="label">
+              Urgent Fee<span className="text-danger">*</span>
+            </label>
+            <input
+              type="number"
+              id="urgentFee"
+              className="form-control"
+              autoComplete="off"
+              min={0}
+              step="0.01"
+              placeholder="Enter urgent fee"
+              {...register('urgentFee')}
+            />
+            {errors.urgentFee && <span className="error">{errors.urgentFee.message}</span>}
           </div>
         </div>
       </div>

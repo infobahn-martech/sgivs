@@ -92,9 +92,27 @@ const ServiceManagement = () => {
       sort: true,
     },
     {
-      name: 'Created Date',
-      selector: 'createdAt',
-      cell: (row) => <span>{formatDate(row?.createdAt)}</span>,
+      name: 'Govt Fee',
+      selector: 'govt_fee',
+      contentClass: 'user-pic',
+      sort: true,
+    },
+    {
+      name: 'Service Fee',
+      selector: 'service_fee',
+      contentClass: 'user-pic',
+      sort: true,
+    },
+    {
+      name: 'ICWF Fee',
+      selector: 'icwf_fee',
+      contentClass: 'user-pic',
+      sort: true,
+    },
+    {
+      name: 'Urgent Fee',
+      selector: 'urgent_fee',
+      contentClass: 'user-pic',
       sort: true,
     },
     {
