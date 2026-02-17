@@ -85,6 +85,7 @@ import AFSManager from '../pages/AFSManager';
 import DailyAFSReport from '../pages/DailyAFSReport';
 import ICACAppointments from '../pages/ICACAppointments';
 import ICACApptSettings from '../pages/ICACApptSettings';
+import BookAppointment from '../pages/BookAppointment';
 const router = createHashRouter([
   {
     element: <App />,
@@ -195,6 +196,7 @@ const router = createHashRouter([
               { path: '/daily-afs-report', element: <DailyAFSReport /> },
               { path: '/icac-appointments', element: <ICACAppointments /> },
               { path: '/icac-appt-settings', element: <ICACApptSettings /> },
+              { path: '/book-appointment', element: <BookAppointment /> },
             ],
           },
         ],

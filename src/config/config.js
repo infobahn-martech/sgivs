@@ -109,6 +109,9 @@ export const headerConfig = [
   // Appointment Settings
   { title: 'Appointment Settings', icon: RentalManageIcon, path: '/appointment-settings' },
 
+  // Book Appointment
+  { title: 'Book Appointment', icon: RentalManageIcon, path: '/book-appointment' },
+
   // Profile / Settings
   { title: 'Settings', icon: SettingsIcon, path: '/profile' },
 ];

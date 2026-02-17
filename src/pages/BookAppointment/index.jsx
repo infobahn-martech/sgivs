@@ -2,26 +2,26 @@ import React, { useMemo, useState } from 'react';
 import CustomTable from '../../components/common/CustomTable';
 import '../../assets/scss/usermanagement.scss';
 import CommonHeader from '../../components/common/CommonHeader';
-import useAuthReducer from '../../stores/AuthReducer';
+import useBookAppointmentReducer from '../../stores/BookAppointmentReducer';
 import CustomActionModal from '../../components/common/CustomActionModal';
 import { debounce } from 'lodash';
 import moment from 'moment';
-import getAppointmentSettingsTableColumns from './getAppointmentSettingsTableColumns';
-import AddEditAppointmentSettingsModal from './AddEditAppointmentSettingsModal';
+import getBookAppointmentTableColumns from './getBookAppointmentTableColumns';
+import AddEditBookAppointmentModal from './AddEditModal';
 
-const AppointmentSettings = () => {
+const BookAppointment = () => {
   // ✅ Toggle this to switch between static data and API data
   const USE_MOCK = true;
 
   const {
-    getAllAppointmentSettings,
-    appointmentSettingsData,
-    isAppointmentSettingsLoading,
-    appointmentSettingsAction,
-    appointmentSettingsActionLoading,
-    appointmentSettingsNotification,
-    appointmentSettingsNotifyLoading,
-  } = useAuthReducer((state) => state);
+    getAllBookAppointment,
+    bookAppointmentData,
+    isBookAppointmentLoading,
+    bookAppointmentAction,
+    bookAppointmentActionLoading,
+    bookAppointmentNotification,
+    bookAppointmentNotifyLoading,
+  } = useBookAppointmentReducer((state) => state);
 
   const initialParams = {
     search: '',
@@ -39,13 +39,13 @@ const AppointmentSettings = () => {
   const [statusModalOpen, setstatusModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [notifyModal, setnotifyModal] = useState(false);
-  const [addAppointmentSettingsModal, setAddAppointmentSettingsModal] = useState(false);
+  const [addBookAppointmentModal, setAddBookAppointmentModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
 
 
 
   // ✅ Static mock data (UI testing without API)
-  const staticAppointmentSettingsData = {
+  const staticBookAppointmentData = {
     data: [
       {
         id: 1,
@@ -85,9 +85,9 @@ const AppointmentSettings = () => {
     },
   };
 
-  const handleGetAllAppointmentSettings = () => {
+  const handleGetAllBookAppointment = () => {
     // ✅ If you want API later, set USE_MOCK=false and uncomment useEffect below
-    if (!USE_MOCK) getAllAppointmentSettings(params);
+    if (!USE_MOCK) getAllBookAppointment(params);
   };
 
   // ✅ API mode (enable later)
@@ -139,9 +139,9 @@ const AppointmentSettings = () => {
     }
 
     const newStatus = selectedUser.status === 2 ? 1 : 2;
-    appointmentSettingsAction(selectedUser.id, newStatus, () => {
+    bookAppointmentAction(selectedUser.id, newStatus, () => {
       setstatusModalOpen(false);
-      handleGetAllAppointmentSettings();
+      handleGetAllBookAppointment();
     });
   };
 
@@ -164,9 +164,9 @@ const AppointmentSettings = () => {
       return;
     }
 
-    appointmentSettingsAction(selectedUser.id, 3, () => {
+    bookAppointmentAction(selectedUser.id, 3, () => {
       setDeleteModalOpen(false);
-      handleGetAllAppointmentSettings();
+      handleGetAllBookAppointment();
     });
   };
 
@@ -179,19 +179,19 @@ const AppointmentSettings = () => {
       return;
     }
 
-    appointmentSettingsNotification(
+    bookAppointmentNotification(
       {
         userId: selectedUser?.id,
         notifications: !selectedUser?.isNotificationEnabled,
       },
       () => {
         setnotifyModal(false);
-        handleGetAllAppointmentSettings();
+        handleGetAllBookAppointment();
       }
     );
   };
 
-  const columns = getAppointmentSettingsTableColumns({
+  const columns = getBookAppointmentTableColumns({
     onDeleteClick: handleDeleteClick,
     onStatusClick: handleStatusClick,
     onUserNotify: handleNotification,
@@ -217,8 +217,8 @@ const AppointmentSettings = () => {
   ];
 
   // ✅ Decide which dataset to use
-  const tableData = USE_MOCK ? staticAppointmentSettingsData : appointmentSettingsData;
-  const loading = USE_MOCK ? false : isAppointmentSettingsLoading;
+  const tableData = USE_MOCK ? staticBookAppointmentData : bookAppointmentData;
+  const loading = USE_MOCK ? false : isBookAppointmentLoading;
 
   return (
     <>
@@ -226,7 +226,7 @@ const AppointmentSettings = () => {
         addButton={{
           name: 'Book',
           type: 'button',
-          action: () => setAddAppointmentSettingsModal(true),
+          action: () => setAddBookAppointmentModal(true),
         }}
         onSearch={debouncedSearch}
         filterOptions={filterOptions}
@@ -257,17 +257,17 @@ const AppointmentSettings = () => {
         onSortChange={handleSortChange}
       />
 
-      {addAppointmentSettingsModal && (
-        <AddEditAppointmentSettingsModal
-          showModal={addAppointmentSettingsModal}
-          closeModal={() => setAddAppointmentSettingsModal(false)}
-          onRefreshAppointmentSettings={handleGetAllAppointmentSettings}
+      {addBookAppointmentModal && (
+        <AddEditBookAppointmentModal
+          showModal={addBookAppointmentModal}
+          closeModal={() => setAddBookAppointmentModal(false)}
+          onRefreshBookAppointment={handleGetAllBookAppointment}
         />
       )}
 
       {statusModalOpen && selectedUser && (
         <CustomActionModal
-          isLoading={USE_MOCK ? false : appointmentSettingsActionLoading}
+          isLoading={USE_MOCK ? false : bookAppointmentActionLoading}
           showModal={statusModalOpen}
           closeModal={() => setstatusModalOpen(false)}
           message={`Are you sure you want to ${selectedUser.status === 2 ? 'Activate' : 'Block'
@@ -280,7 +280,7 @@ const AppointmentSettings = () => {
       {deleteModalOpen && selectedUser && (
         <CustomActionModal
           isDelete
-          isLoading={USE_MOCK ? false : appointmentSettingsActionLoading}
+          isLoading={USE_MOCK ? false : bookAppointmentActionLoading}
           showModal={deleteModalOpen}
           closeModal={() => setDeleteModalOpen(false)}
           message={`Are you sure you want to delete ${selectedUser?.firstName} ?`}
@@ -291,7 +291,7 @@ const AppointmentSettings = () => {
 
       {notifyModal && selectedUser && (
         <CustomActionModal
-          isLoading={USE_MOCK ? false : appointmentSettingsNotifyLoading}
+          isLoading={USE_MOCK ? false : bookAppointmentNotifyLoading}
           showModal={notifyModal}
           closeModal={() => setnotifyModal(false)}
           message={`Are you sure you want to ${selectedUser?.isNotificationEnabled ? 'Disable' : 'Enable'
@@ -304,4 +304,4 @@ const AppointmentSettings = () => {
   );
 };
 
-export default AppointmentSettings;
+export default BookAppointment;

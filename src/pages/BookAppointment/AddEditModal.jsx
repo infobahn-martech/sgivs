@@ -141,10 +141,10 @@ const formSchema = z.object({
     slotFullDates: dateRangeSchema.optional(),
 });
 
-export default function AddEditAppointmentSettingsModal({
+export default function AddEditBookAppointmentModal({
     showModal,
     closeModal,
-    onRefreshAppointmentSettings,
+    onRefreshBookAppointment,
 }) {
     const {
         register,
@@ -282,7 +282,7 @@ export default function AddEditAppointmentSettingsModal({
 
         if (USE_MOCK) {
             // console.log('Appointment Settings Payload:', payload);
-            onRefreshAppointmentSettings?.();
+            onRefreshBookAppointment?.();
             closeModal?.();
             return;
         }
@@ -294,7 +294,7 @@ export default function AddEditAppointmentSettingsModal({
     const renderHeader = () => (
         <>
             <h4 className="modal-title">
-                {showModal?.id ? 'Edit Appointment Settings' : 'Add Appointment Settings'}
+                {showModal?.id ? 'Edit Book Appointment' : 'Add Book Appointment'}
             </h4>
             <button
                 type="button"

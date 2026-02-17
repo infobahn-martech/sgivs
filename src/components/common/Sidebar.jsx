@@ -307,6 +307,12 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
       icon: RentalManageIcon,
       path: '/appointment-settings',
     },
+    // Book Appointment
+    {
+      name: 'Book Appointment',
+      icon: RentalManageIcon,
+      path: '/book-appointment',
+    },
 
     { name: 'Settings', icon: SettingsIcon, path: '/profile' },
   ];
