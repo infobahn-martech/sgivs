@@ -54,13 +54,12 @@ const useCollectionTypeReducer = create((set) => ({
     }
   },
 
-  getData: async (params) => {
+  getData: async () => {
     try {
       set({ isLoadingGet: true });
-      const { data } = await collectionTypeService.getData(params);
-      const datas = data;
+      const { data } = await collectionTypeService.getData();
       set({
-        collectionTypeData: datas?.data,
+        collectionTypeData: data?.data,
         // successMessage: data?.response?.data?.message ?? data?.message,
         isLoadingGet: false,
       });
@@ -77,9 +76,8 @@ const useCollectionTypeReducer = create((set) => ({
     try {
       set({ isLoadingDelete: true });
       const { data } = await collectionTypeService.deleteData(id);
-      const datas = data;
       set({
-        collectionTypeData: datas?.data,
+        collectionTypeData: data?.data,
         successMessage: data?.response?.data?.message ?? data?.message,
         isLoadingDelete: false,
       });
