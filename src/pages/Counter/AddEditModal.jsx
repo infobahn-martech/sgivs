@@ -1,107 +1,110 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import CustomModal from '../../components/common/CustomModal';
 import useCounterReducer from '../../stores/CounterReducer';
 import CustomSelect from './Select';
+import useCenterReducer from '../../stores/CenterReducer';
 
-const USE_MOCK = true;
-
-// ✅ Dummy centers list (Select Center dropdown)
-const mockCenters = [
-  { id: '1', name: 'Dubai Center' },
-  { id: '2', name: 'Abu Dhabi Center' },
-  { id: '3', name: 'Sharjah Center' },
-  { id: '4', name: 'Ajman Center' },
-];
-
-const nameSchema = z.object({
-  name: z
+// ✅ API payload keys: center_id, counter_name
+const schema = z.object({
+  counter_name: z
     .string()
-    .nonempty('Name is required')
-    .max(20, 'Name must be 20 characters or less'),
-  centerId: z.string().nonempty('Center is required'),
+    .nonempty('Counter Name is required')
+    .max(20, 'Counter Name must be 20 characters or less'),
+  center_id: z.string().nonempty('Center is required'),
 });
 
 export function AddEditModal({ showModal, closeModal, onRefreshCounter }) {
+
+  console.log("showModal", showModal);
   const {
-    register,
     handleSubmit,
     formState: { errors },
     setValue,
     reset,
     watch,
   } = useForm({
-    resolver: zodResolver(nameSchema),
+    resolver: zodResolver(schema),
     defaultValues: {
-      name: '',
-      centerId: '',
+      counter_name: '',
+      center_id: '',
     },
   });
 
-  const { postData, patchData, isLoading, getAllCenter, centers } =
-    useCounterReducer((state) => state);
+  const selectedCenterId = watch('center_id');
 
-  const selectedCenterId = watch('centerId');
+  const { postData, patchData, isLoading } = useCounterReducer((state) => state);
 
-  // ✅ Load center list (API mode only)
+  // ✅ centers should come from CenterReducer
+  const { getData, centerData, isLoadingGet } = useCenterReducer((state) => state);
+
+  // ✅ Load centers list
   useEffect(() => {
-    if (!USE_MOCK) getAllCenter();
-  }, []);
+    // if your API uses params you can pass here
+    getData?.({ search: '', page: 1, limit: 1000, sortBy: 'createdAt', sortOrder: 'DESC' });
+  }, [getData]);
+
+  const centers = centerData?.data || centerData || [];
 
   // ✅ Fill form for edit / clear for add
   useEffect(() => {
-    const centers = USE_MOCK ? mockCenters : centers;
-
-    if (showModal?.id && (centers?.length || 0) > 0) {
-      // Your listing page now uses counterName/centerName.
-      // For edit modal, accept both old & new keys safely.
-      setValue('name', showModal?.counterName || showModal?.name || '');
+    if (showModal?.counter_id) {
       setValue(
-        'centerId',
-        String(showModal?.centerId || showModal?.center?.id || showModal?.centerId || '')
+        'counter_name',
+        showModal?.counter_name || showModal?.counterName || showModal?.name || ''
       );
-    } else if (!showModal?.id) {
-      reset();
-    }
-  }, [showModal?.id, centers, reset, setValue]);
 
-  // ✅ Options for select
+      setValue(
+        'center_id',
+        String(
+          showModal?.center_id ||
+          showModal?.centerId ||
+          showModal?.center?.id ||
+          ''
+        )
+      );
+    } else {
+      reset({
+        counter_name: '',
+        center_id: '',
+      });
+    }
+  }, [showModal?.counter_id, showModal, reset, setValue]);
+
+  // ✅ Select options from API
   const centerOptions = useMemo(() => {
-    const centers = USE_MOCK ? mockCenters : centers || [];
-    return centers.map((item) => ({
-      label: item.name,
-      value: String(item.id),
+    const list = Array.isArray(centers) ? centers : [];
+    return list.map((item) => ({
+      label:
+        item?.name ||
+        item?.center_name ||
+        item?.centerName ||
+        `Center ${item?.id || item?.center_id}`,
+      value: String(item?.id || item?.center_id),
     }));
   }, [centers]);
 
-  // ✅ Dummy submit (no API)
   const onSubmit = (data) => {
-    if (USE_MOCK) {
-      // Just close modal + refresh UI
-      onRefreshCounter?.();
-      closeModal?.();
+    // ✅ send exactly: { center_id, counter_name }
+    if (showModal?.counter_id) {
+      patchData?.({ counter_id: showModal.counter_id, ...data }, () => {
+        onRefreshCounter?.();
+        closeModal?.();
+      });
       return;
     }
 
-    if (showModal?.id) {
-      patchData({ id: showModal.id, ...data }, () => {
-        onRefreshCounter?.();
-      });
-    } else {
-      postData(data, () => {
-        onRefreshCounter?.();
-      });
-    }
-    closeModal?.();
+    postData?.(data, () => {
+      onRefreshCounter?.();
+      closeModal?.();
+    });
   };
 
   const renderHeader = () => (
     <>
-      <h4 className="modal-title">
-        {showModal?.id ? 'Edit Counter' : 'Add Counter'}
-      </h4>
+      <h4 className="modal-title">{showModal?.counter_id ? 'Edit Counter' : 'Add Counter'}</h4>
       <button
         type="button"
         className="btn-close"
@@ -117,9 +120,10 @@ export function AddEditModal({ showModal, closeModal, onRefreshCounter }) {
       <div className="row">
         <div className="col-sm-6">
           <div className="form-group forms-custom">
-            <label htmlFor="centerId" className="label">
+            <label htmlFor="center_id" className="label">
               Select Center<span className="text-danger">*</span>
             </label>
+
             <CustomSelect
               options={centerOptions}
               value={
@@ -128,35 +132,39 @@ export function AddEditModal({ showModal, closeModal, onRefreshCounter }) {
                 ) || null
               }
               onChange={(selected) => {
-                setValue('centerId', selected?.value || '');
+                setValue('center_id', selected?.value || '', { shouldValidate: true });
               }}
-              placeholder="Select Center"
+              placeholder={isLoadingGet ? 'Loading centers...' : 'Select Center'}
+              isDisabled={isLoadingGet}
               showIndicator={false}
               className="form-select form-control"
             />
 
-            {errors.centerId && (
-              <span className="error">{errors.centerId.message}</span>
-            )}
+            {errors.center_id && <span className="error">{errors.center_id.message}</span>}
           </div>
         </div>
 
         <div className="col-sm-6">
           <div className="form-group forms-custom">
-            <label htmlFor="name" className="label">
+            <label htmlFor="counter_name" className="label">
               Counter Name<span className="text-danger">*</span>
             </label>
+
             <input
               type="text"
-              id="name"
+              id="counter_name"
               className="form-control"
               autoComplete="off"
               maxLength={20}
               placeholder="Enter counter name"
-              {...register('name')}
+              value={watch('counter_name') || ''}
+              onChange={(e) =>
+                setValue('counter_name', e.target.value, { shouldValidate: true })
+              }
             />
-            {errors.name && (
-              <span className="error">{errors.name.message}</span>
+
+            {errors.counter_name && (
+              <span className="error">{errors.counter_name.message}</span>
             )}
           </div>
         </div>
@@ -169,13 +177,14 @@ export function AddEditModal({ showModal, closeModal, onRefreshCounter }) {
       <button type="button" className="btn btn-cancel" onClick={closeModal}>
         Cancel
       </button>
+
       <button
         type="button"
         className="btn btn-submit"
-        disabled={USE_MOCK ? false : isLoading}
+        disabled={isLoading}
         onClick={handleSubmit(onSubmit)}
       >
-        {USE_MOCK ? 'Save' : isLoading ? 'Loading...' : 'Save'}
+        {isLoading ? 'Loading...' : 'Save'}
       </button>
     </div>
   );

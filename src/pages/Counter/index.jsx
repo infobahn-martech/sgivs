@@ -44,49 +44,6 @@ const CounterManagement = () => {
 
   const [params, setParams] = useState(initialParams);
 
-  // ✅ Dummy data (fields: Center Name, Counter, Created Date, Action)
-  const mockCounterData = {
-    total: 6,
-    data: [
-      {
-        id: 1,
-        centerName: 'Dubai Center',
-        counterName: 'Counter A',
-        createdAt: '2025-01-12T10:00:00Z',
-      },
-      {
-        id: 2,
-        centerName: 'Dubai Center',
-        counterName: 'Counter B',
-        createdAt: '2025-01-15T11:20:00Z',
-      },
-      {
-        id: 3,
-        centerName: 'Abu Dhabi Center',
-        counterName: 'Counter 1',
-        createdAt: '2025-02-02T09:10:00Z',
-      },
-      {
-        id: 4,
-        centerName: 'Sharjah Center',
-        counterName: 'Counter 3',
-        createdAt: '2025-02-20T14:45:00Z',
-      },
-      {
-        id: 5,
-        centerName: 'Ajman Center',
-        counterName: 'Counter X',
-        createdAt: '2025-03-01T08:35:00Z',
-      },
-      {
-        id: 6,
-        centerName: 'Fujairah Center',
-        counterName: 'Counter Z',
-        createdAt: '2025-03-10T16:05:00Z',
-      },
-    ],
-  };
-
   const onRefreshCounter = () => {
     if (!USE_MOCK) getData(params);
     setModal(false);
@@ -183,9 +140,7 @@ const CounterManagement = () => {
     }
   };
 
-  // ✅ Use mock data or API data
-  const tableData = USE_MOCK ? mockCounterData : counterData;
-  const loading = USE_MOCK ? false : isLoadingGet;
+  const loading = isLoadingGet;
 
   return (
     <>
@@ -213,7 +168,7 @@ const CounterManagement = () => {
 
       <CustomTable
         pagination={{ currentPage: params.page, limit: params.limit }}
-        count={tableData?.total || 0}
+        count={counterData?.length || 0}
         columns={columns}
         data={counterData || []}
         isLoading={loading}
