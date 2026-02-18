@@ -286,26 +286,26 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
       ],
       subMenu: [
         {
-          name: 'Appointment type',
+          name: 'Appointment Type',
           path: '/appointment-type-management',
           icon: MessagesIcon,
         },
         {
-          name: 'Collection type',
+          name: 'Collection Type',
           path: '/collection-type-management',
           icon: MessagesIcon,
         },
         {
-          name: 'Application mode',
+          name: 'Application Mode',
           path: '/application-mode-management',
           icon: MessagesIcon,
         },
-        {
-          name: 'Application type',
-          path: '/application-type-management',
-          icon: MessagesIcon,
-        },
-        { name: 'Courier type', path: '/courier-type-management', icon: MessagesIcon },
+        // {
+        //   name: 'Application type',
+        //   path: '/application-type-management',
+        //   icon: MessagesIcon,
+        // },
+        { name: 'Courier Type', path: '/courier-type-management', icon: MessagesIcon },
         { name: 'Visa Duration', path: '/visa-duration-management', icon: MessagesIcon },
         { name: 'Visa Entry', path: '/visa-entry-management', icon: MessagesIcon },
       ],
