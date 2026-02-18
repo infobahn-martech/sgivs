@@ -10,6 +10,7 @@ import useInScanReducer from '../../stores/InScanReducer';
 import { formatDate } from '../../config/config';
 import AddEditModal from './AddEditModal';
 
+
 const InScan = () => {
   const USE_MOCK = true;
 

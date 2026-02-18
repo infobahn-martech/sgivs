@@ -79,8 +79,6 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
       ],
       subMenu: [
         { name: 'Services', path: '/service-management', icon: MessagesIcon },
-        { name: 'Visa Duration', path: '/visa-duration-management', icon: MessagesIcon },
-        { name: 'Visa Entry', path: '/visa-entry-management', icon: MessagesIcon },
         { name: 'Optional Services', path: '/optional-services', icon: MessagesIcon },
         { name: 'Visa Service', path: '/visa-service-management', icon: MessagesIcon },
       ],

@@ -10,6 +10,8 @@ import CustomTable from '../../components/common/CustomTable';
 import useDeleteApplicationReducer from '../../stores/DeleteApplicationReducer';
 import { formatDate } from '../../config/config';
 import CustomActionModal from '../../components/common/CustomActionModal';
+import deleteIcon from '../../assets/images/delete.svg';
+
 
 const DeleteApplication = () => {
   // ✅ Toggle this
@@ -130,7 +132,7 @@ const DeleteApplication = () => {
           onClick={() => setRetrieveModalOpen(row)}
           style={{ textDecoration: 'none' }}
         >
-          Retrieve
+          <img src={deleteIcon} alt="Retrieve" />
         </button>
       </>
     );

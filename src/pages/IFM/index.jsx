@@ -10,9 +10,7 @@ import CustomTable from '../../components/common/CustomTable';
 import useIFMReducer from '../../stores/IFMReducer';
 import { formatDate } from '../../config/config';
 import AddEditModal from './AddEditModal';
-
-// Optional: if you already have edit icon, use it. Otherwise button text is fine.
-// import editIcon from '../../assets/images/edit.svg';
+import editIcon from '../../assets/images/edit.svg';
 
 const IFM = () => {
   const USE_MOCK = true;
@@ -80,7 +78,7 @@ const IFM = () => {
           onClick={() => onClickEdit(row)}
           style={{ textDecoration: 'none' }}
         >
-          Edit
+          <img src={editIcon} alt="Edit" />
         </button>
 
         {/*
