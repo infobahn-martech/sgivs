@@ -54,14 +54,12 @@ const useCourierTypeReducer = create((set) => ({
     }
   },
 
-  getData: async (params) => {
+  getData: async () => {
     try {
       set({ isLoadingGet: true });
-      const { data } = await courierTypeService.getData(params);
-      const datas = data;
+      const { data } = await courierTypeService.getData();
       set({
-        courierTypeList: datas?.data,
-        // successMessage: data?.response?.data?.message ?? data?.message,
+        courierTypeList: data?.data,
         isLoadingGet: false,
       });
     } catch (err) {

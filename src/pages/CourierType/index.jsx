@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { Tooltip } from 'react-tooltip';
-import moment from 'moment';
+import { debounce } from 'lodash';
 
 import '../../assets/scss/usermanagement.scss';
 
@@ -12,120 +12,66 @@ import CustomTable from '../../components/common/CustomTable';
 import useCourierTypeReducer from '../../stores/CourierTypeReducer';
 import { formatDate } from '../../config/config';
 import { AddEditModal } from './AddEditModal';
-import { debounce } from 'lodash';
 import CustomActionModal from '../../components/common/CustomActionModal';
 
 const CourierType = () => {
-  // ✅ Toggle this (VERY useful for large admin projects)
-  const USE_MOCK = true;
-
-  const { getData, courierTypeData, isLoadingGet, deleteData, isLoadingDelete } =
+  const { getData, courierTypeList, isLoadingGet, deleteData, isLoadingDelete } =
     useCourierTypeReducer((state) => state);
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [modal, setModal] = useState(false);
 
-  const initialParams = {
-    search: '',
-    page: 1,
-    limit: 10,
-    fromDate: null,
-    toDate: null,
-    sortBy: 'createdAt',
-    sortOrder: 'DESC',
-    isExcelExport: 'false',
-  };
-
-  const [params, setParams] = useState(initialParams);
-
-  // ✅ Dummy Data
-  const mockCourierTypeData = {
-    total: 5,
-    data: [
-      {
-        id: 1,
-        name: 'Courier Type 1',
-        createdAt: '2025-01-10T09:30:00Z',
-      },
-      {
-        id: 2,
-        name: 'Courier Type 2',
-        createdAt: '2025-02-14T12:15:00Z',
-      },
-      {
-        id: 3,
-        name: 'Courier Type 3',
-        createdAt: '2025-03-05T08:45:00Z',
-      },
-      {
-        id: 4,
-        name: 'Courier Type 4',
-        createdAt: '2025-03-20T10:00:00Z',
-      },
-      {
-        id: 5,
-        name: 'Courier Type 5',
-        createdAt: '2025-04-02T11:20:00Z',
-      },
-    ],
-  };
-
-  const onRefreshCourierType = () => {
-    if (!USE_MOCK) {
-      getData(params);
-    }
-    setModal(false);
-    setDeleteModalOpen(false);
-  };
-
-  // ✅ Call API only if not mock
+  // initial load
   useEffect(() => {
-    if (!USE_MOCK) {
-      getData(params);
+    getData(); // ✅ no params
+  }, [getData]);
+
+  // search (optional) - call API without params if you want only UI search
+  const debouncedSearch = useMemo(
+    () =>
+      debounce((value) => {
+        setSearch(value);
+        // If your API supports search without "params object", call like:
+        // getData(value);
+        // If not, just keep it as local UI search.
+      }, 500),
+    []
+  );
+
+  useEffect(() => {
+    return () => debouncedSearch.cancel?.();
+  }, [debouncedSearch]);
+
+  const handleDelete = () => {
+    if (deleteModalOpen?.id) {
+      deleteData(deleteModalOpen?.id, () => {
+        getData(); // refresh
+        setDeleteModalOpen(false);
+      });
     }
-  }, [params]);
-
-  const handleSortChange = (selector) => {
-    setParams((prevParams) => ({
-      ...prevParams,
-      sortBy: selector,
-      sortOrder: prevParams.sortOrder === 'ASC' ? 'DESC' : 'ASC',
-    }));
   };
 
-  const renderAction = (row) => {
-    return (
-      <>
-        <Tooltip id="edit" place="bottom" content="Edit" style={{ backgroundColor: '#051a53' }} />
-        <Tooltip id="delete" place="bottom" content="Delete" style={{ backgroundColor: '#051a53' }} />
+  const renderAction = (row) => (
+    <>
+      <Tooltip id="edit" place="bottom" content="Edit" style={{ backgroundColor: '#051a53' }} />
+      <Tooltip id="delete" place="bottom" content="Delete" style={{ backgroundColor: '#051a53' }} />
 
-        <img
-          src={editIcon}
-          alt="edit"
-          data-tooltip-id="edit"
-          onClick={() => setModal(row)}
-        />
+      <img src={editIcon} alt="edit" data-tooltip-id="edit" onClick={() => setModal(row)} />
 
-        <img
-          src={deleteIcon}
-          alt="delete"
-          data-tooltip-id="delete"
-          onClick={() => setDeleteModalOpen(row)}
-        />
-      </>
-    );
-  };
+      <img
+        src={deleteIcon}
+        alt="delete"
+        data-tooltip-id="delete"
+        onClick={() => setDeleteModalOpen(row)}
+      />
+    </>
+  );
 
   const columns = [
     {
       name: 'Name',
-      selector: 'name',
+      selector: 'courier_type',
       contentClass: 'user-pic',
-    },
-    {
-      name: 'Created Date',
-      selector: 'createdAt',
-      cell: (row) => <span>{formatDate(row?.createdAt)}</span>,
     },
     {
       name: 'Action',
@@ -136,35 +82,6 @@ const CourierType = () => {
     },
   ];
 
-  // ✅ Stable debounce
-  const debouncedSearch = useMemo(
-    () =>
-      debounce((searchValue) => {
-        setParams((prevParams) => ({
-          ...prevParams,
-          search: searchValue,
-          page: 1,
-        }));
-      }, 500),
-    []
-  );
-
-  const handleDelete = () => {
-    if (USE_MOCK) {
-      setDeleteModalOpen(false);
-      return;
-    }
-
-    if (deleteModalOpen?.id) {
-      deleteData(deleteModalOpen?.id, () => {
-        onRefreshCourierType();
-      });
-    }
-  };
-
-  // ✅ Decide dataset
-  const tableData = USE_MOCK ? mockCourierTypeData : courierTypeData;
-  const loading = USE_MOCK ? false : isLoadingGet;
 
   return (
     <>
@@ -176,31 +93,17 @@ const CourierType = () => {
         }}
         hideFilter
         onSearch={debouncedSearch}
-        submitFilter={(filters) => {
-          const { fromDate, toDate, ...rest } = filters;
-
-          setParams({
-            ...params,
-            ...rest,
-            fromDate: fromDate ? moment(fromDate).format('YYYY-MM-DD') : null,
-            toDate: toDate ? moment(toDate).format('YYYY-MM-DD') : null,
-            page: 1,
-          });
-        }}
         clearOptions={() => {
-          setParams(initialParams);
+          getData(); // optional refresh
         }}
       />
 
       <CustomTable
-        pagination={{ currentPage: params.page, limit: params.limit }}
-        count={tableData?.total || 0}
+        pagination={{ currentPage: 1, limit: 10 }}
+        count={courierTypeList?.length || 0}
         columns={columns}
-        data={tableData?.data || []}
-        isLoading={loading}
-        onPageChange={(page) => setParams({ ...params, page })}
-        setLimit={(limit) => setParams({ ...params, limit })}
-        onSortChange={handleSortChange}
+        data={courierTypeList}
+        isLoading={isLoadingGet}
         wrapClasses="inventory-table-wrap"
       />
 
@@ -208,17 +111,21 @@ const CourierType = () => {
         <AddEditModal
           showModal={modal}
           closeModal={() => setModal(false)}
-          onRefreshCourierType={onRefreshCourierType}
+          onRefreshCourierType={() => {
+            getData();
+            setModal(false);
+            setDeleteModalOpen(false);
+          }}
         />
       )}
 
       {deleteModalOpen && (
         <CustomActionModal
           isDelete
-          isLoading={USE_MOCK ? false : isLoadingDelete}
+          isLoading={isLoadingDelete}
           showModal={deleteModalOpen}
           closeModal={() => setDeleteModalOpen(false)}
-          message={`Are you sure you want to delete this Courier Type?`}
+          message="Are you sure you want to delete this Courier Type?"
           onCancel={() => setDeleteModalOpen(false)}
           onSubmit={handleDelete}
         />
