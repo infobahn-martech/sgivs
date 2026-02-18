@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import CustomModal from '../../components/common/CustomModal';
+import FeeCalculator from '../../components/common/FeeCalculator';
 import usePassportApplicationReducer from '../../stores/PassportApplicationReducer';
 
 // ✅ Helpers
@@ -193,6 +194,23 @@ export function AddEditModal({ showModal, closeModal, onRefreshPassportApplicati
 
   const courierRequired = watch('courierRequired');
   const selectedAfs = watch('afs') || [];
+  const serviceRequested = watch('serviceRequested');
+  const token = watch('token');
+
+  // Dynamic fee calculation (replace with your actual fee logic/API)
+  const feeValues = useMemo(() => {
+    const govtFees = 0;
+    const icwfFees = 0;
+    const serviceFeesByType = { Normal: 6, Tatkal: 10, Courier: 8 };
+    const serviceFees = serviceRequested ? (serviceFeesByType[serviceRequested] ?? 6) : 0;
+    return {
+      govtFees,
+      icwfFees,
+      serviceFees,
+      totalFees: govtFees + icwfFees + serviceFees,
+      onlinePaid: '...',
+    };
+  }, [serviceRequested, token]);
 
   // Prefill form when editing
   useEffect(() => {
@@ -352,57 +370,74 @@ export function AddEditModal({ showModal, closeModal, onRefreshPassportApplicati
         </div>
       </div>
 
-      {/* ===== Row 3 ===== */}
-      <div className="row">
-        <div className="col-md-4">
-          <div className="form-group">
-            <label className="form-label">
-              Processed in GPSP V2.0? <span className="text-danger">*</span>
-            </label>
-            <select className="form-control" {...register('processedInGPSPV2')}>
-              <option value="">Select</option>
-              {yesNoOptions.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-            {errors.processedInGPSPV2 && <span className="error">{errors.processedInGPSPV2.message}</span>}
+      {/* ===== Row 3: Service Requested / Token + Fees Calculator (sticky) ===== */}
+      <div className="row align-items-start">
+        <div className="col-md-8">
+          <div className="row">
+            <div className="col-md-4">
+              <div className="form-group">
+                <label className="form-label">
+                  Processed in GPSP V2.0? <span className="text-danger">*</span>
+                </label>
+                <select className="form-control" {...register('processedInGPSPV2')}>
+                  <option value="">Select</option>
+                  {yesNoOptions.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+                {errors.processedInGPSPV2 && <span className="error">{errors.processedInGPSPV2.message}</span>}
+              </div>
+            </div>
+
+            <div className="col-md-4">
+              <div className="form-group">
+                <label className="form-label">
+                  Service Requested <span className="text-danger">*</span>
+                </label>
+                <select className="form-control" {...register('serviceRequested')}>
+                  <option value="">Select</option>
+                  {serviceRequestedOptions.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+                {errors.serviceRequested && <span className="error">{errors.serviceRequested.message}</span>}
+              </div>
+            </div>
+
+            <div className="col-md-4">
+              <div className="form-group">
+                <label className="form-label">
+                  Token <span className="text-danger">*</span>
+                </label>
+                <select className="form-control" {...register('token')}>
+                  <option value="">Select</option>
+                  {tokenOptions.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+                {errors.token && <span className="error">{errors.token.message}</span>}
+              </div>
+            </div>
           </div>
         </div>
 
-        <div className="col-md-4">
-          <div className="form-group">
-            <label className="form-label">
-              Service Requested <span className="text-danger">*</span>
-            </label>
-            <select className="form-control" {...register('serviceRequested')}>
-              <option value="">Select</option>
-              {serviceRequestedOptions.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-            {errors.serviceRequested && <span className="error">{errors.serviceRequested.message}</span>}
-          </div>
-        </div>
-
-        <div className="col-md-4">
-          <div className="form-group">
-            <label className="form-label">
-              Token <span className="text-danger">*</span>
-            </label>
-            <select className="form-control" {...register('token')}>
-              <option value="">Select</option>
-              {tokenOptions.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-            {errors.token && <span className="error">{errors.token.message}</span>}
-          </div>
+        <div
+          className="col-md-4 d-flex justify-content-md-end justify-content-start"
+          style={{ position: 'sticky', top: 0, alignSelf: 'flex-start' }}
+        >
+          <FeeCalculator
+            govtFees={feeValues.govtFees}
+            icwfFees={feeValues.icwfFees}
+            serviceFees={feeValues.serviceFees}
+            totalFees={feeValues.totalFees}
+            onlinePaid={feeValues.onlinePaid}
+          />
         </div>
       </div>
 
