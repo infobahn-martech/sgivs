@@ -54,14 +54,12 @@ const useVisaDurationReducer = create((set) => ({
     }
   },
 
-  getData: async (params) => {
+  getData: async () => {
     try {
       set({ isLoadingGet: true });
-      const { data } = await visaDurationService.getData(params);
-      const datas = data;
+      const { data } = await visaDurationService.getData();
       set({
-        visaDurationData: datas?.data,
-        // successMessage: data?.response?.data?.message ?? data?.message,
+        visaDurationData: data?.data,
         isLoadingGet: false,
       });
     } catch (err) {

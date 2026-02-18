@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { Tooltip } from 'react-tooltip';
-import moment from 'moment';
+import { debounce } from 'lodash';
 
 import '../../assets/scss/usermanagement.scss';
 
@@ -12,120 +12,59 @@ import CustomTable from '../../components/common/CustomTable';
 import useVisaDurationReducer from '../../stores/VisaDurationReducer';
 import { formatDate } from '../../config/config';
 import { AddEditModal } from './AddEditModal';
-import { debounce } from 'lodash';
 import CustomActionModal from '../../components/common/CustomActionModal';
 
 const VisaDuration = () => {
-  // ✅ Toggle this (VERY useful for large admin projects)
-  const USE_MOCK = true;
-
   const { getData, visaDurationData, isLoadingGet, deleteData, isLoadingDelete } =
     useVisaDurationReducer((state) => state);
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [modal, setModal] = useState(false);
 
-  const initialParams = {
-    search: '',
-    page: 1,
-    limit: 10,
-    fromDate: null,
-    toDate: null,
-    sortBy: 'createdAt',
-    sortOrder: 'DESC',
-    isExcelExport: 'false',
-  };
-
-  const [params, setParams] = useState(initialParams);
-
-  // ✅ Dummy Data
-  const mockVisaDurationData = {
-    total: 5,
-    data: [
-      {
-        id: 1,
-        name: 'Visa Duration 1',
-        createdAt: '2025-01-10T09:30:00Z',
-      },
-      {
-        id: 2,
-        name: 'Visa Duration 2',
-        createdAt: '2025-02-14T12:15:00Z',
-      },
-      {
-        id: 3,
-        name: 'Visa Duration 3',
-        createdAt: '2025-03-05T08:45:00Z',
-      },
-      {
-        id: 4,
-        name: 'Visa Duration 4',
-        createdAt: '2025-03-20T10:00:00Z',
-      },
-      {
-        id: 5,
-        name: 'Visa Duration 5',
-        createdAt: '2025-04-02T11:20:00Z',
-      },
-    ],
-  };
-
-  const onRefreshVisaDuration = () => {
-    if (!USE_MOCK) {
-      getData(params);
-    }
-    setModal(false);
-    setDeleteModalOpen(false);
-  };
-
-  // ✅ Call API only if not mock
+  // ✅ initial load (dynamic)
   useEffect(() => {
-    if (!USE_MOCK) {
-      getData(params);
-    }
-  }, [params]);
+    getData();
+  }, [getData]);
 
-  const handleSortChange = (selector) => {
-    setParams((prevParams) => ({
-      ...prevParams,
-      sortBy: selector,
-      sortOrder: prevParams.sortOrder === 'ASC' ? 'DESC' : 'ASC',
-    }));
-  };
+  // ✅ stable debounce (UI search + optional API call)
+  const debouncedSearch = useMemo(
+    () =>
+      debounce((value) => {
+        setSearch(value);
 
-  const renderAction = (row) => {
-    return (
-      <>
-        <Tooltip id="edit" place="bottom" content="Edit" style={{ backgroundColor: '#051a53' }} />
-        <Tooltip id="delete" place="bottom" content="Delete" style={{ backgroundColor: '#051a53' }} />
+        // If your API supports search without params, call it here:
+        // getData(value);
 
-        <img
-          src={editIcon}
-          alt="edit"
-          data-tooltip-id="edit"
-          onClick={() => setModal(row)}
-        />
+        // If not, keep it as local filtering only (below).
+      }, 500),
+    []
+  );
 
-        <img
-          src={deleteIcon}
-          alt="delete"
-          data-tooltip-id="delete"
-          onClick={() => setDeleteModalOpen(row)}
-        />
-      </>
-    );
-  };
+  useEffect(() => {
+    return () => debouncedSearch.cancel?.();
+  }, [debouncedSearch]);
+
+  const renderAction = (row) => (
+    <>
+      <Tooltip id="edit" place="bottom" content="Edit" style={{ backgroundColor: '#051a53' }} />
+      <Tooltip id="delete" place="bottom" content="Delete" style={{ backgroundColor: '#051a53' }} />
+
+      <img src={editIcon} alt="edit" data-tooltip-id="edit" onClick={() => setModal(row)} />
+
+      <img
+        src={deleteIcon}
+        alt="delete"
+        data-tooltip-id="delete"
+        onClick={() => setDeleteModalOpen(row)}
+      />
+    </>
+  );
 
   const columns = [
     {
       name: 'Name',
-      selector: 'name',
+      selector: 'visa_duration',
       contentClass: 'user-pic',
-    },
-    {
-      name: 'Created Date',
-      selector: 'createdAt',
-      cell: (row) => <span>{formatDate(row?.createdAt)}</span>,
     },
     {
       name: 'Action',
@@ -136,35 +75,19 @@ const VisaDuration = () => {
     },
   ];
 
-  // ✅ Stable debounce
-  const debouncedSearch = useMemo(
-    () =>
-      debounce((searchValue) => {
-        setParams((prevParams) => ({
-          ...prevParams,
-          search: searchValue,
-          page: 1,
-        }));
-      }, 500),
-    []
-  );
+  const onRefreshVisaDuration = () => {
+    getData();
+    setModal(false);
+    setDeleteModalOpen(false);
+  };
 
   const handleDelete = () => {
-    if (USE_MOCK) {
-      setDeleteModalOpen(false);
-      return;
-    }
-
     if (deleteModalOpen?.id) {
       deleteData(deleteModalOpen?.id, () => {
         onRefreshVisaDuration();
       });
     }
   };
-
-  // ✅ Decide dataset
-  const tableData = USE_MOCK ? mockVisaDurationData : visaDurationData;
-  const loading = USE_MOCK ? false : isLoadingGet;
 
   return (
     <>
@@ -176,31 +99,17 @@ const VisaDuration = () => {
         }}
         hideFilter
         onSearch={debouncedSearch}
-        submitFilter={(filters) => {
-          const { fromDate, toDate, ...rest } = filters;
-
-          setParams({
-            ...params,
-            ...rest,
-            fromDate: fromDate ? moment(fromDate).format('YYYY-MM-DD') : null,
-            toDate: toDate ? moment(toDate).format('YYYY-MM-DD') : null,
-            page: 1,
-          });
-        }}
         clearOptions={() => {
-          setParams(initialParams);
+          getData();
         }}
       />
 
       <CustomTable
-        pagination={{ currentPage: params.page, limit: params.limit }}
-        count={tableData?.total || 0}
+        pagination={{ currentPage: 1, limit: 10 }}
+        count={visaDurationData?.length || 0}
         columns={columns}
-        data={tableData?.data || []}
-        isLoading={loading}
-        onPageChange={(page) => setParams({ ...params, page })}
-        setLimit={(limit) => setParams({ ...params, limit })}
-        onSortChange={handleSortChange}
+        data={visaDurationData}
+        isLoading={isLoadingGet}
         wrapClasses="inventory-table-wrap"
       />
 
@@ -215,10 +124,10 @@ const VisaDuration = () => {
       {deleteModalOpen && (
         <CustomActionModal
           isDelete
-          isLoading={USE_MOCK ? false : isLoadingDelete}
+          isLoading={isLoadingDelete}
           showModal={deleteModalOpen}
           closeModal={() => setDeleteModalOpen(false)}
-          message={`Are you sure you want to delete this ${deleteModalOpen?.name}?`}
+          message={`Are you sure you want to delete this ${deleteModalOpen?.name || 'Visa Duration'}?`}
           onCancel={() => setDeleteModalOpen(false)}
           onSubmit={handleDelete}
         />
