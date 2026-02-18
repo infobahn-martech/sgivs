@@ -9,6 +9,7 @@ import blockIcon from '../../assets/images/block.svg';
 import { Tooltip } from 'react-tooltip';
 import { formatBoolean, formatDate } from '../../config/config';
 import InitialsAvatar from '../../components/common/InitialsAvatar';
+import moment from 'moment';
 
 const getAppointmentSettingsTableColumns = ({
   onDeleteClick,
@@ -19,30 +20,43 @@ const getAppointmentSettingsTableColumns = ({
 }) => {
   const columns = [
     {
-      name: 'Center',
-      selector: 'center',
-      titleClasses: isDashboard ? 'th-email' : 'tw3',
+      name: 'Appointment No',
+      selector: 'appointmentNo',
+      titleClasses: isDashboard ? 'th-appointment-no' : 'tw1',
     },
     {
-      name: 'Country',
-      selector: 'country',
-      titleClasses: isDashboard ? 'th-name' : 'tw1',
-      contentClass: 'user-pic',
+      name: 'App Date',
+      selector: 'appDate',
+      cell: (row) =>
+        row.appDate ? moment(row.appDate).format('DD-MM-YYYY') : '-',
+      titleClasses: isDashboard ? 'th-app-date' : 'tw2',
     },
     {
-      name: 'Mission',
-      selector: 'mission',
-      titleClasses: isDashboard ? 'th-last-name' : 'tw2',
+      name: 'App Time',
+      selector: 'appTime',
+      titleClasses: isDashboard ? 'th-app-time' : 'tw3',
     },
     {
       name: 'Application Type',
       selector: 'applicationType',
-      titleClasses: isDashboard ? 'th-phone' : 'tw4',
+      titleClasses: isDashboard ? 'th-application-type' : 'tw4',
     },
     {
-      name: 'Appointment Type',
-      selector: 'appointmentType',
-      titleClasses: isDashboard ? 'th-appointment-type' : 'tw5',
+      name: 'Status',
+      selector: 'status',
+      cell: (row) => (
+        <span
+          className={`status-badge ${row.status === 'Confirmed'
+            ? 'status-confirmed'
+            : row.status === 'Pending'
+              ? 'status-pending'
+              : 'status-cancelled'
+            }`}
+        >
+          {row.status}
+        </span>
+      ),
+      titleClasses: isDashboard ? 'th-status' : 'tw5',
     },
   ];
 

@@ -49,41 +49,58 @@ const BookAppointment = () => {
     data: [
       {
         id: 1,
-        country: 'United States',
-        mission: 'Mission 1',
-        center: 'John Doe',
-        applicationType: 'Application 1',
-        appointmentType: 'Appointment 1', // 1=Active, 2=Blocked
+        appointmentNo: 'DUQ934500059526',
+        appDate: '2026-02-17',
+        appTime: '14:00 - 15:00',
+        applicationType: 'OCI',
+        status: 'Confirmed',
+        name: 'DANY THOMAS',
+        service: 'PIO to OCI',
+        checklist: 'No Checklist',
+        action: 'Action',
       },
       {
         id: 2,
-        country: 'United States',
-        mission: 'Mission 2',
-        center: 'John Doe',
-        applicationType: 'Application 2',
-        appointmentType: 'Appointment 2', // 1=Active, 2=Blocked
+        appointmentNo: 'DXB445100078912',
+        appDate: '2026-02-18',
+        appTime: '10:30 - 11:30',
+        applicationType: 'Visa',
+        status: 'Pending',
+        name: 'JOHN MATHEW',
+        service: 'Tourist Visa',
+        checklist: 'Checklist Available',
+        action: 'Action',
       },
       {
         id: 3,
-        country: 'United States',
-        mission: 'Mission 3',
-        center: 'John Doe',
-        applicationType: 'Application 3',
-        appointmentType: 'Appointment 3', // 1=Active, 2=Blocked
+        appointmentNo: 'AUH221900012345',
+        appDate: '2026-02-19',
+        appTime: '16:00 - 17:00',
+        applicationType: 'Passport',
+        status: 'Cancelled',
+        name: 'AKHIL THOMAS',
+        service: 'Passport Renewal',
+        checklist: 'No Checklist',
+        action: 'Action',
       },
       {
         id: 4,
-        country: 'United States',
-        mission: 'Mission 4',
-        center: 'John Doe',
-        applicationType: 'Application 4',
-        appointmentType: 'Appointment 4', // 1=Active, 2=Blocked
+        appointmentNo: 'SHJ778800099001',
+        appDate: '2026-02-20',
+        appTime: '09:00 - 10:00',
+        applicationType: 'OCI',
+        status: 'Confirmed',
+        name: 'ZIMBA K',
+        service: 'OCI Renewal',
+        checklist: 'Checklist Available',
+        action: 'Action',
       },
     ],
     pagination: {
       totalRecords: 4,
     },
   };
+
 
   const handleGetAllBookAppointment = () => {
     // ✅ If you want API later, set USE_MOCK=false and uncomment useEffect below
@@ -195,7 +212,7 @@ const BookAppointment = () => {
     onDeleteClick: handleDeleteClick,
     onStatusClick: handleStatusClick,
     onUserNotify: handleNotification,
-    showActions: true,
+    showActions: false,
   });
 
   const filterOptions = [
