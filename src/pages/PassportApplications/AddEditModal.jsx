@@ -101,6 +101,7 @@ const schema = z.object({
 
   // multiple checkbox list
   afs: z.array(z.string()).optional(),
+  photocopyNotes: z.string().optional(),
 
   paymentMode: z.string().nonempty('Payment Mode is required'),
 })
@@ -172,6 +173,7 @@ export function AddEditModal({ showModal, closeModal, onRefreshPassportApplicati
 
       tatkalService: false,
       afs: [],
+      photocopyNotes: '',
 
       paymentMode: '',
     }),
@@ -233,6 +235,7 @@ export function AddEditModal({ showModal, closeModal, onRefreshPassportApplicati
         courierRequired: !!showModal?.courierRequired,
         tatkalService: !!showModal?.tatkalService,
         afs: Array.isArray(showModal?.afs) ? showModal?.afs : [],
+        photocopyNotes: showModal?.photocopyNotes ?? '',
         mobileCode: showModal?.mobileCode || '+971',
       });
     } else {
@@ -293,8 +296,12 @@ export function AddEditModal({ showModal, closeModal, onRefreshPassportApplicati
 
   const toggleAfsItem = (value) => {
     const current = new Set(selectedAfs);
-    if (current.has(value)) current.delete(value);
-    else current.add(value);
+    if (current.has(value)) {
+      current.delete(value);
+      if (value === 'Photocopy') setValue('photocopyNotes', '', { shouldValidate: true });
+    } else {
+      current.add(value);
+    }
     setValue('afs', Array.from(current), { shouldValidate: true });
   };
 
@@ -692,6 +699,21 @@ export function AddEditModal({ showModal, closeModal, onRefreshPassportApplicati
                 </div>
               ))}
             </div>
+
+            {selectedAfs.includes('Photocopy') && (
+              <div className="mt-3">
+                <label className="form-label">Photocopy notes</label>
+                <textarea
+                  className="form-control"
+                  rows={3}
+                  placeholder="Enter photocopy details..."
+                  {...register('photocopyNotes')}
+                />
+                {errors.photocopyNotes && (
+                  <span className="error">{errors.photocopyNotes.message}</span>
+                )}
+              </div>
+            )}
 
             {errors.afs && <span className="error">{errors.afs.message}</span>}
           </div>
