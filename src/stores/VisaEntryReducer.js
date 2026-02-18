@@ -8,7 +8,7 @@ const useVisaEntryReducer = create((set) => ({
   isLoadingDelete: false,
   errorMessage: '',
   successMessage: '',
-  visaEntryData: null,
+  visaEntryData: [],
 
   postData: async (payload, cb) => {
     try {
@@ -54,14 +54,12 @@ const useVisaEntryReducer = create((set) => ({
     }
   },
 
-  getData: async (params) => {
+  getData: async () => {
     try {
       set({ isLoadingGet: true });
-      const { data } = await visaEntryService.getData(params);
-      const datas = data;
+      const { data } = await visaEntryService.getData();
       set({
-        visaEntryData: datas?.data,
-        // successMessage: data?.response?.data?.message ?? data?.message,
+        visaEntryData: data?.data,
         isLoadingGet: false,
       });
     } catch (err) {
@@ -77,9 +75,8 @@ const useVisaEntryReducer = create((set) => ({
     try {
       set({ isLoadingDelete: true });
       const { data } = await visaEntryService.deleteData(id);
-      const datas = data;
       set({
-        visaEntryData: datas?.data,
+        visaEntryData: data?.data,
         successMessage: data?.response?.data?.message ?? data?.message,
         isLoadingDelete: false,
       });
