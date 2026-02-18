@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import moment from 'moment';
 import { debounce } from 'lodash';
 
@@ -9,6 +10,7 @@ import CustomTable from '../../components/common/CustomTable';
 import usePassportApplicationReducer from '../../stores/PassportApplicationReducer';
 import { formatDate } from '../../config/config';
 import { AddEditModal } from './AddEditModal';
+import FeeCalculator from '../../components/common/FeeCalculator';
 import CustomActionModal from '../../components/common/CustomActionModal';
 import ActionsMenu from './ActionsMenu';
 import ViewModal from './ViewModal';
@@ -28,6 +30,7 @@ const PassportApplications = () => {
   const [commentModal, setCommentModal] = useState(false);
   const [changeServicesModal, setChangeServicesModal] = useState(false);
   const [activityLogModal, setActivityLogModal] = useState(false);
+  const [feeValues, setFeeValues] = useState(null);
   const initialParams = {
     search: '',
     page: 1,
@@ -128,6 +131,7 @@ const PassportApplications = () => {
     setCommentModal(false);
     setChangeServicesModal(false);
     setActivityLogModal(false);
+    setFeeValues(null);
   };
 
   useEffect(() => {
@@ -289,10 +293,39 @@ const PassportApplications = () => {
       {modal && (
         <AddEditModal
           showModal={modal}
-          closeModal={() => setModal(false)}
+          closeModal={() => {
+            setModal(false);
+            setFeeValues(null);
+          }}
           onRefreshPassportApplications={onRefreshPassportApplications}
+          onFeeValuesChange={setFeeValues}
         />
       )}
+
+      {/* FeeCalculator outside modal – shows when Service Requested is selected (portaled so it stays above modal) */}
+      {modal &&
+        feeValues &&
+        createPortal(
+          <div
+            className="passport-fee-calculator-outside"
+            style={{
+              position: 'fixed',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              right: '24px',
+              zIndex: 10000,
+            }}
+          >
+            <FeeCalculator
+              govtFees={feeValues.govtFees}
+              icwfFees={feeValues.icwfFees}
+              serviceFees={feeValues.serviceFees}
+              totalFees={feeValues.totalFees}
+              onlinePaid={feeValues.onlinePaid}
+            />
+          </div>,
+          document.body
+        )}
 
       {deleteModalOpen && (
         <CustomActionModal

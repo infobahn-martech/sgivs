@@ -3,7 +3,6 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import CustomModal from '../../components/common/CustomModal';
-import FeeCalculator from '../../components/common/FeeCalculator';
 import usePassportApplicationReducer from '../../stores/PassportApplicationReducer';
 
 // ✅ Helpers
@@ -139,7 +138,7 @@ const schema = z.object({
     }
   });
 
-export function AddEditModal({ showModal, closeModal, onRefreshPassportApplications }) {
+export function AddEditModal({ showModal, closeModal, onRefreshPassportApplications, onFeeValuesChange }) {
   const { postData, patchData, isLoading } = usePassportApplicationReducer((state) => state);
 
   const defaultValues = useMemo(
@@ -211,6 +210,16 @@ export function AddEditModal({ showModal, closeModal, onRefreshPassportApplicati
       onlinePaid: '...',
     };
   }, [serviceRequested, token]);
+
+  // Notify parent of fee values when Service Requested is selected (for FeeCalculator outside modal)
+  useEffect(() => {
+    if (typeof onFeeValuesChange !== 'function') return;
+    if (serviceRequested) {
+      onFeeValuesChange(feeValues);
+    } else {
+      onFeeValuesChange(null);
+    }
+  }, [serviceRequested, feeValues, onFeeValuesChange]);
 
   // Prefill form when editing
   useEffect(() => {
@@ -370,74 +379,57 @@ export function AddEditModal({ showModal, closeModal, onRefreshPassportApplicati
         </div>
       </div>
 
-      {/* ===== Row 3: Service Requested / Token + Fees Calculator (sticky) ===== */}
-      <div className="row align-items-start">
-        <div className="col-md-8">
-          <div className="row">
-            <div className="col-md-4">
-              <div className="form-group">
-                <label className="form-label">
-                  Processed in GPSP V2.0? <span className="text-danger">*</span>
-                </label>
-                <select className="form-control" {...register('processedInGPSPV2')}>
-                  <option value="">Select</option>
-                  {yesNoOptions.map((o) => (
-                    <option key={o.value} value={o.value}>
-                      {o.label}
-                    </option>
-                  ))}
-                </select>
-                {errors.processedInGPSPV2 && <span className="error">{errors.processedInGPSPV2.message}</span>}
-              </div>
-            </div>
-
-            <div className="col-md-4">
-              <div className="form-group">
-                <label className="form-label">
-                  Service Requested <span className="text-danger">*</span>
-                </label>
-                <select className="form-control" {...register('serviceRequested')}>
-                  <option value="">Select</option>
-                  {serviceRequestedOptions.map((o) => (
-                    <option key={o.value} value={o.value}>
-                      {o.label}
-                    </option>
-                  ))}
-                </select>
-                {errors.serviceRequested && <span className="error">{errors.serviceRequested.message}</span>}
-              </div>
-            </div>
-
-            <div className="col-md-4">
-              <div className="form-group">
-                <label className="form-label">
-                  Token <span className="text-danger">*</span>
-                </label>
-                <select className="form-control" {...register('token')}>
-                  <option value="">Select</option>
-                  {tokenOptions.map((o) => (
-                    <option key={o.value} value={o.value}>
-                      {o.label}
-                    </option>
-                  ))}
-                </select>
-                {errors.token && <span className="error">{errors.token.message}</span>}
-              </div>
-            </div>
+      {/* ===== Row 3 ===== */}
+      <div className="row">
+        <div className="col-md-4">
+          <div className="form-group">
+            <label className="form-label">
+              Processed in GPSP V2.0? <span className="text-danger">*</span>
+            </label>
+            <select className="form-control" {...register('processedInGPSPV2')}>
+              <option value="">Select</option>
+              {yesNoOptions.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+            {errors.processedInGPSPV2 && <span className="error">{errors.processedInGPSPV2.message}</span>}
           </div>
         </div>
 
-        <div
-          className="col-md-4 d-flex justify-content-md-end justify-content-start"
-          style={{ position: 'sticky', top: 0, alignSelf: 'flex-start' }}
-        >
-          <FeeCalculator
-            govtFees={feeValues.govtFees}
-            icwfFees={feeValues.icwfFees}
-            serviceFees={feeValues.serviceFees}
-            totalFees={feeValues.totalFees}
-            onlinePaid={feeValues.onlinePaid}
-          />
+        <div className="col-md-4">
+          <div className="form-group">
+            <label className="form-label">
+              Service Requested <span className="text-danger">*</span>
+            </label>
+            <select className="form-control" {...register('serviceRequested')}>
+              <option value="">Select</option>
+              {serviceRequestedOptions.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+            {errors.serviceRequested && <span className="error">{errors.serviceRequested.message}</span>}
+          </div>
+        </div>
+
+        <div className="col-md-4">
+          <div className="form-group">
+            <label className="form-label">
+              Token <span className="text-danger">*</span>
+            </label>
+            <select className="form-control" {...register('token')}>
+              <option value="">Select</option>
+              {tokenOptions.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+            {errors.token && <span className="error">{errors.token.message}</span>}
+          </div>
         </div>
       </div>
 
