@@ -6,139 +6,78 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import CustomModal from '../../components/common/CustomModal';
 import CustomSelect from '../../components/common/CustomSelect';
 
-import DatePicker from 'react-datepicker';
-import 'react-datepicker/dist/react-datepicker.css';
-
 const USE_MOCK = true;
 
-/** ✅ Date Range Picker (inline component for easy copy-paste) */
-const DateRangePicker = ({ className, onChange, value }) => {
-    const startDate = value?.startDate || null;
-    const endDate = value?.endDate || null;
-
-    return (
-        <DatePicker
-            selected={startDate}
-            onChange={(update) => {
-                const [start, end] = update;
-                onChange({ startDate: start, endDate: end });
-            }}
-            startDate={startDate}
-            endDate={endDate}
-            selectsRange
-            showYearDropdown
-            showMonthDropdown
-            showTwoColumnMonthYearPicker
-            portalId="root-portal"
-            className={className}
-            placeholderText="Select date range"
-            dateFormat="yyyy-MM-dd"
-            isClearable
-        />
-    );
-};
-
-/** ✅ MOCK OPTIONS */
-const mockCountries = [
-    { id: '1', name: 'UAE' },
-    { id: '2', name: 'India' },
-    { id: '3', name: 'USA' },
-];
-
-const mockMissions = [
-    { id: '1', name: 'Abu Dhabi Mission' },
-    { id: '2', name: 'Dubai Mission' },
-];
-
-const mockCenters = [
-    { id: '1', name: 'Dubai Center' },
-    { id: '2', name: 'Abu Dhabi Center' },
-    { id: '3', name: 'Sharjah Center' },
-    { id: '4', name: 'Ajman Center' },
+/** ✅ OPTIONS */
+const mockIcacLocations = [
+    { id: 'Salalah', name: 'Salalah' },
+    { id: 'Sohar', name: 'Sohar' },
+    { id: 'Nizwa', name: 'Nizwa' },
+    { id: 'Sur', name: 'Sur' },
+    { id: 'Buraimi', name: 'Buraimi' },
+    { id: 'Duqm', name: 'Duqm' },
+    { id: 'Ibri', name: 'Ibri' },
+    { id: 'Ibra', name: 'Ibra' },
+    { id: 'Khasab', name: 'Khasab' },
+    { id: 'Barka', name: 'Barka' },
+    { id: 'Muscat', name: 'Muscat' },
 ];
 
 const mockApplicationTypes = [
-    { id: '1', name: 'New' },
-    { id: '2', name: 'Renewal' },
+    { id: 'Passport/PCC/Surrender/GEP/EC', name: 'Passport / PCC / Surrender Certificate / GEP / EC' },
+    { id: 'Attestation Services', name: 'Attestation Services' },
+    { id: 'Visa', name: 'Visa' },
+    { id: 'OCI', name: 'OCI' },
 ];
 
-const mockAppointmentTypes = [
-    { id: '1', name: 'Normal' },
-    { id: '2', name: 'Urgent' },
+const mockGender = [
+    { id: 'Male', name: 'Male' },
+    { id: 'Female', name: 'Female' },
+    { id: 'Other', name: 'Other' },
 ];
 
-const mockOffDays = [
-    { id: 'SAT', name: 'Saturday' },
-    { id: 'SUN', name: 'Sunday' },
-    { id: 'MON', name: 'Monday' },
-    { id: 'TUE', name: 'Tuesday' },
-    { id: 'WED', name: 'Wednesday' },
-    { id: 'THU', name: 'Thursday' },
-    { id: 'FRI', name: 'Friday' },
+const mockRequiredServices = [
+    { id: 'Passport', name: 'Passport' },
+    { id: 'PCC', name: 'PCC' },
+    { id: 'Surrender Certificate', name: 'Surrender Certificate' },
+    { id: 'GEP', name: 'GEP' },
+    { id: 'EC', name: 'EC' },
+    { id: 'Attestation', name: 'Attestation Services' },
+    { id: 'Visa', name: 'Visa' },
+    { id: 'OCI', name: 'OCI' },
 ];
 
-const mockSlotPeriods = [
-    { id: '10', name: '10 Minutes' },
-    { id: '15', name: '15 Minutes' },
-    { id: '20', name: '20 Minutes' },
-    { id: '30', name: '30 Minutes' },
-];
-
-const mockSlotCapacity = [
-    { id: '1', name: '1' },
-    { id: '2', name: '2' },
-    { id: '3', name: '3' },
-    { id: '5', name: '5' },
-    { id: '10', name: '10' },
-];
-
-const mockMaxSlots = [
-    { id: '10', name: '10' },
-    { id: '20', name: '20' },
-    { id: '30', name: '30' },
-    { id: '50', name: '50' },
-    { id: '100', name: '100' },
-];
-
-/** ✅ Lunch Break options (single select) */
-const mockLunchBreak = [
-    { id: '0', name: 'No Lunch Break' },
-    { id: '30', name: '30 Minutes' },
-    { id: '45', name: '45 Minutes' },
-    { id: '60', name: '60 Minutes' },
-];
-
-/** ✅ Date-range schema helper */
-const dateRangeSchema = z.object({
-    startDate: z.date().nullable(),
-    endDate: z.date().nullable(),
-});
-
+/** ✅ Schema */
 const formSchema = z.object({
-    countryId: z.string().nonempty('Country is required'),
-    missionId: z.string().nonempty('Mission is required'),
-    centerId: z.string().nonempty('Center is required'),
-    applicationTypeId: z.string().nonempty('Application Type is required'),
-    appointmentTypeId: z.string().nonempty('Appointment Type is required'),
+    icacLocation: z.string().nonempty('ICAC Location is required'),
+    applicationType: z.string().nonempty('Application Type is required'),
 
-    offDays: z.array(z.string()).optional(),
+    appointmentDateTime: z
+        .string()
+        .nonempty('Appointment Date & Time is required')
+        .refine((v) => !Number.isNaN(Date.parse(v)), 'Invalid date/time'),
 
-    startTime: z.string().nonempty('Start time is required'),
-    endTime: z.string().nonempty('End time is required'),
+    returnCourierAddress: z
+        .string()
+        .nonempty('Return Courier Address is required')
+        .max(500, 'Address must be 500 characters or less'),
 
-    lunchBreak: z.string().optional(), // '0' | '30' | '45' | '60'
+    applicant1: z.object({
+        firstName: z.string().nonempty('First Name is required').max(50, 'Max 50 chars'),
+        lastName: z.string().nonempty('Last Name is required').max(50, 'Max 50 chars'),
+        gender: z.string().nonempty('Gender is required'),
+        dob: z.string().nonempty('Date of Birth is required'),
+        passportNumber: z
+            .string()
+            .nonempty('Passport Number is required')
+            .max(20, 'Max 20 chars')
+            .regex(/^[A-Za-z0-9]+$/, 'Passport Number should be alphanumeric'),
+        requiredService: z.string().nonempty('Required Service is required'),
+    }),
 
-    slotPeriod: z.string().nonempty('Slot period is required'),
-    slotCapacity: z.string().nonempty('Slot capacity is required'),
-    maxSlots: z.string().nonempty('Max slots is required'),
-
-    bookingAllowFrom: z.string().nonempty('Booking allow from is required'),
-    bookingAllowTill: z.string().nonempty('Booking allow till is required'),
-
-    /** ✅ NEW: date range picker values */
-    blockedDates: dateRangeSchema.optional(),
-    releaseDates: dateRangeSchema.optional(),
-    slotFullDates: dateRangeSchema.optional(),
+    termsAccepted: z.literal(true, {
+        errorMap: () => ({ message: 'You must agree to the terms and conditions' }),
+    }),
 });
 
 export default function AddEditBookAppointmentModal({
@@ -157,145 +96,92 @@ export default function AddEditBookAppointmentModal({
     } = useForm({
         resolver: zodResolver(formSchema),
         defaultValues: {
-            countryId: '',
-            missionId: '',
-            centerId: '',
-            applicationTypeId: '',
-            appointmentTypeId: '',
-            offDays: [],
-
-            startTime: '',
-            endTime: '',
-
-            lunchBreak: '0',
-
-            slotPeriod: '',
-            slotCapacity: '',
-            maxSlots: '',
-
-            bookingAllowFrom: '',
-            bookingAllowTill: '',
-
-            blockedDates: { startDate: null, endDate: null },
-            releaseDates: { startDate: null, endDate: null },
-            slotFullDates: { startDate: null, endDate: null },
+            icacLocation: '',
+            applicationType: '',
+            appointmentDateTime: '',
+            returnCourierAddress: '',
+            applicant1: {
+                firstName: '',
+                lastName: '',
+                gender: '',
+                dob: '',
+                passportNumber: '',
+                requiredService: '',
+            },
+            termsAccepted: false,
         },
     });
 
-    // ✅ Fill form for edit / clear for add (MOCK)
+    // ✅ Fill for edit / clear for add
     useEffect(() => {
         if (showModal?.id) {
-            // Map edit values here (example):
-            // setValue('countryId', String(showModal.countryId || ''));
-            // setValue('lunchBreak', String(showModal.lunchBreak ?? '0'));
-            // setValue('blockedDates', { startDate: new Date(showModal.blockedStart), endDate: new Date(showModal.blockedEnd) });
+            // Example mapping (edit mode) — update based on your API keys:
+            // setValue('icacLocation', showModal.icacLocation || '');
+            // setValue('applicationType', showModal.applicationType || '');
+            // setValue('appointmentDateTime', showModal.appointmentDateTime || '');
+            // setValue('returnCourierAddress', showModal.returnCourierAddress || '');
+            // setValue('applicant1.firstName', showModal.applicant1?.firstName || '');
+            // ...
+            // setValue('termsAccepted', Boolean(showModal.termsAccepted));
         } else {
             reset();
         }
     }, [showModal?.id, reset, setValue, showModal]);
 
-    /** ✅ OPTIONS MAPPING */
-    const countryOptions = useMemo(
-        () => (USE_MOCK ? mockCountries : []).map((x) => ({ label: x.name, value: String(x.id) })),
-        []
-    );
-
-    const missionOptions = useMemo(
-        () => (USE_MOCK ? mockMissions : []).map((x) => ({ label: x.name, value: String(x.id) })),
-        []
-    );
-
-    const centerOptions = useMemo(
-        () => (USE_MOCK ? mockCenters : []).map((x) => ({ label: x.name, value: String(x.id) })),
+    /** ✅ options -> {label,value} */
+    const icacLocationOptions = useMemo(
+        () => (USE_MOCK ? mockIcacLocations : []).map((x) => ({ label: x.name, value: x.id })),
         []
     );
 
     const applicationTypeOptions = useMemo(
-        () =>
-            (USE_MOCK ? mockApplicationTypes : []).map((x) => ({
-                label: x.name,
-                value: String(x.id),
-            })),
+        () => (USE_MOCK ? mockApplicationTypes : []).map((x) => ({ label: x.name, value: x.id })),
         []
     );
 
-    const appointmentTypeOptions = useMemo(
-        () =>
-            (USE_MOCK ? mockAppointmentTypes : []).map((x) => ({
-                label: x.name,
-                value: String(x.id),
-            })),
+    const genderOptions = useMemo(
+        () => (USE_MOCK ? mockGender : []).map((x) => ({ label: x.name, value: x.id })),
         []
     );
 
-    const offDaysOptions = useMemo(
-        () => (USE_MOCK ? mockOffDays : []).map((x) => ({ label: x.name, value: String(x.id) })),
+    const requiredServiceOptions = useMemo(
+        () => (USE_MOCK ? mockRequiredServices : []).map((x) => ({ label: x.name, value: x.id })),
         []
     );
 
-    const slotPeriodOptions = useMemo(
-        () => (USE_MOCK ? mockSlotPeriods : []).map((x) => ({ label: x.name, value: String(x.id) })),
-        []
-    );
-
-    const slotCapacityOptions = useMemo(
-        () => (USE_MOCK ? mockSlotCapacity : []).map((x) => ({ label: x.name, value: String(x.id) })),
-        []
-    );
-
-    const maxSlotsOptions = useMemo(
-        () => (USE_MOCK ? mockMaxSlots : []).map((x) => ({ label: x.name, value: String(x.id) })),
-        []
-    );
-
-    const lunchBreakOptions = useMemo(
-        () => (USE_MOCK ? mockLunchBreak : []).map((x) => ({ label: x.name, value: String(x.id) })),
-        []
-    );
-
-    /** ✅ Helper: convert Date -> yyyy-mm-dd */
-    const toYMD = (date) => {
-        if (!date) return null;
-        const yyyy = date.getFullYear();
-        const mm = String(date.getMonth() + 1).padStart(2, '0');
-        const dd = String(date.getDate()).padStart(2, '0');
-        return `${yyyy}-${mm}-${dd}`;
-    };
-
-    // ✅ Submit (MOCK)
     const onSubmit = (data) => {
         const payload = {
-            ...data,
-            blockedDates: {
-                startDate: toYMD(data.blockedDates?.startDate),
-                endDate: toYMD(data.blockedDates?.endDate),
+            icac_location: data.icacLocation,
+            application_type: data.applicationType,
+            appointment_datetime: data.appointmentDateTime,
+            return_courier_address: data.returnCourierAddress,
+
+            applicant_1: {
+                first_name: data.applicant1.firstName,
+                last_name: data.applicant1.lastName,
+                gender: data.applicant1.gender,
+                dob: data.applicant1.dob,
+                passport_number: data.applicant1.passportNumber,
+                required_service: data.applicant1.requiredService,
             },
-            releaseDates: {
-                startDate: toYMD(data.releaseDates?.startDate),
-                endDate: toYMD(data.releaseDates?.endDate),
-            },
-            slotFullDates: {
-                startDate: toYMD(data.slotFullDates?.startDate),
-                endDate: toYMD(data.slotFullDates?.endDate),
-            },
+
+            terms_accepted: data.termsAccepted,
         };
 
         if (USE_MOCK) {
-            // console.log('Appointment Settings Payload:', payload);
+            // console.log('Book Appointment Payload:', payload);
             onRefreshBookAppointment?.();
             closeModal?.();
             return;
         }
 
-        // API mode: call post/patch with payload
+        // ✅ API mode: call post/patch with payload
         closeModal?.();
     };
 
     const renderHeader = () => (
         <>
-            <h4 className="modal-title">
-                {showModal?.id ? 'Edit Book Appointment' : 'Add Book Appointment'}
-            </h4>
+            <h4 className="modal-title">{showModal?.id ? 'Edit Book Appointment' : 'Add Book Appointment'}</h4>
             <button
                 type="button"
                 className="btn-close"
@@ -309,292 +195,193 @@ export default function AddEditBookAppointmentModal({
     const renderBody = () => (
         <div className="modal-body">
             <div className="row g-3">
-                {/* Country */}
-                <div className="col-lg-4 col-md-6">
+                {/* ✅ ICAC Location */}
+                <div className="col-lg-6 col-md-6">
                     <div className="form-group forms-custom">
                         <label className="label">
-                            Country<span className="text-danger">*</span>
+                            Select ICAC Location <span className="text-danger">*</span>
                         </label>
                         <CustomSelect
-                            options={countryOptions}
-                            value={countryOptions.find((o) => o.value === watch('countryId')) || null}
+                            options={icacLocationOptions}
+                            value={icacLocationOptions.find((o) => o.value === watch('icacLocation')) || null}
                             onChange={(selected) =>
-                                setValue('countryId', selected?.value || '', { shouldValidate: true })
+                                setValue('icacLocation', selected?.value || '', { shouldValidate: true })
                             }
-                            placeholder="Select Country"
+                            placeholder="Select"
                             className="form-control"
                         />
-                        {errors.countryId && <span className="error">{errors.countryId.message}</span>}
+                        {errors.icacLocation && <span className="error">{errors.icacLocation.message}</span>}
                     </div>
                 </div>
 
-                {/* Mission */}
-                <div className="col-lg-4 col-md-6">
+                {/* ✅ Application Type */}
+                <div className="col-lg-6 col-md-6">
                     <div className="form-group forms-custom">
                         <label className="label">
-                            Mission<span className="text-danger">*</span>
-                        </label>
-                        <CustomSelect
-                            options={missionOptions}
-                            value={missionOptions.find((o) => o.value === watch('missionId')) || null}
-                            onChange={(selected) =>
-                                setValue('missionId', selected?.value || '', { shouldValidate: true })
-                            }
-                            placeholder="Select Mission"
-                            className="form-control"
-                        />
-                        {errors.missionId && <span className="error">{errors.missionId.message}</span>}
-                    </div>
-                </div>
-
-                {/* Center */}
-                <div className="col-lg-4 col-md-6">
-                    <div className="form-group forms-custom">
-                        <label className="label">
-                            Center<span className="text-danger">*</span>
-                        </label>
-                        <CustomSelect
-                            options={centerOptions}
-                            value={centerOptions.find((o) => o.value === watch('centerId')) || null}
-                            onChange={(selected) =>
-                                setValue('centerId', selected?.value || '', { shouldValidate: true })
-                            }
-                            placeholder="Select Center"
-                            className="form-control"
-                        />
-                        {errors.centerId && <span className="error">{errors.centerId.message}</span>}
-                    </div>
-                </div>
-
-                {/* Application Type */}
-                <div className="col-lg-4 col-md-6">
-                    <div className="form-group forms-custom">
-                        <label className="label">
-                            Application Type<span className="text-danger">*</span>
+                            Select Application Type <span className="text-danger">*</span>
                         </label>
                         <CustomSelect
                             options={applicationTypeOptions}
-                            value={
-                                applicationTypeOptions.find((o) => o.value === watch('applicationTypeId')) || null
-                            }
+                            value={applicationTypeOptions.find((o) => o.value === watch('applicationType')) || null}
                             onChange={(selected) =>
-                                setValue('applicationTypeId', selected?.value || '', { shouldValidate: true })
+                                setValue('applicationType', selected?.value || '', { shouldValidate: true })
                             }
-                            placeholder="Select Application Type"
+                            placeholder="Select"
                             className="form-control"
                         />
-                        {errors.applicationTypeId && (
-                            <span className="error">{errors.applicationTypeId.message}</span>
+                        {errors.applicationType && <span className="error">{errors.applicationType.message}</span>}
+                    </div>
+                </div>
+
+                {/* ✅ Appointment Date & Time */}
+                <div className="col-lg-6 col-md-6">
+                    <div className="form-group forms-custom">
+                        <label className="label">
+                            Select Appointment Date and Time <span className="text-danger">*</span>
+                        </label>
+                        <input type="datetime-local" className="form-control" {...register('appointmentDateTime')} />
+                        {errors.appointmentDateTime && (
+                            <span className="error">{errors.appointmentDateTime.message}</span>
                         )}
                     </div>
                 </div>
 
-                {/* Appointment Type */}
+                {/* ✅ Return Courier Address */}
+                <div className="col-lg-6 col-md-6">
+                    <div className="form-group forms-custom">
+                        <label className="label">
+                            Return Courier Address <span className="text-danger">*</span>
+                        </label>
+                        <textarea
+                            rows={3}
+                            className="form-control"
+                            placeholder="Enter return courier address"
+                            {...register('returnCourierAddress')}
+                        />
+                        {errors.returnCourierAddress && (
+                            <span className="error">{errors.returnCourierAddress.message}</span>
+                        )}
+                    </div>
+                </div>
+
+                {/* ✅ Applicant - 1 */}
+                <div className="col-12">
+                    <hr />
+                    <h6 className="mb-2">Applicant - 1</h6>
+                </div>
+
+                {/* First Name */}
                 <div className="col-lg-4 col-md-6">
                     <div className="form-group forms-custom">
                         <label className="label">
-                            Appointment Type<span className="text-danger">*</span>
+                            First Name <span className="text-danger">*</span>
                         </label>
-                        <CustomSelect
-                            options={appointmentTypeOptions}
-                            value={
-                                appointmentTypeOptions.find((o) => o.value === watch('appointmentTypeId')) || null
-                            }
-                            onChange={(selected) =>
-                                setValue('appointmentTypeId', selected?.value || '', { shouldValidate: true })
-                            }
-                            placeholder="Select Appointment Type"
-                            className="form-control"
-                        />
-                        {errors.appointmentTypeId && (
-                            <span className="error">{errors.appointmentTypeId.message}</span>
-                        )}
+                        <input className="form-control" placeholder="First Name" {...register('applicant1.firstName')} />
+                        {errors.applicant1?.firstName && <span className="error">{errors.applicant1.firstName.message}</span>}
                     </div>
                 </div>
 
-                {/* Off days (multi select) */}
+                {/* Last Name */}
                 <div className="col-lg-4 col-md-6">
                     <div className="form-group forms-custom">
-                        <label className="label">Off days</label>
+                        <label className="label">
+                            Last Name <span className="text-danger">*</span>
+                        </label>
+                        <input className="form-control" placeholder="Last Name" {...register('applicant1.lastName')} />
+                        {errors.applicant1?.lastName && <span className="error">{errors.applicant1.lastName.message}</span>}
+                    </div>
+                </div>
+
+                {/* Gender */}
+                <div className="col-lg-4 col-md-6">
+                    <div className="form-group forms-custom">
+                        <label className="label">
+                            Gender <span className="text-danger">*</span>
+                        </label>
                         <Controller
                             control={control}
-                            name="offDays"
+                            name="applicant1.gender"
                             render={({ field }) => (
                                 <CustomSelect
-                                    options={offDaysOptions}
-                                    isMulti
-                                    value={offDaysOptions.filter((o) => (field.value || []).includes(o.value))}
-                                    onChange={(selected) => field.onChange((selected || []).map((s) => s.value))}
-                                    placeholder="Select Off days"
+                                    options={genderOptions}
+                                    value={genderOptions.find((o) => o.value === field.value) || null}
+                                    onChange={(selected) => field.onChange(selected?.value || '')}
+                                    placeholder="Select"
                                     className="form-control"
                                 />
                             )}
                         />
+                        {errors.applicant1?.gender && <span className="error">{errors.applicant1.gender.message}</span>}
                     </div>
                 </div>
 
-                {/* Start Time */}
+                {/* DOB */}
                 <div className="col-lg-4 col-md-6">
                     <div className="form-group forms-custom">
                         <label className="label">
-                            Start time<span className="text-danger">*</span>
+                            Date Of Birth <span className="text-danger">*</span>
                         </label>
-                        <input type="time" className="form-control" {...register('startTime')} />
-                        {errors.startTime && <span className="error">{errors.startTime.message}</span>}
+                        <input type="date" className="form-control" {...register('applicant1.dob')} />
+                        {errors.applicant1?.dob && <span className="error">{errors.applicant1.dob.message}</span>}
                     </div>
                 </div>
 
-                {/* End Time */}
+                {/* Passport Number */}
                 <div className="col-lg-4 col-md-6">
                     <div className="form-group forms-custom">
                         <label className="label">
-                            End time<span className="text-danger">*</span>
+                            Passport Number <span className="text-danger">*</span>
                         </label>
-                        <input type="time" className="form-control" {...register('endTime')} />
-                        {errors.endTime && <span className="error">{errors.endTime.message}</span>}
-                    </div>
-                </div>
-
-                {/* Lunch break (single select) */}
-                <div className="col-lg-4 col-md-6">
-                    <div className="form-group forms-custom">
-                        <label className="label">Lunch break</label>
-                        <CustomSelect
-                            options={lunchBreakOptions}
-                            value={lunchBreakOptions.find((o) => o.value === watch('lunchBreak')) || null}
-                            onChange={(selected) =>
-                                setValue('lunchBreak', selected?.value || '0', { shouldValidate: true })
-                            }
-                            placeholder="Select Lunch break"
+                        <input
                             className="form-control"
+                            placeholder="Passport Number"
+                            {...register('applicant1.passportNumber')}
                         />
-                        {errors.lunchBreak && <span className="error">{errors.lunchBreak.message}</span>}
-                    </div>
-                </div>
-
-                {/* Slot Period */}
-                <div className="col-lg-4 col-md-6">
-                    <div className="form-group forms-custom">
-                        <label className="label">
-                            Slot period<span className="text-danger">*</span>
-                        </label>
-                        <CustomSelect
-                            options={slotPeriodOptions}
-                            value={slotPeriodOptions.find((o) => o.value === watch('slotPeriod')) || null}
-                            onChange={(selected) =>
-                                setValue('slotPeriod', selected?.value || '', { shouldValidate: true })
-                            }
-                            placeholder="Select Slot period"
-                            className="form-control"
-                        />
-                        {errors.slotPeriod && <span className="error">{errors.slotPeriod.message}</span>}
-                    </div>
-                </div>
-
-                {/* Slot Capacity */}
-                <div className="col-lg-4 col-md-6">
-                    <div className="form-group forms-custom">
-                        <label className="label">
-                            Slot capacity<span className="text-danger">*</span>
-                        </label>
-                        <CustomSelect
-                            options={slotCapacityOptions}
-                            value={slotCapacityOptions.find((o) => o.value === watch('slotCapacity')) || null}
-                            onChange={(selected) =>
-                                setValue('slotCapacity', selected?.value || '', { shouldValidate: true })
-                            }
-                            placeholder="Select Slot capacity"
-                            className="form-control"
-                        />
-                        {errors.slotCapacity && <span className="error">{errors.slotCapacity.message}</span>}
-                    </div>
-                </div>
-
-                {/* Max Slots */}
-                <div className="col-lg-4 col-md-6">
-                    <div className="form-group forms-custom">
-                        <label className="label">
-                            Max slots<span className="text-danger">*</span>
-                        </label>
-                        <CustomSelect
-                            options={maxSlotsOptions}
-                            value={maxSlotsOptions.find((o) => o.value === watch('maxSlots')) || null}
-                            onChange={(selected) =>
-                                setValue('maxSlots', selected?.value || '', { shouldValidate: true })
-                            }
-                            placeholder="Select Max slots"
-                            className="form-control"
-                        />
-                        {errors.maxSlots && <span className="error">{errors.maxSlots.message}</span>}
-                    </div>
-                </div>
-
-                {/* Booking Allow From */}
-                <div className="col-lg-4 col-md-6">
-                    <div className="form-group forms-custom">
-                        <label className="label">
-                            Booking allow from<span className="text-danger">*</span>
-                        </label>
-                        <input type="date" className="form-control" {...register('bookingAllowFrom')} />
-                        {errors.bookingAllowFrom && (
-                            <span className="error">{errors.bookingAllowFrom.message}</span>
+                        {errors.applicant1?.passportNumber && (
+                            <span className="error">{errors.applicant1.passportNumber.message}</span>
                         )}
                     </div>
                 </div>
 
-                {/* Booking Allow Till */}
+                {/* Required Service */}
                 <div className="col-lg-4 col-md-6">
                     <div className="form-group forms-custom">
                         <label className="label">
-                            Booking allow till<span className="text-danger">*</span>
+                            Select Required Service <span className="text-danger">*</span>
                         </label>
-                        <input type="date" className="form-control" {...register('bookingAllowTill')} />
-                        {errors.bookingAllowTill && (
-                            <span className="error">{errors.bookingAllowTill.message}</span>
+                        <Controller
+                            control={control}
+                            name="applicant1.requiredService"
+                            render={({ field }) => (
+                                <CustomSelect
+                                    options={requiredServiceOptions}
+                                    value={requiredServiceOptions.find((o) => o.value === field.value) || null}
+                                    onChange={(selected) => field.onChange(selected?.value || '')}
+                                    placeholder="Select"
+                                    className="form-control"
+                                />
+                            )}
+                        />
+                        {errors.applicant1?.requiredService && (
+                            <span className="error">{errors.applicant1.requiredService.message}</span>
                         )}
                     </div>
                 </div>
 
-                {/* ✅ Blocked Dates (DateRangePicker) */}
-                <div className="col-lg-4 col-md-6">
-                    <div className="form-group forms-custom">
-                        <label className="label">Blocked dates</label>
-                        <Controller
-                            control={control}
-                            name="blockedDates"
-                            render={({ field }) => (
-                                <DateRangePicker className="form-control" value={field.value} onChange={field.onChange} />
-                            )}
+                {/* ✅ Terms */}
+                <div className="col-12">
+                    <div className="form-group forms-custom d-flex align-items-center gap-2">
+                        <input
+                            id="termsAccepted"
+                            type="checkbox"
+                            className="form-check-input mt-0"
+                            {...register('termsAccepted')}
                         />
+                        <label htmlFor="termsAccepted" className="mb-0">
+                            I agree to these terms and conditions <span className="text-danger">*</span>
+                        </label>
                     </div>
-                </div>
-
-                {/* ✅ Release Dates (DateRangePicker) */}
-                <div className="col-lg-4 col-md-6">
-                    <div className="form-group forms-custom">
-                        <label className="label">Release dates</label>
-                        <Controller
-                            control={control}
-                            name="releaseDates"
-                            render={({ field }) => (
-                                <DateRangePicker className="form-control" value={field.value} onChange={field.onChange} />
-                            )}
-                        />
-                    </div>
-                </div>
-
-                {/* ✅ Slot Full Dates (DateRangePicker) */}
-                <div className="col-lg-4 col-md-6">
-                    <div className="form-group forms-custom">
-                        <label className="label">Slot full dates</label>
-                        <Controller
-                            control={control}
-                            name="slotFullDates"
-                            render={({ field }) => (
-                                <DateRangePicker className="form-control" value={field.value} onChange={field.onChange} />
-                            )}
-                        />
-                    </div>
+                    {errors.termsAccepted && <span className="error">{errors.termsAccepted.message}</span>}
                 </div>
             </div>
         </div>
