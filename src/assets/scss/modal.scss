@@ -1,5 +1,16 @@
 @import "partials";
 
+/* AddEditModal blurred when NotificationModal is open */
+.add-edit-modal-blurred .modal-dialog {
+    filter: blur(4px);
+    pointer-events: none;
+}
+
+/* Card Type Verification - stacked modal above AddEditModal */
+.card-type-verification-modal {
+    z-index: 1065 !important;
+}
+
 .modal {
     .modal-header {
         .btn-close {

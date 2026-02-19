@@ -882,7 +882,7 @@ export function AddEditModal({
   return (
     <>
       <CustomModal
-        className="modal fade passport-application-modal show"
+        className={`modal fade passport-application-modal show${showCardTypeNotification ? ' add-edit-modal-blurred' : ''}`}
         dialgName="modal-dialog-scrollable"
         show={!!showModal}
         closeModal={closeModal}

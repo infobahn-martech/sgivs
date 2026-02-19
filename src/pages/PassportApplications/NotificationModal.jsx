@@ -17,10 +17,10 @@ export const CARD_VERIFICATION_CONTENT = (
       <li>Bank Nizwa</li>
       <li>Alizz Islamic Bank</li>
     </ul>
-    <p className="mb-2">
+    <p className="mb-2 text-success">
       Local Cards attract a 1.5% charge for debit card &amp; 1.8% charge for credit card.
     </p>
-    <p className="mb-2">
+    <p className="mb-2 text-danger">
       All other cards are considered <strong>INTERNATIONAL</strong> and attract a 2.25% charge.
     </p>
     <p className="text-danger fw-semibold mb-0">
@@ -54,7 +54,7 @@ export function NotificationModal({ showModal, closeModal, title = 'Notification
 
     return (
         <CustomModal
-            className="modal fade passport-application-modal show"
+            className="modal fade passport-application-modal card-type-verification-modal show"
             dialgName="modal-dialog-scrollable"
             show={!!showModal}
             closeModal={closeModal}
