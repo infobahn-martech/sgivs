@@ -61,9 +61,8 @@ const useOptionalServiceReducer = create((set) => ({
     try {
       set({ isLoadingGet: true, successMessage: '' });
       const { data } = await optionalServiceService.getData(params);
-      const datas = data;
       set({
-        optionalServiceData: datas?.data,
+        optionalServiceData: data?.data,
         // successMessage: data?.response?.data?.message ?? data?.message,
         isLoadingGet: false,
       });

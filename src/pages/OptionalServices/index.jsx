@@ -16,9 +16,6 @@ import CustomActionModal from '../../components/common/CustomActionModal';
 import useOptionalServiceReducer from '../../stores/OptionalServiceReducer';
 
 const OptionalServices = () => {
-  // ✅ Toggle mock/static data
-  const USE_MOCK = true;
-
   const {
     getData,
     optionalServiceData,
@@ -38,77 +35,27 @@ const OptionalServices = () => {
     toDate: null,
     sortBy: 'createdAt',
     sortOrder: 'DESC',
-    isExcelExport: 'false',
   };
 
   const [params, setParams] = useState(initialParams);
 
-  // ✅ Dummy data (fields: Center Name, Counter, Created Date, Action)
-  const mockOptionalServiceData = {
-    total: 6,
-    data: [
-      {
-        id: 1,
-        servicesTypeName: 'Attestation',
-        name: 'Service A',
-        serviceFee: 100,
-        createdAt: '2025-01-12T10:00:00Z',
-      },
-      {
-        id: 2,
-        servicesTypeName: 'Visa',
-        name: 'Service B',
-        serviceFee: 200,
-        createdAt: '2025-01-15T11:20:00Z',
-      },
-      {
-        id: 3,
-        servicesTypeName: 'Passport',
-        name: 'Service C',
-        serviceFee: 300,
-        createdAt: '2025-02-02T09:10:00Z',
-      },
-      {
-        id: 4,
-        servicesTypeName: 'OCI',
-        name: 'Service D',
-        serviceFee: 400,
-        createdAt: '2025-02-20T14:45:00Z',
-      },
-      {
-        id: 5,
-        servicesTypeName: 'Ajman Center',
-        optionalServiceName: 'Service E',
-        serviceFee: 500,
-        createdAt: '2025-03-01T08:35:00Z',
-      },
-      {
-        id: 6,
-        servicesTypeName: 'Fujairah Center',
-        name: 'Service F',
-        optionalServiceName: 'Service F',
-        serviceFee: 600,
-        createdAt: '2025-03-10T16:05:00Z',
-      },
-    ],
-  };
-
   const onRefreshOptionalService = () => {
-    if (!USE_MOCK) getData(params);
+    getData(params);
     setModal(false);
     setDeleteModalOpen(false);
   };
 
-  // ✅ Call API only if not mock
+  // ✅ Call API always (dynamic)
   useEffect(() => {
-    if (!USE_MOCK) getData(params);
-  }, [params]);
+    getData(params);
+  }, [params, getData]);
 
   const handleSortChange = (selector) => {
     setParams((prevParams) => ({
       ...prevParams,
       sortBy: selector,
       sortOrder: prevParams.sortOrder === 'ASC' ? 'DESC' : 'ASC',
+      page: 1,
     }));
   };
 
@@ -118,12 +65,7 @@ const OptionalServices = () => {
         <Tooltip id="edit" place="bottom" content="Edit" style={{ backgroundColor: '#051a53' }} />
         <Tooltip id="delete" place="bottom" content="Delete" style={{ backgroundColor: '#051a53' }} />
 
-        <img
-          src={editIcon}
-          alt="edit"
-          data-tooltip-id="edit"
-          onClick={() => setModal(row)}
-        />
+        <img src={editIcon} alt="edit" data-tooltip-id="edit" onClick={() => setModal(row)} />
         <img
           src={deleteIcon}
           alt="delete"
@@ -134,7 +76,6 @@ const OptionalServices = () => {
     );
   };
 
-  // ✅ Replace table fields with: Center Name + Counter
   const columns = [
     {
       name: 'Services Type',
@@ -145,31 +86,24 @@ const OptionalServices = () => {
     },
     {
       name: 'Optional Service',
-      selector: 'optionalServiceName',
+      selector: 'optional_service_type',
       contentClass: 'user-pic',
-      cell: (row) => <span>{row?.optionalServiceName || '-'}</span>,
       sort: true,
     },
     {
       name: 'Service Fee',
       selector: 'serviceFee',
       contentClass: 'user-pic',
-      cell: (row) => <span>{row?.serviceFee || '-'}</span>,
+      cell: (row) => <span>{row?.serviceFee ?? '-'}</span>,
       sort: true,
     },
-    {
-      name: 'Created Date',
-      selector: 'createdAt',
-      cell: (row) => <span>{formatDate(row?.createdAt)}</span>,
-      sort: true,
-    },
-    {
-      name: 'Action',
-      disableViewClick: true,
-      contentClass: 'action-wrap',
-      thclass: 'actions-edit employee-actn-edit',
-      cell: (row) => renderAction(row),
-    },
+    // {
+    //   name: 'Action',
+    //   disableViewClick: true,
+    //   contentClass: 'action-wrap',
+    //   thclass: 'actions-edit employee-actn-edit',
+    //   cell: (row) => renderAction(row),
+    // },
   ];
 
   // ✅ stable debounce
@@ -185,42 +119,42 @@ const OptionalServices = () => {
     []
   );
 
-  const handleDelete = () => {
-    if (USE_MOCK) {
-      setDeleteModalOpen(false);
-      return;
-    }
+  // ✅ cleanup debounce on unmount
+  useEffect(() => {
+    return () => {
+      debouncedSearch.cancel?.();
+    };
+  }, [debouncedSearch]);
 
-    if (deleteModalOpen?.id) {
-      deleteData(deleteModalOpen?.id, () => {
-        onRefreshOptionalService();
-      });
-    }
+  const handleDelete = () => {
+    if (!deleteModalOpen?.id) return;
+
+    deleteData(deleteModalOpen?.id, () => {
+      onRefreshOptionalService();
+    });
   };
 
-  // ✅ Use mock data or API data
-  const tableData = USE_MOCK ? mockOptionalServiceData : optionalServiceData;
-  const loading = USE_MOCK ? false : isLoadingGet;
+  const loading = isLoadingGet;
 
   return (
     <>
       <CommonHeader
-        addButton={{
-          name: 'Add Item',
-          type: 'button',
-          action: () => setModal(true),
-        }}
+        // addButton={{
+        //   name: 'Add Item',
+        //   type: 'button',
+        //   action: () => setModal(true),
+        // }}
         hideFilter
         submitFilter={(filters) => {
           const { fromDate, toDate, ...rest } = filters;
 
-          setParams({
-            ...params,
+          setParams((prev) => ({
+            ...prev,
             ...rest,
             fromDate: fromDate ? moment(fromDate).format('YYYY-MM-DD') : null,
             toDate: toDate ? moment(toDate).format('YYYY-MM-DD') : null,
             page: 1,
-          });
+          }));
         }}
         clearOptions={() => setParams(initialParams)}
         onSearch={debouncedSearch}
@@ -228,12 +162,12 @@ const OptionalServices = () => {
 
       <CustomTable
         pagination={{ currentPage: params.page, limit: params.limit }}
-        count={tableData?.total || 0}
+        count={optionalServiceData?.length || 0}
         columns={columns}
-        data={tableData?.data || []}
+        data={optionalServiceData || []}
         isLoading={loading}
-        onPageChange={(page) => setParams({ ...params, page })}
-        setLimit={(limit) => setParams({ ...params, limit })}
+        onPageChange={(page) => setParams((prev) => ({ ...prev, page }))}
+        setLimit={(limit) => setParams((prev) => ({ ...prev, limit, page: 1 }))}
         onSortChange={handleSortChange}
         wrapClasses="inventory-table-wrap"
       />
@@ -249,10 +183,11 @@ const OptionalServices = () => {
       {deleteModalOpen && (
         <CustomActionModal
           isDelete
-          isLoading={USE_MOCK ? false : isLoadingDelete}
+          isLoading={isLoadingDelete}
           showModal={deleteModalOpen}
           closeModal={() => setDeleteModalOpen(false)}
-          message={`Are you sure you want to delete this ${deleteModalOpen?.optionalServiceName || ''}?`}
+          message={`Are you sure you want to delete this ${deleteModalOpen?.optionalServiceName || ''
+            }?`}
           onCancel={() => setDeleteModalOpen(false)}
           onSubmit={handleDelete}
         />
