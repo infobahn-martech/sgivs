@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import CustomModal from '../../components/common/CustomModal';
+import Phonenumber from '../../components/common/Phonenumber';
 import usePassportApplicationReducer from '../../stores/PassportApplicationReducer';
 
 // ✅ Helpers
@@ -46,13 +47,6 @@ const genderOptions = [
   { value: 'Male', label: 'Male' },
   { value: 'Female', label: 'Female' },
   { value: 'Other', label: 'Other' },
-];
-
-const countryCodeOptions = [
-  { value: '+971', label: '+971 (UAE)' },
-  { value: '+91', label: '+91 (India)' },
-  { value: '+44', label: '+44 (UK)' },
-  { value: '+1', label: '+1 (USA)' },
 ];
 
 // ✅ AFS multiple checkbox options
@@ -197,6 +191,8 @@ export function AddEditModal({ showModal, closeModal, onRefreshPassportApplicati
   const selectedAfs = watch('afs') || [];
   const serviceRequested = watch('serviceRequested');
   const token = watch('token');
+  const mobileCode = watch('mobileCode');
+  const mobileNumber = watch('mobileNumber');
 
   // Dynamic fee calculation (replace with your actual fee logic/API)
   const feeValues = useMemo(() => {
@@ -513,32 +509,17 @@ export function AddEditModal({ showModal, closeModal, onRefreshPassportApplicati
       {/* ===== Contact ===== */}
       <div className="row">
         <div className="col-md-6">
-          <div className="form-group">
-            <label className="form-label">
-              Mobile Number <span className="text-danger">*</span>
-            </label>
-            <div className="d-flex gap-2">
-              <select className="form-control" style={{ maxWidth: 160 }} {...register('mobileCode')}>
-                {countryCodeOptions.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
-              <input
-                type="text"
-                className="form-control"
-                autoComplete="off"
-                maxLength={20}
-                {...register('mobileNumber')}
-              />
-            </div>
-            {(errors.mobileCode || errors.mobileNumber) && (
-              <span className="error">
-                {errors.mobileCode?.message || errors.mobileNumber?.message}
-              </span>
-            )}
-          </div>
+          <Phonenumber
+            value={mobileCode && mobileNumber ? `${mobileCode}${mobileNumber}` : mobileCode || ''}
+            onChange={(_, { mobileCode: code, mobileNumber: number }) => {
+              setValue('mobileCode', code || '+971', { shouldValidate: true });
+              setValue('mobileNumber', number || '', { shouldValidate: true });
+            }}
+            error={errors.mobileCode?.message || errors.mobileNumber?.message}
+            label="Mobile Number"
+            required
+            defaultCountry="AE"
+          />
         </div>
 
         <div className="col-md-6">
