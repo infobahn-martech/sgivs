@@ -509,7 +509,7 @@ export function AddEditModal({
 
       <hr />
 
-      {/* ===== Personal Details ===== */}
+      <h5 className="section-heading mb-3 mt-2">Personal Details</h5>
       <div className="row">
         <div className="col-md-6">
           <div className="form-group">
