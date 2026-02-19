@@ -30,6 +30,7 @@ export const headerConfig = [
   // Service Management
   { title: 'Service Management', icon: MessagesIcon, path: '/service-management' },
   { title: 'Optional Services', icon: MessagesIcon, path: '/optional-services' },
+  { title: 'Optional Service Type', icon: MessagesIcon, path: '/optional-service-type' },
   { title: 'Visa Service Management', icon: MessagesIcon, path: '/visa-service-management' },
 
   // Passport Manager

@@ -86,6 +86,7 @@ import DailyAFSReport from '../pages/DailyAFSReport';
 import ICACAppointments from '../pages/ICACAppointments';
 import ICACApptSettings from '../pages/ICACApptSettings';
 import BookAppointment from '../pages/BookAppointment';
+import OptionalServiceType from '../pages/OptionalServiceType/Loader';
 const router = createHashRouter([
   {
     element: <App />,
@@ -143,6 +144,7 @@ const router = createHashRouter([
               { path: '/visa-entry-management', element: <VisaEntryManagement /> },
               { path: '/visa-service-management', element: <VisaServiceManagement /> },
               { path: '/optional-services', element: <OptionalServices /> },
+              { path: '/optional-service-type', element: <OptionalServiceType /> },
               { path: '/appointment-settings', element: <AppointmentSettings /> },
               { path: '/passport-applications', element: <PassportApplications /> },
               { path: '/delete-application', element: <DeleteApplication /> },

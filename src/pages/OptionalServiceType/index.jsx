@@ -13,16 +13,16 @@ import { formatDate } from '../../config/config';
 import { AddEditModal } from './AddEditModal';
 import { debounce } from 'lodash';
 import CustomActionModal from '../../components/common/CustomActionModal';
-import useOptionalServiceReducer from '../../stores/OptionalServiceReducer';
+import useOptionalServiceTypeReducer from '../../stores/OptionalServiceTypeReducer';
 
-const OptionalServices = () => {
+const OptionalServiceType = () => {
   const {
     getData,
-    optionalServiceData,
+    optionalServiceTypeData,
     isLoadingGet,
     deleteData,
     isLoadingDelete,
-  } = useOptionalServiceReducer((state) => state);
+  } = useOptionalServiceTypeReducer((state) => state);
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [modal, setModal] = useState(false);
@@ -162,9 +162,9 @@ const OptionalServices = () => {
 
       <CustomTable
         pagination={{ currentPage: params.page, limit: params.limit }}
-        count={optionalServiceData?.length || 0}
+        count={optionalServiceTypeData?.length || 0}
         columns={columns}
-        data={optionalServiceData || []}
+        data={optionalServiceTypeData || []}
         isLoading={loading}
         onPageChange={(page) => setParams((prev) => ({ ...prev, page }))}
         setLimit={(limit) => setParams((prev) => ({ ...prev, limit, page: 1 }))}
@@ -186,7 +186,7 @@ const OptionalServices = () => {
           isLoading={isLoadingDelete}
           showModal={deleteModalOpen}
           closeModal={() => setDeleteModalOpen(false)}
-          message={`Are you sure you want to delete this ${deleteModalOpen?.optionalServiceName || ''
+          message={`Are you sure you want to delete this ${deleteModalOpen?.optional_service_type || ''
             }?`}
           onCancel={() => setDeleteModalOpen(false)}
           onSubmit={handleDelete}
@@ -196,4 +196,4 @@ const OptionalServices = () => {
   );
 };
 
-export default OptionalServices;
+export default OptionalServiceType;
