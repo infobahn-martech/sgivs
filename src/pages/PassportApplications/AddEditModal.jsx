@@ -47,6 +47,9 @@ const afsOptions = [
   { value: 'SMS', label: 'SMS' },
 ];
 
+// ✅ If your API uses "2" as Card (as per your sample)
+const CARD_PAYMENT_MODE_ID = '2';
+
 // ✅ Validation
 const schema = z
   .object({
@@ -103,7 +106,7 @@ const schema = z
     transactionId: z.string().optional(),
   })
   .superRefine((val, ctx) => {
-    // If courier required => these fields become required
+    // ✅ If courier required => these fields become required
     if (val.courierRequired) {
       if (!val.residenceCountry) {
         ctx.addIssue({
@@ -135,8 +138,8 @@ const schema = z
       }
     }
 
-    // ✅ If payment mode is Card => require cardType + transactionId
-    if (val.paymentMode === 'Card') {
+    // ✅ If payment mode is Card (ID = "2") => require cardType + transactionId
+    if (String(val.paymentMode) === String(CARD_PAYMENT_MODE_ID)) {
       if (!val.cardType) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
@@ -161,18 +164,14 @@ export function AddEditModal({
   onFeeValuesChange,
 }) {
   const { postData, patchData, isLoading } = usePassportApplicationReducer((state) => state);
-  const {
-    getData: getDataAppointmentType,
-    appointmentTypeData,
-  } = useAppointmentTypeReducer((state) => state);
-  const {
-    getData: getDataApplicationMode,
-    applicationModeData,
-  } = useApplicationModeReducer((state) => state);
-  const {
-    getDataPaymentMode,
-    paymentModeData,
-  } = usePassportApplicationReducer((state) => state);
+
+  const { getData: getDataAppointmentType, appointmentTypeData } =
+    useAppointmentTypeReducer((state) => state);
+
+  const { getData: getDataApplicationMode, applicationModeData } =
+    useApplicationModeReducer((state) => state);
+
+  const { getDataPaymentMode, paymentModeData } = usePassportApplicationReducer((state) => state);
 
   useEffect(() => {
     getDataAppointmentType({});
@@ -243,7 +242,17 @@ export function AddEditModal({
   const mobileNumber = watch('mobileNumber');
 
   const paymentMode = watch('paymentMode');
-  const isCardPayment = paymentModeData?.find((o) => o.payment_mode_id === paymentMode)?.payment_mode === 'Card';
+
+  // ✅ Card mode detection based on ID (2)
+  const isCardPayment = String(paymentMode) === String(CARD_PAYMENT_MODE_ID);
+
+  // ✅ Clear card fields if switching away from Card
+  useEffect(() => {
+    if (!isCardPayment) {
+      setValue('cardType', '', { shouldValidate: true });
+      setValue('transactionId', '', { shouldValidate: true });
+    }
+  }, [isCardPayment, setValue]);
 
   // Dynamic fee calculation (replace with your actual fee logic/API)
   const feeValues = useMemo(() => {
@@ -280,6 +289,7 @@ export function AddEditModal({
         mobileCode: showModal?.mobileCode || '+971',
 
         // ✅ safety for new fields
+        paymentMode: showModal?.paymentMode ? String(showModal.paymentMode) : '',
         cardType: showModal?.cardType ?? '',
         transactionId: showModal?.transactionId ?? '',
       });
@@ -400,7 +410,7 @@ export function AddEditModal({
             <select className="form-control" {...register('applicationType')}>
               <option value="">Select</option>
               {appointmentTypeData?.map((o) => (
-                <option key={o.appointment_type} value={o.appointment_type_id}>
+                <option key={o.appointment_type_id} value={String(o.appointment_type_id)}>
                   {o.appointment_type}
                 </option>
               ))}
@@ -422,7 +432,7 @@ export function AddEditModal({
             <select className="form-control" {...register('applicationBy')}>
               <option value="">Select</option>
               {applicationModeData?.map((o) => (
-                <option key={o.application_mode} value={o.application_mode_id}>
+                <option key={o.application_mode_id} value={String(o.application_mode_id)}>
                   {o.application_mode}
                 </option>
               ))}
@@ -624,7 +634,8 @@ export function AddEditModal({
         <div className="col-md-6">
           <div className="form-group">
             <label className="form-label">
-              Father/Mother/Spouse name (For courier delivery) <span className="text-danger">*</span>
+              Father/Mother/Spouse name (For courier delivery){' '}
+              <span className="text-danger">*</span>
             </label>
             <input
               type="text"
@@ -750,7 +761,9 @@ export function AddEditModal({
       <div className="row">
         <div className="col-12">
           <div className="form-group">
-            <label className="form-label">Application Facilitation Services (AFS) - multiple selection</label>
+            <label className="form-label">
+              Application Facilitation Services (AFS) - multiple selection
+            </label>
 
             <div className="d-flex flex-wrap gap-3">
               {afsOptions.map((opt) => (
@@ -777,7 +790,9 @@ export function AddEditModal({
                   placeholder="Enter photocopy details..."
                   {...register('photocopyNotes')}
                 />
-                {errors.photocopyNotes && <span className="error">{errors.photocopyNotes.message}</span>}
+                {errors.photocopyNotes && (
+                  <span className="error">{errors.photocopyNotes.message}</span>
+                )}
               </div>
             )}
 
@@ -801,8 +816,8 @@ export function AddEditModal({
                 const val = e.target.value;
                 setValue('paymentMode', val, { shouldValidate: true });
 
-                // if switching away from Card, clear fields
-                if (val !== 'Card') {
+                // ✅ if switching away from Card (ID != "2"), clear fields
+                if (String(val) !== String(CARD_PAYMENT_MODE_ID)) {
                   setValue('cardType', '', { shouldValidate: true });
                   setValue('transactionId', '', { shouldValidate: true });
                 }
@@ -810,7 +825,7 @@ export function AddEditModal({
             >
               <option value="">Select</option>
               {paymentModeData?.map((o) => (
-                <option key={o.payment_mode} value={o.payment_mode_id}>
+                <option key={o.payment_mode_id} value={String(o.payment_mode_id)}>
                   {o.payment_mode}
                 </option>
               ))}
@@ -828,10 +843,7 @@ export function AddEditModal({
               <label className="form-label">
                 Card Type <span className="text-danger">*</span>
               </label>
-              <select
-                className="form-control"
-                {...register('cardType')}
-              >
+              <select className="form-control" {...register('cardType')}>
                 <option value="">Select</option>
                 {cardTypeOptions.map((o) => (
                   <option key={o.value} value={o.value}>
@@ -855,7 +867,9 @@ export function AddEditModal({
                 maxLength={50}
                 {...register('transactionId')}
               />
-              {errors.transactionId && <span className="error">{errors.transactionId.message}</span>}
+              {errors.transactionId && (
+                <span className="error">{errors.transactionId.message}</span>
+              )}
             </div>
           </div>
 
@@ -876,7 +890,12 @@ export function AddEditModal({
       <button type="button" className="btn btn-cancel" onClick={closeModal}>
         Cancel
       </button>
-      <button type="submit" className="btn btn-submit" disabled={isLoading} onClick={handleSubmit(onSubmit)}>
+      <button
+        type="submit"
+        className="btn btn-submit"
+        disabled={isLoading}
+        onClick={handleSubmit(onSubmit)}
+      >
         {isLoading ? 'Loading...' : 'Save'}
       </button>
     </div>
