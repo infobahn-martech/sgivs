@@ -5,6 +5,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import CustomModal from '../../components/common/CustomModal';
 import Phonenumber from '../../components/common/Phonenumber';
 import usePassportApplicationReducer from '../../stores/PassportApplicationReducer';
+import useAppointmentTypeReducer from '../../stores/AppointmentTypeReducer';
+import useApplicationModeReducer from '../../stores/ApplicationModeReducer';
 
 // ✅ Helpers
 const yesNoOptions = [
@@ -16,19 +18,6 @@ const paymentModeOptions = [
   { value: 'Cash', label: 'Cash' },
   { value: 'Card', label: 'Credit card / Debit card' },
   { value: 'POS', label: 'Other POS Transaction' },
-];
-
-// ✅ Replace with your real options (from API/config)
-const applicationTypeOptions = [
-  { value: 'New', label: 'New' },
-  { value: 'Renewal', label: 'Renewal' },
-  { value: 'Reissue', label: 'Reissue' },
-];
-
-const applicationByOptions = [
-  { value: 'Self', label: 'Self' },
-  { value: 'Agent', label: 'Agent' },
-  { value: 'Representative', label: 'Representative' },
 ];
 
 const serviceRequestedOptions = [
@@ -135,6 +124,16 @@ const schema = z.object({
 
 export function AddEditModal({ showModal, closeModal, onRefreshPassportApplications, onFeeValuesChange }) {
   const { postData, patchData, isLoading } = usePassportApplicationReducer((state) => state);
+  const { getData: getDataAppointmentType, appointmentTypeData, isLoading: isLoadingApplicationType } = useAppointmentTypeReducer((state) => state);
+  const { getData: getDataApplicationMode, applicationModeData, isLoading: isLoadingApplicationMode } = useApplicationModeReducer((state) => state);
+
+  useEffect(() => {
+    getDataAppointmentType({});
+    getDataApplicationMode({});
+  }, []);
+
+  console.log('appointmentTypeData', appointmentTypeData);
+  console.log('applicationModeData', applicationModeData);
 
   const defaultValues = useMemo(
     () => ({
@@ -341,9 +340,9 @@ export function AddEditModal({ showModal, closeModal, onRefreshPassportApplicati
             </label>
             <select className="form-control" {...register('applicationType')}>
               <option value="">Select</option>
-              {applicationTypeOptions.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
+              {appointmentTypeData?.map((o) => (
+                <option key={o.appointment_type} value={o.appointment_type_id}>
+                  {o.appointment_type}
                 </option>
               ))}
             </select>
@@ -361,9 +360,9 @@ export function AddEditModal({ showModal, closeModal, onRefreshPassportApplicati
             </label>
             <select className="form-control" {...register('applicationBy')}>
               <option value="">Select</option>
-              {applicationByOptions.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
+              {applicationModeData?.map((o) => (
+                <option key={o.application_mode} value={o.application_mode_id}>
+                  {o.application_mode}
                 </option>
               ))}
             </select>
