@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -16,8 +16,13 @@ const yesNoOptions = [
 
 const paymentModeOptions = [
   { value: 'Cash', label: 'Cash' },
-  { value: 'Card', label: 'Credit card / Debit card' },
-  { value: 'POS', label: 'Other POS Transaction' },
+  { value: 'Card', label: 'Credit card / Debit card / Other POS Transaction' },
+];
+
+const cardTypeOptions = [
+  // { value: 'Credit', label: 'Credit Card' },
+  // { value: 'Debit', label: 'Debit Card' },
+  { value: 'Other', label: 'Other' },
 ];
 
 const serviceRequestedOptions = [
@@ -47,47 +52,60 @@ const afsOptions = [
 ];
 
 // ✅ Validation
-const schema = z.object({
-  appointmentPostalRefNo: z.string().nonempty('Appointment/Postal Reference Number is required').max(50),
-  applicationType: z.string().nonempty('Application Type is required'),
-  applicationBy: z.string().nonempty('Application By is required'),
-  arnNo: z.string().nonempty('ARN Number is required').max(50),
-  processedInGPSPV2: z.string().nonempty('Processed in GPSP V2.0? is required'),
-  serviceRequested: z.string().nonempty('Service Requested is required'),
-  token: z.string().nonempty('Token is required'),
+const schema = z
+  .object({
+    appointmentPostalRefNo: z
+      .string()
+      .nonempty('Appointment/Postal Reference Number is required')
+      .max(50),
+    applicationType: z.string().nonempty('Application Type is required'),
+    applicationBy: z.string().nonempty('Application By is required'),
+    arnNo: z.string().nonempty('ARN Number is required').max(50),
+    processedInGPSPV2: z.string().nonempty('Processed in GPSP V2.0? is required'),
+    serviceRequested: z.string().nonempty('Service Requested is required'),
+    token: z.string().nonempty('Token is required'),
 
-  firstName: z.string().nonempty('First Name is required').max(50),
-  lastName: z.string().nonempty('Last Name is required').max(50),
-  dob: z.string().nonempty('Date of Birth is required'),
-  gender: z.string().nonempty('Gender is required'),
+    firstName: z.string().nonempty('First Name is required').max(50),
+    lastName: z.string().nonempty('Last Name is required').max(50),
+    dob: z.string().nonempty('Date of Birth is required'),
+    gender: z.string().nonempty('Gender is required'),
 
-  mobileCode: z.string().nonempty('Code is required'),
-  mobileNumber: z
-    .string()
-    .nonempty('Mobile Number is required')
-    .max(20)
-    .regex(/^[0-9]+$/, 'Mobile Number must be digits only'),
+    mobileCode: z.string().nonempty('Code is required'),
+    mobileNumber: z
+      .string()
+      .nonempty('Mobile Number is required')
+      .max(20)
+      .regex(/^[0-9]+$/, 'Mobile Number must be digits only'),
 
-  email: z.string().nonempty('Email is required').email('Invalid email format'),
-  oldPassportNo: z.string().nonempty('Old Passport Number is required').max(30),
+    email: z.string().nonempty('Email is required').email('Invalid email format'),
+    oldPassportNo: z.string().nonempty('Old Passport Number is required').max(30),
 
-  parentSpouseName: z.string().nonempty('Father/Mother/Spouse name is required').max(80),
-  returnCourierAddress: z.string().nonempty('Return courier address is required').max(400),
+    parentSpouseName: z
+      .string()
+      .nonempty('Father/Mother/Spouse name is required')
+      .max(80),
+    returnCourierAddress: z
+      .string()
+      .nonempty('Return courier address is required')
+      .max(400),
 
-  courierRequired: z.boolean().optional(),
-  residenceCountry: z.string().optional(),
-  addressLine1: z.string().optional(),
-  state: z.string().optional(),
-  city: z.string().optional(),
+    courierRequired: z.boolean().optional(),
+    residenceCountry: z.string().optional(),
+    addressLine1: z.string().optional(),
+    state: z.string().optional(),
+    city: z.string().optional(),
 
-  tatkalService: z.boolean().optional(),
+    tatkalService: z.boolean().optional(),
 
-  // multiple checkbox list
-  afs: z.array(z.string()).optional(),
-  photocopyNotes: z.string().optional(),
+    // multiple checkbox list
+    afs: z.array(z.string()).optional(),
+    photocopyNotes: z.string().optional(),
 
-  paymentMode: z.string().nonempty('Payment Mode is required'),
-})
+    // ✅ payment fields (paymentMode required always)
+    paymentMode: z.string().nonempty('Payment Mode is required'),
+    cardType: z.string().optional(),
+    transactionId: z.string().optional(),
+  })
   .superRefine((val, ctx) => {
     // If courier required => these fields become required
     if (val.courierRequired) {
@@ -120,20 +138,47 @@ const schema = z.object({
         });
       }
     }
+
+    // ✅ If payment mode is Card => require cardType + transactionId
+    if (val.paymentMode === 'Card') {
+      if (!val.cardType) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['cardType'],
+          message: 'Card Type is required',
+        });
+      }
+      if (!val.transactionId) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['transactionId'],
+          message: 'Transaction ID (Auth Code) is required',
+        });
+      }
+    }
   });
 
-export function AddEditModal({ showModal, closeModal, onRefreshPassportApplications, onFeeValuesChange }) {
+export function AddEditModal({
+  showModal,
+  closeModal,
+  onRefreshPassportApplications,
+  onFeeValuesChange,
+}) {
   const { postData, patchData, isLoading } = usePassportApplicationReducer((state) => state);
-  const { getData: getDataAppointmentType, appointmentTypeData, isLoading: isLoadingApplicationType } = useAppointmentTypeReducer((state) => state);
-  const { getData: getDataApplicationMode, applicationModeData, isLoading: isLoadingApplicationMode } = useApplicationModeReducer((state) => state);
+  const {
+    getData: getDataAppointmentType,
+    appointmentTypeData,
+  } = useAppointmentTypeReducer((state) => state);
+  const {
+    getData: getDataApplicationMode,
+    applicationModeData,
+  } = useApplicationModeReducer((state) => state);
 
   useEffect(() => {
     getDataAppointmentType({});
     getDataApplicationMode({});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  console.log('appointmentTypeData', appointmentTypeData);
-  console.log('applicationModeData', applicationModeData);
 
   const defaultValues = useMemo(
     () => ({
@@ -168,7 +213,10 @@ export function AddEditModal({ showModal, closeModal, onRefreshPassportApplicati
       afs: [],
       photocopyNotes: '',
 
+      // ✅ payment
       paymentMode: '',
+      cardType: '',
+      transactionId: '',
     }),
     []
   );
@@ -193,12 +241,15 @@ export function AddEditModal({ showModal, closeModal, onRefreshPassportApplicati
   const mobileCode = watch('mobileCode');
   const mobileNumber = watch('mobileNumber');
 
+  const paymentMode = watch('paymentMode');
+  const isCardPayment = paymentMode === 'Card';
+
   // Dynamic fee calculation (replace with your actual fee logic/API)
   const feeValues = useMemo(() => {
     const govtFees = 0;
     const icwfFees = 0;
     const serviceFeesByType = { Normal: 6, Tatkal: 10, Courier: 8 };
-    const serviceFees = serviceRequested ? (serviceFeesByType[serviceRequested] ?? 6) : 0;
+    const serviceFees = serviceRequested ? serviceFeesByType[serviceRequested] ?? 6 : 0;
     return {
       govtFees,
       icwfFees,
@@ -211,27 +262,25 @@ export function AddEditModal({ showModal, closeModal, onRefreshPassportApplicati
   // Notify parent of fee values when Service Requested is selected (for FeeCalculator outside modal)
   useEffect(() => {
     if (typeof onFeeValuesChange !== 'function') return;
-    if (serviceRequested) {
-      onFeeValuesChange(feeValues);
-    } else {
-      onFeeValuesChange(null);
-    }
+    if (serviceRequested) onFeeValuesChange(feeValues);
+    else onFeeValuesChange(null);
   }, [serviceRequested, feeValues, onFeeValuesChange]);
 
   // Prefill form when editing
   useEffect(() => {
     if (showModal?.id) {
-      // ✅ Map existing data from showModal to form fields
-      // Make sure your API uses same keys or adjust mapping below.
       reset({
         ...defaultValues,
         ...showModal,
-        // safety for arrays/booleans
         courierRequired: !!showModal?.courierRequired,
         tatkalService: !!showModal?.tatkalService,
         afs: Array.isArray(showModal?.afs) ? showModal?.afs : [],
         photocopyNotes: showModal?.photocopyNotes ?? '',
         mobileCode: showModal?.mobileCode || '+971',
+
+        // ✅ safety for new fields
+        cardType: showModal?.cardType ?? '',
+        transactionId: showModal?.transactionId ?? '',
       });
     } else {
       reset(defaultValues);
@@ -240,7 +289,6 @@ export function AddEditModal({ showModal, closeModal, onRefreshPassportApplicati
   }, [showModal?.id]);
 
   const onSubmit = (data) => {
-    // ✅ If courier is not required, clear courier fields before sending
     const payload = {
       ...data,
       ...(data.courierRequired
@@ -250,6 +298,12 @@ export function AddEditModal({ showModal, closeModal, onRefreshPassportApplicati
           addressLine1: '',
           state: '',
           city: '',
+        }),
+      ...(data.paymentMode === 'Card'
+        ? {}
+        : {
+          cardType: '',
+          transactionId: '',
         }),
     };
 
@@ -271,8 +325,9 @@ export function AddEditModal({ showModal, closeModal, onRefreshPassportApplicati
     const checked = e.target.checked;
 
     if (checked) {
-      // ✅ Popup confirmation when enabling courier
-      const ok = window.confirm('Courier is required. Do you want to enter courier delivery details now?');
+      const ok = window.confirm(
+        'Courier is required. Do you want to enter courier delivery details now?'
+      );
       if (!ok) {
         setValue('courierRequired', false, { shouldValidate: true });
         return;
@@ -281,7 +336,6 @@ export function AddEditModal({ showModal, closeModal, onRefreshPassportApplicati
       return;
     }
 
-    // turning off courier => clear fields
     setValue('courierRequired', false, { shouldValidate: true });
     setValue('residenceCountry', '', { shouldValidate: true });
     setValue('addressLine1', '', { shouldValidate: true });
@@ -302,7 +356,9 @@ export function AddEditModal({ showModal, closeModal, onRefreshPassportApplicati
 
   const renderHeader = () => (
     <>
-      <h4 className="modal-title">{showModal?.id ? 'Edit Passport Application' : 'Add Passport Application'}</h4>
+      <h4 className="modal-title">
+        {showModal?.id ? 'Edit Passport Application' : 'Add Passport Application'}
+      </h4>
       <button
         type="button"
         className="btn-close"
@@ -329,7 +385,9 @@ export function AddEditModal({ showModal, closeModal, onRefreshPassportApplicati
               maxLength={50}
               {...register('appointmentPostalRefNo')}
             />
-            {errors.appointmentPostalRefNo && <span className="error">{errors.appointmentPostalRefNo.message}</span>}
+            {errors.appointmentPostalRefNo && (
+              <span className="error">{errors.appointmentPostalRefNo.message}</span>
+            )}
           </div>
         </div>
 
@@ -346,7 +404,9 @@ export function AddEditModal({ showModal, closeModal, onRefreshPassportApplicati
                 </option>
               ))}
             </select>
-            {errors.applicationType && <span className="error">{errors.applicationType.message}</span>}
+            {errors.applicationType && (
+              <span className="error">{errors.applicationType.message}</span>
+            )}
           </div>
         </div>
       </div>
@@ -366,7 +426,9 @@ export function AddEditModal({ showModal, closeModal, onRefreshPassportApplicati
                 </option>
               ))}
             </select>
-            {errors.applicationBy && <span className="error">{errors.applicationBy.message}</span>}
+            {errors.applicationBy && (
+              <span className="error">{errors.applicationBy.message}</span>
+            )}
           </div>
         </div>
 
@@ -375,7 +437,13 @@ export function AddEditModal({ showModal, closeModal, onRefreshPassportApplicati
             <label className="form-label">
               ARN Number (Embassy Reference Number) <span className="text-danger">*</span>
             </label>
-            <input type="text" className="form-control" autoComplete="off" maxLength={50} {...register('arnNo')} />
+            <input
+              type="text"
+              className="form-control"
+              autoComplete="off"
+              maxLength={50}
+              {...register('arnNo')}
+            />
             {errors.arnNo && <span className="error">{errors.arnNo.message}</span>}
           </div>
         </div>
@@ -396,7 +464,9 @@ export function AddEditModal({ showModal, closeModal, onRefreshPassportApplicati
                 </option>
               ))}
             </select>
-            {errors.processedInGPSPV2 && <span className="error">{errors.processedInGPSPV2.message}</span>}
+            {errors.processedInGPSPV2 && (
+              <span className="error">{errors.processedInGPSPV2.message}</span>
+            )}
           </div>
         </div>
 
@@ -413,7 +483,9 @@ export function AddEditModal({ showModal, closeModal, onRefreshPassportApplicati
                 </option>
               ))}
             </select>
-            {errors.serviceRequested && <span className="error">{errors.serviceRequested.message}</span>}
+            {errors.serviceRequested && (
+              <span className="error">{errors.serviceRequested.message}</span>
+            )}
           </div>
         </div>
 
@@ -444,7 +516,13 @@ export function AddEditModal({ showModal, closeModal, onRefreshPassportApplicati
             <label className="form-label">
               First Name <span className="text-danger">*</span>
             </label>
-            <input type="text" className="form-control" autoComplete="off" maxLength={50} {...register('firstName')} />
+            <input
+              type="text"
+              className="form-control"
+              autoComplete="off"
+              maxLength={50}
+              {...register('firstName')}
+            />
             {errors.firstName && <span className="error">{errors.firstName.message}</span>}
           </div>
         </div>
@@ -454,7 +532,13 @@ export function AddEditModal({ showModal, closeModal, onRefreshPassportApplicati
             <label className="form-label">
               Last Name <span className="text-danger">*</span>
             </label>
-            <input type="text" className="form-control" autoComplete="off" maxLength={50} {...register('lastName')} />
+            <input
+              type="text"
+              className="form-control"
+              autoComplete="off"
+              maxLength={50}
+              {...register('lastName')}
+            />
             {errors.lastName && <span className="error">{errors.lastName.message}</span>}
           </div>
         </div>
@@ -500,7 +584,9 @@ export function AddEditModal({ showModal, closeModal, onRefreshPassportApplicati
               maxLength={30}
               {...register('oldPassportNo')}
             />
-            {errors.oldPassportNo && <span className="error">{errors.oldPassportNo.message}</span>}
+            {errors.oldPassportNo && (
+              <span className="error">{errors.oldPassportNo.message}</span>
+            )}
           </div>
         </div>
       </div>
@@ -546,24 +632,9 @@ export function AddEditModal({ showModal, closeModal, onRefreshPassportApplicati
               maxLength={80}
               {...register('parentSpouseName')}
             />
-            {errors.parentSpouseName && <span className="error">{errors.parentSpouseName.message}</span>}
-          </div>
-        </div>
-
-        <div className="col-md-6">
-          <div className="form-group">
-            <label className="form-label">
-              Payment Mode <span className="text-danger">*</span>
-            </label>
-            <select className="form-control" {...register('paymentMode')}>
-              <option value="">Select</option>
-              {paymentModeOptions.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-            {errors.paymentMode && <span className="error">{errors.paymentMode.message}</span>}
+            {errors.parentSpouseName && (
+              <span className="error">{errors.parentSpouseName.message}</span>
+            )}
           </div>
         </div>
       </div>
@@ -575,7 +646,9 @@ export function AddEditModal({ showModal, closeModal, onRefreshPassportApplicati
               Return courier address filled by applicant <span className="text-danger">*</span>
             </label>
             <textarea className="form-control" rows={3} {...register('returnCourierAddress')} />
-            {errors.returnCourierAddress && <span className="error">{errors.returnCourierAddress.message}</span>}
+            {errors.returnCourierAddress && (
+              <span className="error">{errors.returnCourierAddress.message}</span>
+            )}
           </div>
         </div>
       </div>
@@ -606,8 +679,15 @@ export function AddEditModal({ showModal, closeModal, onRefreshPassportApplicati
                 <label className="form-label">
                   Residence Country <span className="text-danger">*</span>
                 </label>
-                <input type="text" className="form-control" autoComplete="off" {...register('residenceCountry')} />
-                {errors.residenceCountry && <span className="error">{errors.residenceCountry.message}</span>}
+                <input
+                  type="text"
+                  className="form-control"
+                  autoComplete="off"
+                  {...register('residenceCountry')}
+                />
+                {errors.residenceCountry && (
+                  <span className="error">{errors.residenceCountry.message}</span>
+                )}
               </div>
             </div>
 
@@ -616,8 +696,15 @@ export function AddEditModal({ showModal, closeModal, onRefreshPassportApplicati
                 <label className="form-label">
                   Address line 1 <span className="text-danger">*</span>
                 </label>
-                <input type="text" className="form-control" autoComplete="off" {...register('addressLine1')} />
-                {errors.addressLine1 && <span className="error">{errors.addressLine1.message}</span>}
+                <input
+                  type="text"
+                  className="form-control"
+                  autoComplete="off"
+                  {...register('addressLine1')}
+                />
+                {errors.addressLine1 && (
+                  <span className="error">{errors.addressLine1.message}</span>
+                )}
               </div>
             </div>
           </div>
@@ -689,9 +776,7 @@ export function AddEditModal({ showModal, closeModal, onRefreshPassportApplicati
                   placeholder="Enter photocopy details..."
                   {...register('photocopyNotes')}
                 />
-                {errors.photocopyNotes && (
-                  <span className="error">{errors.photocopyNotes.message}</span>
-                )}
+                {errors.photocopyNotes && <span className="error">{errors.photocopyNotes.message}</span>}
               </div>
             )}
 
@@ -699,6 +784,78 @@ export function AddEditModal({ showModal, closeModal, onRefreshPassportApplicati
           </div>
         </div>
       </div>
+
+      {/* ✅ PAYMENT MODE (MOVED TO LAST) */}
+      <hr />
+      <div className="row">
+        <div className="col-md-6">
+          <div className="form-group">
+            <label className="form-label">
+              Payment Mode <span className="text-danger">*</span>
+            </label>
+            <select
+              className="form-control"
+              {...register('paymentMode')}
+              onChange={(e) => {
+                const val = e.target.value;
+                setValue('paymentMode', val, { shouldValidate: true });
+
+                // if switching away from Card, clear fields
+                if (val !== 'Card') {
+                  setValue('cardType', '', { shouldValidate: true });
+                  setValue('transactionId', '', { shouldValidate: true });
+                }
+              }}
+            >
+              <option value="">Select</option>
+              {paymentModeOptions.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+            {errors.paymentMode && <span className="error">{errors.paymentMode.message}</span>}
+          </div>
+        </div>
+      </div>
+
+      {/* ✅ Card fields only when Card selected */}
+      {isCardPayment && (
+        <div className="row">
+          <div className="col-md-6">
+            <div className="form-group">
+              <label className="form-label">
+                Card Type <span className="text-danger">*</span>
+              </label>
+              <select className="form-control" {...register('cardType')}>
+                <option value="">Select</option>
+                {cardTypeOptions.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+              {errors.cardType && <span className="error">{errors.cardType.message}</span>}
+            </div>
+          </div>
+
+          <div className="col-md-6">
+            <div className="form-group">
+              <label className="form-label">
+                Transaction ID (Auth Code) <span className="text-danger">*</span>
+              </label>
+              <input
+                type="text"
+                className="form-control"
+                autoComplete="off"
+                maxLength={50}
+                {...register('transactionId')}
+              />
+              {errors.transactionId && <span className="error">{errors.transactionId.message}</span>}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 
