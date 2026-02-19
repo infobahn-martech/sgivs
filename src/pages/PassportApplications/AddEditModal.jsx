@@ -894,7 +894,7 @@ export function AddEditModal({
       <NotificationModal
         showModal={showCardTypeNotification}
         closeModal={() => setShowCardTypeNotification(false)}
-        title="Card Type Verification"
+        title="Please verify the issuing bank before proceeding!"
         content={CARD_VERIFICATION_CONTENT}
       />
     </>

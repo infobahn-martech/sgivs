@@ -2,7 +2,7 @@
 
 /* AddEditModal blurred when NotificationModal is open */
 .add-edit-modal-blurred .modal-dialog {
-    filter: blur(4px);
+    filter: blur(2px);
     pointer-events: none;
 }
 
