@@ -7,9 +7,12 @@ const updatePassportApplication = (id, data) => Gateway.patch(`passport-applicat
 
 const deletePassportApplication = (id) => Gateway.delete(`passport-application/${id}`);
 
+const paymentMode = () => Gateway.post('payment/get_all_mode');
+
 export default {
   getPassportApplications,
   createPassportApplication,
   updatePassportApplication,
   deletePassportApplication,
+  paymentMode,
 };

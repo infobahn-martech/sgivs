@@ -15,10 +15,6 @@ const yesNoOptions = [
   { value: 'No', label: 'No' },
 ];
 
-const paymentModeOptions = [
-  { value: 'Cash', label: 'Cash' },
-  { value: 'Card', label: 'Credit card / Debit card / Other POS Transaction' },
-];
 const cardTypeOptions = [
   { value: 'Local Bank Debit Card', label: 'Local Bank Debit Card' },
   { value: 'Local Bank Credit Card', label: 'Local Bank Credit Card' },
@@ -173,10 +169,15 @@ export function AddEditModal({
     getData: getDataApplicationMode,
     applicationModeData,
   } = useApplicationModeReducer((state) => state);
+  const {
+    getDataPaymentMode,
+    paymentModeData,
+  } = usePassportApplicationReducer((state) => state);
 
   useEffect(() => {
     getDataAppointmentType({});
     getDataApplicationMode({});
+    getDataPaymentMode();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -242,7 +243,7 @@ export function AddEditModal({
   const mobileNumber = watch('mobileNumber');
 
   const paymentMode = watch('paymentMode');
-  const isCardPayment = paymentMode === 'Card';
+  const isCardPayment = paymentModeData?.find((o) => o.payment_mode_id === paymentMode)?.payment_mode === 'Card';
 
   // Dynamic fee calculation (replace with your actual fee logic/API)
   const feeValues = useMemo(() => {
@@ -299,7 +300,7 @@ export function AddEditModal({
           state: '',
           city: '',
         }),
-      ...(data.paymentMode === 'Card'
+      ...(isCardPayment
         ? {}
         : {
           cardType: '',
@@ -808,9 +809,9 @@ export function AddEditModal({
               }}
             >
               <option value="">Select</option>
-              {paymentModeOptions.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
+              {paymentModeData?.map((o) => (
+                <option key={o.payment_mode} value={o.payment_mode_id}>
+                  {o.payment_mode}
                 </option>
               ))}
             </select>

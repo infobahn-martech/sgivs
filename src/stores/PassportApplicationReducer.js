@@ -12,7 +12,24 @@ const usePassportApplicationReducer = create((set) => ({
   passportApplicationsData: [],
   isLoadingGet: false,
   pagination: {},
-
+  paymentModeData: [],
+  isLoadingPaymentMode: false,
+  getDataPaymentMode: async () => {
+    try {
+      set({ isLoadingPaymentMode: true });
+      const { data } = await passportApplicationService.paymentMode();
+      set({ paymentModeData: data?.data, isLoadingPaymentMode: false });
+      const { success } = useAlertReducer.getState();
+      success(data?.message);
+    } catch (err) {
+      const { error } = useAlertReducer.getState();
+      set({
+        errorMessage: err?.response?.data?.message ?? err?.message,
+        isLoadingPaymentMode: false,
+      });
+      error(err?.response?.data?.message ?? err.message);
+    }
+  },
   createPassportApplication: async (data) => {
     try {
       set({ isCreatePassportApplicationLoading: true });
