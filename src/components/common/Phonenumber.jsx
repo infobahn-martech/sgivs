@@ -80,7 +80,7 @@ function Phonenumber({
           autoComplete: 'tel',
         }}
         countrySelectProps={{
-          className: 'form-control',
+          className: 'form-control phone-country-select',
         }}
         {...rest}
       />

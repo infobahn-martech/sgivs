@@ -333,6 +333,19 @@
         min-width: 80px;
     }
 
+    // Reduce country dropdown option height (Chrome/Edge)
+    .PhoneInputCountrySelect,
+    .phone-country-select {
+        font-size: 13px;
+    }
+
+    .PhoneInputCountrySelect option,
+    .phone-country-select option {
+        padding: 2px 8px;
+        font-size: 13px;
+        line-height: 1.3;
+    }
+
     .PhoneInputInput {
         flex: 1;
         border: 1px solid #E9F0FF;
