@@ -1,9 +1,9 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import CustomModal from '../../components/common/CustomModal';
-import NotificationModal, { CARD_VERIFICATION_CONTENT } from './NotificationModal';
+import { CARD_VERIFICATION_CONTENT } from './NotificationModal';
 import Phonenumber from '../../components/common/Phonenumber';
 import usePassportApplicationReducer from '../../stores/PassportApplicationReducer';
 import useAppointmentTypeReducer from '../../stores/AppointmentTypeReducer';
@@ -243,7 +243,6 @@ export function AddEditModal({
 
   const paymentMode = watch('paymentMode');
   const isCardPayment = paymentMode === 'Card';
-  const [showCardTypeNotification, setShowCardTypeNotification] = useState(false);
 
   // Dynamic fee calculation (replace with your actual fee logic/API)
   const feeValues = useMemo(() => {
@@ -830,12 +829,7 @@ export function AddEditModal({
               </label>
               <select
                 className="form-control"
-                {...register('cardType', {
-                  onChange: (e) => {
-                    const val = e.target.value;
-                    if (val) setShowCardTypeNotification(true);
-                  },
-                })}
+                {...register('cardType')}
               >
                 <option value="">Select</option>
                 {cardTypeOptions.map((o) => (
@@ -863,6 +857,14 @@ export function AddEditModal({
               {errors.transactionId && <span className="error">{errors.transactionId.message}</span>}
             </div>
           </div>
+
+          {/* Card verification info - inline instead of modal */}
+          <div className="col-12 mt-2">
+            <div className="card-verification-inline alert alert-info border-info">
+              <p className="fw-semibold mb-2">Please verify the issuing bank before proceeding</p>
+              {CARD_VERIFICATION_CONTENT}
+            </div>
+          </div>
         </div>
       )}
     </div>
@@ -880,24 +882,16 @@ export function AddEditModal({
   );
 
   return (
-    <>
-      <CustomModal
-        className={`modal fade passport-application-modal show${showCardTypeNotification ? ' add-edit-modal-blurred' : ''}`}
-        dialgName="modal-dialog-scrollable"
-        show={!!showModal}
-        closeModal={closeModal}
-        body={renderBody()}
-        header={renderHeader()}
-        footer={renderFooter()}
-        isLoading={false}
-      />
-      <NotificationModal
-        showModal={showCardTypeNotification}
-        closeModal={() => setShowCardTypeNotification(false)}
-        title="Please verify the issuing bank before proceeding!"
-        content={CARD_VERIFICATION_CONTENT}
-      />
-    </>
+    <CustomModal
+      className="modal fade passport-application-modal show"
+      dialgName="modal-dialog-scrollable"
+      show={!!showModal}
+      closeModal={closeModal}
+      body={renderBody()}
+      header={renderHeader()}
+      footer={renderFooter()}
+      isLoading={false}
+    />
   );
 }
 
