@@ -18,11 +18,10 @@ const paymentModeOptions = [
   { value: 'Cash', label: 'Cash' },
   { value: 'Card', label: 'Credit card / Debit card / Other POS Transaction' },
 ];
-
 const cardTypeOptions = [
-  // { value: 'Credit', label: 'Credit Card' },
-  // { value: 'Debit', label: 'Debit Card' },
-  { value: 'Other', label: 'Other' },
+  { value: 'Local Bank Debit Card', label: 'Local Bank Debit Card' },
+  { value: 'Local Bank Credit Card', label: 'Local Bank Credit Card' },
+  { value: 'Other POS Transaction', label: 'Other POS Transaction' },
 ];
 
 const serviceRequestedOptions = [
