@@ -1,8 +1,9 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import CustomModal from '../../components/common/CustomModal';
+import NotificationModal, { CARD_VERIFICATION_CONTENT } from './NotificationModal';
 import Phonenumber from '../../components/common/Phonenumber';
 import usePassportApplicationReducer from '../../stores/PassportApplicationReducer';
 import useAppointmentTypeReducer from '../../stores/AppointmentTypeReducer';
@@ -242,6 +243,7 @@ export function AddEditModal({
 
   const paymentMode = watch('paymentMode');
   const isCardPayment = paymentMode === 'Card';
+  const [showCardTypeNotification, setShowCardTypeNotification] = useState(false);
 
   // Dynamic fee calculation (replace with your actual fee logic/API)
   const feeValues = useMemo(() => {
@@ -826,7 +828,15 @@ export function AddEditModal({
               <label className="form-label">
                 Card Type <span className="text-danger">*</span>
               </label>
-              <select className="form-control" {...register('cardType')}>
+              <select
+                className="form-control"
+                {...register('cardType', {
+                  onChange: (e) => {
+                    const val = e.target.value;
+                    if (val) setShowCardTypeNotification(true);
+                  },
+                })}
+              >
                 <option value="">Select</option>
                 {cardTypeOptions.map((o) => (
                   <option key={o.value} value={o.value}>
@@ -870,16 +880,24 @@ export function AddEditModal({
   );
 
   return (
-    <CustomModal
-      className="modal fade passport-application-modal show"
-      dialgName="modal-dialog-scrollable"
-      show={!!showModal}
-      closeModal={closeModal}
-      body={renderBody()}
-      header={renderHeader()}
-      footer={renderFooter()}
-      isLoading={false}
-    />
+    <>
+      <CustomModal
+        className="modal fade passport-application-modal show"
+        dialgName="modal-dialog-scrollable"
+        show={!!showModal}
+        closeModal={closeModal}
+        body={renderBody()}
+        header={renderHeader()}
+        footer={renderFooter()}
+        isLoading={false}
+      />
+      <NotificationModal
+        showModal={showCardTypeNotification}
+        closeModal={() => setShowCardTypeNotification(false)}
+        title="Card Type Verification"
+        content={CARD_VERIFICATION_CONTENT}
+      />
+    </>
   );
 }
 
