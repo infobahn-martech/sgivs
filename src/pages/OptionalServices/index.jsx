@@ -77,16 +77,15 @@ const OptionalServices = () => {
   };
 
   const columns = [
-    // {
-    //   name: 'Services Type',
-    //   selector: 'servicesTypeName',
-    //   contentClass: 'user-pic',
-    //   cell: (row) => <span>{row?.servicesTypeName || '-'}</span>,
-    //   sort: true,
-    // },
+    {
+      name: 'Optional Services Type',
+      selector: 'optional_service_type',
+      contentClass: 'user-pic',
+      sort: true,
+    },
     {
       name: 'Optional Service',
-      selector: 'optional_service_type',
+      selector: 'optional_service',
       contentClass: 'user-pic',
       sort: true,
     },
