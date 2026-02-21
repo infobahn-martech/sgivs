@@ -334,24 +334,14 @@ export function AddEditModal({
 
   const onToggleCourier = (e) => {
     const checked = e.target.checked;
+    setValue('courierRequired', checked, { shouldValidate: true });
 
-    if (checked) {
-      const ok = window.confirm(
-        'Courier is required. Do you want to enter courier delivery details now?'
-      );
-      if (!ok) {
-        setValue('courierRequired', false, { shouldValidate: true });
-        return;
-      }
-      setValue('courierRequired', true, { shouldValidate: true });
-      return;
+    if (!checked) {
+      setValue('residenceCountry', '', { shouldValidate: true });
+      setValue('addressLine1', '', { shouldValidate: true });
+      setValue('state', '', { shouldValidate: true });
+      setValue('city', '', { shouldValidate: true });
     }
-
-    setValue('courierRequired', false, { shouldValidate: true });
-    setValue('residenceCountry', '', { shouldValidate: true });
-    setValue('addressLine1', '', { shouldValidate: true });
-    setValue('state', '', { shouldValidate: true });
-    setValue('city', '', { shouldValidate: true });
   };
 
   const toggleAfsItem = (value) => {
