@@ -80,7 +80,7 @@ function buildCreateFullApplicationPayload(data, totalFees = 0) {
     reference_no: data.appointmentPostalRefNo ?? '',
     appointment_ref_no: data.appointmentPostalRefNo ?? '',
     arn_number: data.arnNo ?? '',
-    processed_in_gsp: data.processedInGPSPV2 ?? '',
+    processed_in_gpsp: data.processedInGPSPV2 ?? '',
     passport_service_id: SERVICE_REQUESTED_TO_ID[data.serviceRequested] ?? data.serviceRequested ?? '',
     token_no: data.token ?? '',
     first_name: data.firstName ?? '',
