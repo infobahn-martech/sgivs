@@ -50,6 +50,72 @@ const afsOptions = [
 // ✅ If your API uses "2" as Card (as per your sample)
 const CARD_PAYMENT_MODE_ID = '2';
 
+// Map form AFS options to vas_service_id (adjust IDs per your backend)
+const AFS_TO_VAS_SERVICE_ID = {
+  Photocopy: '1',
+  Photograph: '2',
+  FormFilling: '3',
+  SMS: '4',
+};
+
+// Map Service Requested to passport_service_id (adjust IDs per your backend)
+const SERVICE_REQUESTED_TO_ID = {
+  Normal: '1',
+  Tatkal: '2',
+  Courier: '3',
+};
+
+function buildCreateFullApplicationPayload(data, totalFees = 0) {
+  const vas_services = (data.afs || [])
+    .filter(Boolean)
+    .map((name) => ({
+      vas_service_id: AFS_TO_VAS_SERVICE_ID[name] ?? '',
+      quantity: '1',
+    }));
+
+  const passport_application = {
+    center_id: data.center_id ?? '',
+    appointment_type_id: data.applicationType ?? '',
+    application_mode_id: data.applicationBy ?? '',
+    reference_no: data.appointmentPostalRefNo ?? '',
+    appointment_ref_no: data.appointmentPostalRefNo ?? '',
+    arn_number: data.arnNo ?? '',
+    processed_in_gsp: data.processedInGPSPV2 ?? '',
+    passport_service_id: SERVICE_REQUESTED_TO_ID[data.serviceRequested] ?? data.serviceRequested ?? '',
+    token_no: data.token ?? '',
+    first_name: data.firstName ?? '',
+    last_name: data.lastName ?? '',
+    date_of_birth: data.dob ?? '',
+    gender: data.gender ?? '',
+    contact_code: data.mobileCode ?? '',
+    contact_no: data.mobileNumber ?? '',
+    email_address: data.email ?? '',
+    old_passport_no: data.oldPassportNo ?? '',
+    tatkal_status: data.tatkalService ? '1' : '0',
+    afs_service_status: (data.afs || []).length > 0 ? '1' : '0',
+    payment_mode: data.paymentMode ?? '',
+    created_by: data.created_by ?? '',
+  };
+
+  const courier = {
+    address_1: data.addressLine1 ?? '',
+    address_2: data.residenceCountry ? `Country: ${data.residenceCountry}` : '',
+    state: data.state ?? '',
+    city: data.city ?? '',
+    postal_code: data.postalCode ?? '',
+    courier_type_id: data.courier_type_id ?? '',
+  };
+
+  const payment = {
+    payment_mode_id: data.paymentMode ?? '',
+    card_type: data.cardType ?? '',
+    transactionID: data.transactionId ?? '',
+    total_amount: String(totalFees),
+  };
+
+  return { passport_application, courier, payment, vas_services };
+}
+
 // ✅ Validation
 const schema = z
   .object({
@@ -300,33 +366,33 @@ export function AddEditModal({
   }, [showModal?.id]);
 
   const onSubmit = (data) => {
-    const payload = {
+    const normalizedData = {
       ...data,
-      ...(data.courierRequired
-        ? {}
-        : {
-          residenceCountry: '',
-          addressLine1: '',
-          state: '',
-          city: '',
-        }),
-      ...(isCardPayment
-        ? {}
-        : {
-          cardType: '',
-          transactionId: '',
-        }),
+      ...(!data.courierRequired && {
+        residenceCountry: '',
+        addressLine1: '',
+        state: '',
+        city: '',
+      }),
+      ...(!isCardPayment && {
+        cardType: '',
+        transactionId: '',
+      }),
     };
 
     if (showModal?.id) {
-      patchData({ id: showModal.id, ...payload }, () => {
+      patchData({ id: showModal.id, ...normalizedData }, () => {
         onRefreshPassportApplications?.();
         closeModal?.();
       });
       return;
     }
 
-    postData(payload, () => {
+    const apiPayload = buildCreateFullApplicationPayload(
+      normalizedData,
+      feeValues?.totalFees ?? 0
+    );
+    postData(apiPayload, () => {
       onRefreshPassportApplications?.();
       closeModal?.();
     });

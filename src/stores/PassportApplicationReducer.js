@@ -6,6 +6,7 @@ import useAlertReducer from './AlertReducer';
 const usePassportApplicationReducer = create((set) => ({
   isCreatePassportApplicationLoading: false,
   isUpdatePassportApplicationLoading: false,
+  isLoading: false,
   isDeletePassportApplicationLoading: false,
   errorMessage: '',
   successMessage: '',
@@ -44,6 +45,44 @@ const usePassportApplicationReducer = create((set) => ({
         isCreatePassportApplicationLoading: false,
       });
       error(err?.response?.data?.message ?? err.message);
+    }
+  },
+  postData: async (payload, cb) => {
+    try {
+      set({ isCreatePassportApplicationLoading: true, isLoading: true });
+      const { data } = await passportApplicationService.createFullApplication(payload);
+      set({ isCreatePassportApplicationLoading: false, isLoading: false });
+      const { success } = useAlertReducer.getState();
+      success(data?.response?.data?.message ?? data?.message ?? 'Application created successfully');
+      typeof cb === 'function' && cb();
+    } catch (err) {
+      const { error } = useAlertReducer.getState();
+      set({
+        errorMessage: err?.response?.data?.message ?? err?.message,
+        isCreatePassportApplicationLoading: false,
+        isLoading: false,
+      });
+      error(err?.response?.data?.message ?? err.message);
+      typeof cb === 'function' && cb();
+    }
+  },
+  patchData: async ({ id, ...rest }, cb) => {
+    try {
+      set({ isUpdatePassportApplicationLoading: true, isLoading: true });
+      const { data } = await passportApplicationService.updatePassportApplication(id, rest);
+      const { success } = useAlertReducer.getState();
+      success(data?.response?.data?.message ?? data?.message ?? 'Application updated successfully');
+      set({ isUpdatePassportApplicationLoading: false, isLoading: false });
+      typeof cb === 'function' && cb();
+    } catch (err) {
+      const { error } = useAlertReducer.getState();
+      set({
+        errorMessage: err?.response?.data?.message ?? err?.message,
+        isUpdatePassportApplicationLoading: false,
+        isLoading: false,
+      });
+      error(err?.response?.data?.message ?? err.message);
+      typeof cb === 'function' && cb();
     }
   },
   updatePassportApplication: async (id, data) => {
