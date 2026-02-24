@@ -112,6 +112,7 @@ function buildCreateFullApplicationPayload(data, totalFees = 0) {
     center_id: centerId ?? parseIntSafe(data.center_id, 1),
     appointment_type_id: parseIntSafe(data.applicationType, 1),
     application_mode_id: parseIntSafe(data.applicationBy, 1),
+    reference_no: null,
     appointment_ref_no: data.appointmentPostalRefNo ?? '',
     arn_number: data.arnNo ?? '',
     processed_in_gpsp: data.processedInGPSPV2 ?? 'Yes',
