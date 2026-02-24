@@ -1,14 +1,16 @@
 import { create } from 'zustand';
 import authService from '../services/authService';
-import { getAuthData, removeItem, setItem } from '../helpers/localStorage';
+import { getAuthData, removeItem, setItem, AUTH_KEYS } from '../helpers/localStorage';
 import useAlertReducer from './AlertReducer';
 
-// If your getAuthData() depends on tokens, it may return false now.
-// We'll still keep isAuthenticated stored locally.
-const { isAuthenticated } = getAuthData();
+const { isAuthenticated, employee_id, center_id, role_id } = getAuthData();
+const initialAuthData =
+  employee_id && center_id && role_id
+    ? { employee_id, center_id, role_id }
+    : null;
 
 const useAuthReducer = create((set) => ({
-  authData: null,
+  authData: initialAuthData,
   userProfile: null,
 
   isLoginLoading: false,
@@ -49,14 +51,16 @@ const useAuthReducer = create((set) => ({
         throw new Error(data?.message || 'Login failed');
       }
 
-      // ✅ No token storage for PHP session auth
-      // But if your app expects auth flag in localStorage, store a simple boolean
-      setItem('isAuthenticated', true);
+      // ✅ Store employee_id, center_id, role_id from login response
+      const { employee_id, center_id, role_id } = data;
+      if (employee_id != null) setItem('employee_id', String(employee_id));
+      if (center_id != null) setItem('center_id', String(center_id));
+      if (role_id != null) setItem('role_id', String(role_id));
 
       set({
         isAuthenticated: true,
         isLoginLoading: false,
-        authData: null, // will be filled after calling profile
+        authData: { employee_id, center_id, role_id },
       });
 
       const { success } = useAlertReducer.getState();
@@ -162,8 +166,7 @@ const useAuthReducer = create((set) => ({
       profileData: null,
     });
 
-    removeItem('isAuthenticated');
-    // no tokens anymore
+    AUTH_KEYS.forEach((key) => removeItem(key));
     removeItem('accessToken');
     removeItem('refreshToken');
   },
@@ -183,8 +186,6 @@ const useAuthReducer = create((set) => ({
         isProfileFetchLoading: false,
         isAuthenticated: true,
       });
-
-      setItem('isAuthenticated', true);
     } catch (err) {
       const { error } = useAlertReducer.getState();
       set({
@@ -194,7 +195,7 @@ const useAuthReducer = create((set) => ({
         authData: null,
       });
       error(err?.response?.data?.message ?? err.message);
-      removeItem('isAuthenticated');
+      AUTH_KEYS.forEach((key) => removeItem(key));
     }
   },
 

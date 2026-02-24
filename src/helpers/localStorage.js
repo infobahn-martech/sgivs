@@ -1,13 +1,16 @@
+export const AUTH_KEYS = ['employee_id', 'center_id', 'role_id'];
+
 export const getAuthData = () => {
-  let isAuthenticated = false;
-  if (
-    localStorage.getItem('accessToken') &&
-    localStorage.getItem('accessToken').length
-  ) {
-    isAuthenticated = true;
-  }
+  const employeeId = localStorage.getItem('employee_id');
+  const centerId = localStorage.getItem('center_id');
+  const roleId = localStorage.getItem('role_id');
+  const isAuthenticated = Boolean(employeeId && centerId && roleId);
+
   return {
     isAuthenticated,
+    employee_id: employeeId,
+    center_id: centerId,
+    role_id: roleId,
   };
 };
 
