@@ -82,8 +82,20 @@ function getEmployeeIdFromStorage() {
   }
 }
 
+function getCenterIdFromStorage() {
+  try {
+    const val = localStorage.getItem('center_id');
+    if (val == null) return null;
+    const n = parseInt(val, 10);
+    return Number.isNaN(n) ? null : n;
+  } catch {
+    return null;
+  }
+}
+
 function buildCreateFullApplicationPayload(data, totalFees = 0) {
   const employeeId = getEmployeeIdFromStorage();
+  const centerId = getCenterIdFromStorage();
   const vas_services = (data.afs || [])
     .filter(Boolean)
     .map((name) => ({
@@ -96,7 +108,7 @@ function buildCreateFullApplicationPayload(data, totalFees = 0) {
   const contactNo = parseIntSafe(data.mobileNumber, 0);
 
   const passport_application = {
-    center_id: employeeId ?? parseIntSafe(data.center_id, 1),
+    center_id: centerId ?? parseIntSafe(data.center_id, 1),
     appointment_type_id: parseIntSafe(data.applicationType, 1),
     application_mode_id: parseIntSafe(data.applicationBy, 1),
     appointment_ref_no: data.appointmentPostalRefNo ?? '',
@@ -277,41 +289,41 @@ export function AddEditModal({
 
   const defaultValues = useMemo(
     () => ({
-        appointmentPostalRefNo: '',
-        applicationType: '',
-        applicationBy: '',
-        arnNo: '',
-        processedInGPSPV2: '',
-        serviceRequested: '',
-        token: '',
+      appointmentPostalRefNo: '',
+      applicationType: '',
+      applicationBy: '',
+      arnNo: '',
+      processedInGPSPV2: '',
+      serviceRequested: '',
+      token: '',
 
-        firstName: '',
-        lastName: '',
-        dob: '',
-        gender: '',
+      firstName: '',
+      lastName: '',
+      dob: '',
+      gender: '',
 
-        mobileCode: '+971',
-        mobileNumber: '',
-        email: '',
-        oldPassportNo: '',
+      mobileCode: '+971',
+      mobileNumber: '',
+      email: '',
+      oldPassportNo: '',
 
-        parentSpouseName: '',
-        returnCourierAddress: '',
+      parentSpouseName: '',
+      returnCourierAddress: '',
 
-        courierRequired: false,
-        residenceCountry: '',
-        addressLine1: '',
-        addressLine2: '',
-        postalCode: '',
-        courier_type_id: '',
-        state: '',
-        city: '',
+      courierRequired: false,
+      residenceCountry: '',
+      addressLine1: '',
+      addressLine2: '',
+      postalCode: '',
+      courier_type_id: '',
+      state: '',
+      city: '',
 
-        tatkalService: false,
-        afs: [],
-        photocopyNotes: '',
+      tatkalService: false,
+      afs: [],
+      photocopyNotes: '',
 
-        // ✅ payment
+      // ✅ payment
       paymentMode: '',
       cardType: '',
       transactionId: '',
@@ -402,13 +414,12 @@ export function AddEditModal({
 
   const onSubmit = (data) => {
     const employeeId = getEmployeeIdFromStorage();
+    const centerId = getCenterIdFromStorage();
     const { referenceNo: _refNo, ...rest } = data;
     const normalizedData = {
       ...rest,
-      ...(employeeId != null && {
-        center_id: employeeId,
-        created_by: employeeId,
-      }),
+      ...(centerId != null && { center_id: centerId }),
+      ...(employeeId != null && { created_by: employeeId }),
       ...(!data.courierRequired && {
         residenceCountry: '',
         addressLine1: '',
