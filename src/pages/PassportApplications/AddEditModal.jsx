@@ -8,7 +8,6 @@ import Phonenumber from '../../components/common/Phonenumber';
 import usePassportApplicationReducer from '../../stores/PassportApplicationReducer';
 import useAppointmentTypeReducer from '../../stores/AppointmentTypeReducer';
 import useApplicationModeReducer from '../../stores/ApplicationModeReducer';
-import useCenterReducer from '../../stores/CenterReducer';
 import useCourierTypeReducer from '../../stores/CourierTypeReducer';
 
 // ✅ Helpers
@@ -72,7 +71,19 @@ function parseIntSafe(val, fallback = 0) {
   return Number.isNaN(n) ? fallback : n;
 }
 
+function getEmployeeIdFromStorage() {
+  try {
+    const val = localStorage.getItem('employee_id');
+    if (val == null) return null;
+    const n = parseInt(val, 10);
+    return Number.isNaN(n) ? null : n;
+  } catch {
+    return null;
+  }
+}
+
 function buildCreateFullApplicationPayload(data, totalFees = 0) {
+  const employeeId = getEmployeeIdFromStorage();
   const vas_services = (data.afs || [])
     .filter(Boolean)
     .map((name) => ({
@@ -85,10 +96,9 @@ function buildCreateFullApplicationPayload(data, totalFees = 0) {
   const contactNo = parseIntSafe(data.mobileNumber, 0);
 
   const passport_application = {
-    center_id: parseIntSafe(data.center_id, 1),
+    center_id: employeeId ?? parseIntSafe(data.center_id, 1),
     appointment_type_id: parseIntSafe(data.applicationType, 1),
     application_mode_id: parseIntSafe(data.applicationBy, 1),
-    reference_no: data.referenceNo ?? data.appointmentPostalRefNo ?? '',
     appointment_ref_no: data.appointmentPostalRefNo ?? '',
     arn_number: data.arnNo ?? '',
     processed_in_gpsp: data.processedInGPSPV2 ?? 'Yes',
@@ -105,7 +115,7 @@ function buildCreateFullApplicationPayload(data, totalFees = 0) {
     tatkal_status: data.tatkalService ? 1 : 0,
     afs_service_status: (data.afs || []).length > 0 ? 1 : 0,
     payment_mode: parseIntSafe(data.paymentMode, 2),
-    created_by: parseIntSafe(data.created_by, 1),
+    created_by: employeeId ?? parseIntSafe(data.created_by, 1),
   };
 
   const courier = {
@@ -130,8 +140,6 @@ function buildCreateFullApplicationPayload(data, totalFees = 0) {
 // ✅ Validation
 const schema = z
   .object({
-    center_id: z.union([z.string().nonempty(), z.number()]).optional(),
-    referenceNo: z.string().optional(),
     appointmentPostalRefNo: z
       .string()
       .nonempty('Appointment/Postal Reference Number is required')
@@ -255,60 +263,55 @@ export function AddEditModal({
 
   const { getDataPaymentMode, paymentModeData } = usePassportApplicationReducer((state) => state);
 
-  const { getData: getDataCenters, centerData } = useCenterReducer((state) => state);
   const { getData: getDataCourierTypes, courierTypeList } = useCourierTypeReducer((state) => state);
 
-  const centerList = Array.isArray(centerData?.data) ? centerData.data : centerData ?? [];
   const courierTypeData = Array.isArray(courierTypeList) ? courierTypeList : courierTypeList?.data ?? [];
 
   useEffect(() => {
     getDataAppointmentType({});
     getDataApplicationMode({});
     getDataPaymentMode();
-    getDataCenters({});
     if (typeof getDataCourierTypes === 'function') getDataCourierTypes();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const defaultValues = useMemo(
     () => ({
-      center_id: '',
-      referenceNo: '',
-      appointmentPostalRefNo: '',
-      applicationType: '',
-      applicationBy: '',
-      arnNo: '',
-      processedInGPSPV2: '',
-      serviceRequested: '',
-      token: '',
+        appointmentPostalRefNo: '',
+        applicationType: '',
+        applicationBy: '',
+        arnNo: '',
+        processedInGPSPV2: '',
+        serviceRequested: '',
+        token: '',
 
-      firstName: '',
-      lastName: '',
-      dob: '',
-      gender: '',
+        firstName: '',
+        lastName: '',
+        dob: '',
+        gender: '',
 
-      mobileCode: '+971',
-      mobileNumber: '',
-      email: '',
-      oldPassportNo: '',
+        mobileCode: '+971',
+        mobileNumber: '',
+        email: '',
+        oldPassportNo: '',
 
-      parentSpouseName: '',
-      returnCourierAddress: '',
+        parentSpouseName: '',
+        returnCourierAddress: '',
 
-      courierRequired: false,
-      residenceCountry: '',
-      addressLine1: '',
-      addressLine2: '',
-      postalCode: '',
-      courier_type_id: '',
-      state: '',
-      city: '',
+        courierRequired: false,
+        residenceCountry: '',
+        addressLine1: '',
+        addressLine2: '',
+        postalCode: '',
+        courier_type_id: '',
+        state: '',
+        city: '',
 
-      tatkalService: false,
-      afs: [],
-      photocopyNotes: '',
+        tatkalService: false,
+        afs: [],
+        photocopyNotes: '',
 
-      // ✅ payment
+        // ✅ payment
       paymentMode: '',
       cardType: '',
       transactionId: '',
@@ -377,8 +380,6 @@ export function AddEditModal({
       reset({
         ...defaultValues,
         ...showModal,
-        center_id: showModal?.center_id ? String(showModal.center_id) : '',
-        referenceNo: showModal?.referenceNo ?? showModal?.reference_no ?? '',
         courierRequired: !!showModal?.courierRequired,
         tatkalService: !!showModal?.tatkalService,
         afs: Array.isArray(showModal?.afs) ? showModal?.afs : [],
@@ -400,9 +401,14 @@ export function AddEditModal({
   }, [showModal?.id]);
 
   const onSubmit = (data) => {
+    const employeeId = getEmployeeIdFromStorage();
+    const { referenceNo: _refNo, ...rest } = data;
     const normalizedData = {
-      ...data,
-      referenceNo: data.referenceNo || data.appointmentPostalRefNo,
+      ...rest,
+      ...(employeeId != null && {
+        center_id: employeeId,
+        created_by: employeeId,
+      }),
       ...(!data.courierRequired && {
         residenceCountry: '',
         addressLine1: '',
@@ -481,34 +487,6 @@ export function AddEditModal({
     <div className="modal-body custom-scroll">
       {/* ===== Row 1 ===== */}
       <div className="row">
-        <div className="col-md-4">
-          <div className="form-group">
-            <label className="form-label">Center</label>
-            <select className="form-control" {...register('center_id')}>
-              <option value="">Select</option>
-              {centerList?.map((o) => (
-                <option key={o.center_id ?? o.id} value={String(o.center_id ?? o.id)}>
-                  {o.center_name ?? o.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        <div className="col-md-4">
-          <div className="form-group">
-            <label className="form-label">Reference Number</label>
-            <input
-              type="text"
-              className="form-control"
-              autoComplete="off"
-              maxLength={50}
-              placeholder="e.g. REF1783"
-              {...register('referenceNo')}
-            />
-          </div>
-        </div>
-
         <div className="col-md-4">
           <div className="form-group">
             <label className="form-label">
