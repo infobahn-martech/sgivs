@@ -8,6 +8,8 @@ import Phonenumber from '../../components/common/Phonenumber';
 import usePassportApplicationReducer from '../../stores/PassportApplicationReducer';
 import useAppointmentTypeReducer from '../../stores/AppointmentTypeReducer';
 import useApplicationModeReducer from '../../stores/ApplicationModeReducer';
+import useCenterReducer from '../../stores/CenterReducer';
+import useCourierTypeReducer from '../../stores/CourierTypeReducer';
 
 // ✅ Helpers
 const yesNoOptions = [
@@ -52,62 +54,71 @@ const CARD_PAYMENT_MODE_ID = '2';
 
 // Map form AFS options to vas_service_id (adjust IDs per your backend)
 const AFS_TO_VAS_SERVICE_ID = {
-  Photocopy: '1',
-  Photograph: '2',
-  FormFilling: '3',
-  SMS: '4',
+  Photocopy: 1,
+  Photograph: 2,
+  FormFilling: 3,
+  SMS: 4,
 };
 
 // Map Service Requested to passport_service_id (adjust IDs per your backend)
 const SERVICE_REQUESTED_TO_ID = {
-  Normal: '1',
-  Tatkal: '2',
-  Courier: '3',
+  Normal: 1,
+  Tatkal: 2,
+  Courier: 3,
 };
+
+function parseIntSafe(val, fallback = 0) {
+  const n = parseInt(val, 10);
+  return Number.isNaN(n) ? fallback : n;
+}
 
 function buildCreateFullApplicationPayload(data, totalFees = 0) {
   const vas_services = (data.afs || [])
     .filter(Boolean)
     .map((name) => ({
-      vas_service_id: AFS_TO_VAS_SERVICE_ID[name] ?? '',
-      quantity: '1',
+      vas_service_id: AFS_TO_VAS_SERVICE_ID[name] ?? 0,
+      quantity: 1,
     }));
 
+  const contactCodeDigits = (data.mobileCode || '').replace(/\D/g, '');
+  const contactCode = contactCodeDigits ? parseInt(contactCodeDigits, 10) : 0;
+  const contactNo = parseIntSafe(data.mobileNumber, 0);
+
   const passport_application = {
-    center_id: data.center_id ?? '',
-    appointment_type_id: data.applicationType ?? '',
-    application_mode_id: data.applicationBy ?? '',
-    reference_no: data.appointmentPostalRefNo ?? '',
+    center_id: parseIntSafe(data.center_id, 1),
+    appointment_type_id: parseIntSafe(data.applicationType, 1),
+    application_mode_id: parseIntSafe(data.applicationBy, 1),
+    reference_no: data.referenceNo ?? data.appointmentPostalRefNo ?? '',
     appointment_ref_no: data.appointmentPostalRefNo ?? '',
     arn_number: data.arnNo ?? '',
-    processed_in_gpsp: data.processedInGPSPV2 ?? '',
-    passport_service_id: SERVICE_REQUESTED_TO_ID[data.serviceRequested] ?? data.serviceRequested ?? '',
+    processed_in_gpsp: data.processedInGPSPV2 ?? 'Yes',
+    passport_service_id: SERVICE_REQUESTED_TO_ID[data.serviceRequested] ?? parseIntSafe(data.serviceRequested, 1),
     token_no: data.token ?? '',
     first_name: data.firstName ?? '',
     last_name: data.lastName ?? '',
     date_of_birth: data.dob ?? '',
     gender: data.gender ?? '',
-    contact_code: data.mobileCode ?? '',
-    contact_no: data.mobileNumber ?? '',
+    contact_code: contactCode,
+    contact_no: contactNo,
     email_address: data.email ?? '',
     old_passport_no: data.oldPassportNo ?? '',
-    tatkal_status: data.tatkalService ? '1' : '0',
-    afs_service_status: (data.afs || []).length > 0 ? '1' : '0',
-    payment_mode: data.paymentMode ?? '',
-    created_by: data.created_by ?? '',
+    tatkal_status: data.tatkalService ? 1 : 0,
+    afs_service_status: (data.afs || []).length > 0 ? 1 : 0,
+    payment_mode: parseIntSafe(data.paymentMode, 2),
+    created_by: parseIntSafe(data.created_by, 1),
   };
 
   const courier = {
     address_1: data.addressLine1 ?? '',
-    address_2: data.residenceCountry ? `Country: ${data.residenceCountry}` : '',
+    address_2: data.addressLine2 ?? '',
     state: data.state ?? '',
     city: data.city ?? '',
-    postal_code: data.postalCode ?? '',
-    courier_type_id: data.courier_type_id ?? '',
+    postal_code: parseIntSafe(data.postalCode, 0),
+    courier_type_id: parseIntSafe(data.courier_type_id, 1),
   };
 
   const payment = {
-    payment_mode_id: data.paymentMode ?? '',
+    payment_mode_id: parseIntSafe(data.paymentMode, 2),
     card_type: data.cardType ?? '',
     transactionID: data.transactionId ?? '',
     total_amount: String(totalFees),
@@ -119,6 +130,8 @@ function buildCreateFullApplicationPayload(data, totalFees = 0) {
 // ✅ Validation
 const schema = z
   .object({
+    center_id: z.union([z.string().nonempty(), z.number()]).optional(),
+    referenceNo: z.string().optional(),
     appointmentPostalRefNo: z
       .string()
       .nonempty('Appointment/Postal Reference Number is required')
@@ -157,6 +170,9 @@ const schema = z
     courierRequired: z.boolean().optional(),
     residenceCountry: z.string().optional(),
     addressLine1: z.string().optional(),
+    addressLine2: z.string().optional(),
+    postalCode: z.union([z.string(), z.number()]).optional(),
+    courier_type_id: z.union([z.string(), z.number()]).optional(),
     state: z.string().optional(),
     city: z.string().optional(),
 
@@ -239,15 +255,25 @@ export function AddEditModal({
 
   const { getDataPaymentMode, paymentModeData } = usePassportApplicationReducer((state) => state);
 
+  const { getData: getDataCenters, centerData } = useCenterReducer((state) => state);
+  const { getData: getDataCourierTypes, courierTypeList } = useCourierTypeReducer((state) => state);
+
+  const centerList = Array.isArray(centerData?.data) ? centerData.data : centerData ?? [];
+  const courierTypeData = Array.isArray(courierTypeList) ? courierTypeList : courierTypeList?.data ?? [];
+
   useEffect(() => {
     getDataAppointmentType({});
     getDataApplicationMode({});
     getDataPaymentMode();
+    getDataCenters({});
+    if (typeof getDataCourierTypes === 'function') getDataCourierTypes();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const defaultValues = useMemo(
     () => ({
+      center_id: '',
+      referenceNo: '',
       appointmentPostalRefNo: '',
       applicationType: '',
       applicationBy: '',
@@ -272,6 +298,9 @@ export function AddEditModal({
       courierRequired: false,
       residenceCountry: '',
       addressLine1: '',
+      addressLine2: '',
+      postalCode: '',
+      courier_type_id: '',
       state: '',
       city: '',
 
@@ -348,11 +377,16 @@ export function AddEditModal({
       reset({
         ...defaultValues,
         ...showModal,
+        center_id: showModal?.center_id ? String(showModal.center_id) : '',
+        referenceNo: showModal?.referenceNo ?? showModal?.reference_no ?? '',
         courierRequired: !!showModal?.courierRequired,
         tatkalService: !!showModal?.tatkalService,
         afs: Array.isArray(showModal?.afs) ? showModal?.afs : [],
         photocopyNotes: showModal?.photocopyNotes ?? '',
         mobileCode: showModal?.mobileCode || '+971',
+        addressLine2: showModal?.addressLine2 ?? showModal?.address_2 ?? '',
+        postalCode: showModal?.postalCode ?? showModal?.postal_code ?? '',
+        courier_type_id: showModal?.courier_type_id ? String(showModal.courier_type_id) : '',
 
         // ✅ safety for new fields
         paymentMode: showModal?.paymentMode ? String(showModal.paymentMode) : '',
@@ -368,9 +402,13 @@ export function AddEditModal({
   const onSubmit = (data) => {
     const normalizedData = {
       ...data,
+      referenceNo: data.referenceNo || data.appointmentPostalRefNo,
       ...(!data.courierRequired && {
         residenceCountry: '',
         addressLine1: '',
+        addressLine2: '',
+        postalCode: '',
+        courier_type_id: '',
         state: '',
         city: '',
       }),
@@ -405,6 +443,9 @@ export function AddEditModal({
     if (!checked) {
       setValue('residenceCountry', '', { shouldValidate: true });
       setValue('addressLine1', '', { shouldValidate: true });
+      setValue('addressLine2', '', { shouldValidate: true });
+      setValue('postalCode', '', { shouldValidate: true });
+      setValue('courier_type_id', '', { shouldValidate: true });
       setValue('state', '', { shouldValidate: true });
       setValue('city', '', { shouldValidate: true });
     }
@@ -440,7 +481,35 @@ export function AddEditModal({
     <div className="modal-body custom-scroll">
       {/* ===== Row 1 ===== */}
       <div className="row">
-        <div className="col-md-6">
+        <div className="col-md-4">
+          <div className="form-group">
+            <label className="form-label">Center</label>
+            <select className="form-control" {...register('center_id')}>
+              <option value="">Select</option>
+              {centerList?.map((o) => (
+                <option key={o.center_id ?? o.id} value={String(o.center_id ?? o.id)}>
+                  {o.center_name ?? o.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div className="col-md-4">
+          <div className="form-group">
+            <label className="form-label">Reference Number</label>
+            <input
+              type="text"
+              className="form-control"
+              autoComplete="off"
+              maxLength={50}
+              placeholder="e.g. REF1783"
+              {...register('referenceNo')}
+            />
+          </div>
+        </div>
+
+        <div className="col-md-4">
           <div className="form-group">
             <label className="form-label">
               Appointment / Postal Reference Number <span className="text-danger">*</span>
@@ -450,6 +519,7 @@ export function AddEditModal({
               className="form-control"
               autoComplete="off"
               maxLength={50}
+              placeholder="e.g. APT003"
               {...register('appointmentPostalRefNo')}
             />
             {errors.appointmentPostalRefNo && (
@@ -457,8 +527,11 @@ export function AddEditModal({
             )}
           </div>
         </div>
+      </div>
 
-        <div className="col-md-6">
+      {/* ===== Row 2 ===== */}
+      <div className="row">
+        <div className="col-md-4">
           <div className="form-group">
             <label className="form-label">
               Application Type <span className="text-danger">*</span>
@@ -476,11 +549,8 @@ export function AddEditModal({
             )}
           </div>
         </div>
-      </div>
 
-      {/* ===== Row 2 ===== */}
-      <div className="row">
-        <div className="col-md-6">
+        <div className="col-md-4">
           <div className="form-group">
             <label className="form-label">
               Application By <span className="text-danger">*</span>
@@ -499,7 +569,7 @@ export function AddEditModal({
           </div>
         </div>
 
-        <div className="col-md-6">
+        <div className="col-md-4">
           <div className="form-group">
             <label className="form-label">
               ARN Number (Embassy Reference Number) <span className="text-danger">*</span>
@@ -768,11 +838,59 @@ export function AddEditModal({
                   type="text"
                   className="form-control"
                   autoComplete="off"
+                  placeholder="e.g. Al Khuwair"
                   {...register('addressLine1')}
                 />
                 {errors.addressLine1 && (
                   <span className="error">{errors.addressLine1.message}</span>
                 )}
+              </div>
+            </div>
+          </div>
+
+          <div className="row">
+            <div className="col-md-6">
+              <div className="form-group">
+                <label className="form-label">Address line 2</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  autoComplete="off"
+                  placeholder="e.g. Flat 12"
+                  {...register('addressLine2')}
+                />
+              </div>
+            </div>
+
+            <div className="col-md-6">
+              <div className="form-group">
+                <label className="form-label">Postal Code</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  autoComplete="off"
+                  placeholder="e.g. 112"
+                  {...register('postalCode')}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="row">
+            <div className="col-md-6">
+              <div className="form-group">
+                <label className="form-label">Courier Type</label>
+                <select className="form-control" {...register('courier_type_id')}>
+                  <option value="">Select</option>
+                  {courierTypeData?.map((o) => (
+                    <option
+                      key={o.courier_type_id ?? o.id}
+                      value={String(o.courier_type_id ?? o.id)}
+                    >
+                      {o.courier_type ?? o.name}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
           </div>
