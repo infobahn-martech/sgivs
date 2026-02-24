@@ -96,6 +96,7 @@ function getCenterIdFromStorage() {
 function buildCreateFullApplicationPayload(data, totalFees = 0) {
   const employeeId = getEmployeeIdFromStorage();
   const centerId = getCenterIdFromStorage();
+  console.log('centerId', centerId);
   const vas_services = (data.afs || [])
     .filter(Boolean)
     .map((name) => ({
