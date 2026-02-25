@@ -12,6 +12,10 @@ const deletePassportApplication = (id) => Gateway.delete(`passport-application/$
 
 const paymentMode = () => Gateway.post('payment/get_all_mode');
 
+const getReceipt = (passport_app_id) => Gateway.post('passport/receipt', { passport_app_id });
+
+const getBarcode = (passport_app_id) => Gateway.post('passport/barcode', { passport_app_id });
+
 export default {
   getPassportApplications,
   createPassportApplication,
@@ -19,4 +23,6 @@ export default {
   updatePassportApplication,
   deletePassportApplication,
   paymentMode,
+  getReceipt,
+  getBarcode,
 };
