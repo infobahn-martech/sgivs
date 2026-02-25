@@ -9,6 +9,7 @@ import usePassportApplicationReducer from '../../stores/PassportApplicationReduc
 import useAppointmentTypeReducer from '../../stores/AppointmentTypeReducer';
 import useApplicationModeReducer from '../../stores/ApplicationModeReducer';
 import useCourierTypeReducer from '../../stores/CourierTypeReducer';
+import serviceService from '../../services/serviceService';
 
 // ✅ Helpers
 const yesNoOptions = [
@@ -22,11 +23,7 @@ const cardTypeOptions = [
   { value: 'Other POS Transaction', label: 'Other POS Transaction' },
 ];
 
-const serviceRequestedOptions = [
-  { value: 'Normal', label: 'Normal' },
-  { value: 'Tatkal', label: 'Tatkal' },
-  { value: 'Courier', label: 'Courier' },
-];
+// Service Requested options are loaded dynamically from service/service_by_service_type/{service_type_id}
 
 const tokenOptions = [
   { value: 'A', label: 'A' },
@@ -59,12 +56,8 @@ const AFS_TO_VAS_SERVICE_ID = {
   SMS: 4,
 };
 
-// Map Service Requested to passport_service_id (adjust IDs per your backend)
-const SERVICE_REQUESTED_TO_ID = {
-  Normal: 1,
-  Tatkal: 2,
-  Courier: 3,
-};
+// Passport service type id used to fetch services via service/service_by_service_type/{service_type_id}
+const PASSPORT_SERVICE_TYPE_ID = 1;
 
 function parseIntSafe(val, fallback = 0) {
   const n = parseInt(val, 10);
@@ -116,7 +109,7 @@ function buildCreateFullApplicationPayload(data, totalFees = 0) {
     appointment_ref_no: data.appointmentPostalRefNo ?? '',
     arn_number: data.arnNo ?? '',
     processed_in_gpsp: data.processedInGPSPV2 ?? 'Yes',
-    passport_service_id: SERVICE_REQUESTED_TO_ID[data.serviceRequested] ?? parseIntSafe(data.serviceRequested, 1),
+    passport_service_id: parseIntSafe(data.serviceRequested, 1),
     token_no: data.token ?? '',
     first_name: data.firstName ?? '',
     last_name: data.lastName ?? '',
@@ -266,6 +259,7 @@ export function AddEditModal({
   closeModal,
   onRefreshPassportApplications,
   onFeeValuesChange,
+  serviceTypeId = PASSPORT_SERVICE_TYPE_ID,
 }) {
   const { postData, patchData, isLoading } = usePassportApplicationReducer((state) => state);
 
@@ -281,6 +275,8 @@ export function AddEditModal({
 
   const courierTypeData = Array.isArray(courierTypeList) ? courierTypeList : courierTypeList?.data ?? [];
 
+  const [serviceRequestedOptions, setServiceRequestedOptions] = React.useState([]);
+
   useEffect(() => {
     getDataAppointmentType({});
     getDataApplicationMode({});
@@ -288,6 +284,23 @@ export function AddEditModal({
     if (typeof getDataCourierTypes === 'function') getDataCourierTypes();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (!serviceTypeId) return;
+    serviceService
+      .getServicesByServiceType(serviceTypeId)
+      .then((res) => {
+        const list = res?.data?.data ?? res?.data ?? [];
+        const options = Array.isArray(list)
+          ? list.map((item) => ({
+              value: String(item?.passport_service_id ?? item?.service_id ?? item?.id ?? ''),
+              label: item?.service_name ?? item?.service_type ?? item?.name ?? '-',
+            }))
+          : [];
+        setServiceRequestedOptions(options);
+      })
+      .catch(() => setServiceRequestedOptions([]));
+  }, [serviceTypeId]);
 
   const defaultValues = useMemo(
     () => ({
@@ -371,7 +384,8 @@ export function AddEditModal({
     const govtFees = 0;
     const icwfFees = 0;
     const serviceFeesByType = { Normal: 6, Tatkal: 10, Courier: 8 };
-    const serviceFees = serviceRequested ? serviceFeesByType[serviceRequested] ?? 6 : 0;
+    const selectedLabel = serviceRequestedOptions.find((o) => o.value === serviceRequested)?.label;
+    const serviceFees = selectedLabel ? serviceFeesByType[selectedLabel] ?? 6 : 0;
     return {
       govtFees,
       icwfFees,
@@ -379,7 +393,7 @@ export function AddEditModal({
       totalFees: govtFees + icwfFees + serviceFees,
       onlinePaid: '...',
     };
-  }, [serviceRequested, token]);
+  }, [serviceRequested, serviceRequestedOptions, token]);
 
   // Notify parent of fee values when Service Requested is selected (for FeeCalculator outside modal)
   useEffect(() => {
@@ -402,6 +416,7 @@ export function AddEditModal({
         addressLine2: showModal?.addressLine2 ?? showModal?.address_2 ?? '',
         postalCode: showModal?.postalCode ?? showModal?.postal_code ?? '',
         courier_type_id: showModal?.courier_type_id ? String(showModal.courier_type_id) : '',
+        serviceRequested: showModal?.passport_service_id ? String(showModal.passport_service_id) : '',
 
         // ✅ safety for new fields
         paymentMode: showModal?.paymentMode ? String(showModal.paymentMode) : '',
