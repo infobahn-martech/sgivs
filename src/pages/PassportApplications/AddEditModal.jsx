@@ -515,7 +515,7 @@ export function AddEditModal({
     <div className="modal-body custom-scroll">
       {/* ===== Row 1 ===== */}
       <div className="row">
-        <div className="col-md-4">
+        <div className="col-md-6">
           <div className="form-group">
             <label className="form-label">
               Appointment / Postal Reference Number <span className="text-danger">*</span>
@@ -533,11 +533,7 @@ export function AddEditModal({
             )}
           </div>
         </div>
-      </div>
-
-      {/* ===== Row 2 ===== */}
-      <div className="row">
-        <div className="col-md-4">
+        <div className="col-md-6">
           <div className="form-group">
             <label className="form-label">
               Application Type <span className="text-danger">*</span>
@@ -555,8 +551,11 @@ export function AddEditModal({
             )}
           </div>
         </div>
+      </div>
 
-        <div className="col-md-4">
+      {/* ===== Row 2 ===== */}
+      <div className="row">
+        <div className="col-md-6">
           <div className="form-group">
             <label className="form-label">
               Application By <span className="text-danger">*</span>
@@ -575,7 +574,7 @@ export function AddEditModal({
           </div>
         </div>
 
-        <div className="col-md-4">
+        <div className="col-md-6">
           <div className="form-group">
             <label className="form-label">
               ARN Number (Embassy Reference Number) <span className="text-danger">*</span>
