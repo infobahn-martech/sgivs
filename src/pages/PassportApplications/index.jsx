@@ -106,7 +106,7 @@ const PassportApplications = () => {
       name: 'Date of Birth',
       selector: 'date_of_birth',
     },
-    { name: 'Application Type', selector: 'application_type' },
+    { name: 'Application Type', selector: 'appointment_type' },
     { name: 'Service Name', selector: 'service_name' },
     { name: 'Delivery Type', selector: 'delivery_type' },
     {

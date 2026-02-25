@@ -867,7 +867,7 @@
 
 .category-mgmt-modal {
     .modal-dialog {
-        max-width: 492px;
+        max-width: 800px;
 
         @media ($sm-767) {
             max-width: 95%;
@@ -4867,4 +4867,79 @@
 .checkbox-custom input {
     width: 16px;
     height: 16px;
+}
+
+/* Comment Modal */
+.category-mgmt-modal.comment-modal {
+    .comment-modal-body {
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+    }
+
+    .comment-add-section {
+        .form-label {
+            font-weight: 500;
+            color: #092837;
+        }
+
+        textarea.form-control {
+            min-height: 80px;
+        }
+    }
+
+    .comment-list-section {
+        padding-top: 20px;
+        border-top: 1px solid #D8E1ED;
+    }
+
+    .comment-list-title {
+        font-weight: 600;
+        font-size: 15px;
+        color: #092837;
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+    }
+
+    .comment-table-wrap {
+        max-height: 220px;
+        overflow-y: auto;
+        border: 1px solid #D8E1ED;
+        border-radius: 10px;
+        background: #FAFCFF;
+    }
+
+    .comment-table {
+        margin-bottom: 0;
+        font-size: 14px;
+
+        thead th {
+            background: #E8EFF8;
+            color: #092837;
+            font-weight: 600;
+            padding: 12px 14px;
+            border-bottom: 1px solid #D8E1ED;
+            white-space: nowrap;
+        }
+
+        tbody td {
+            padding: 10px 14px;
+            vertical-align: middle;
+            border-color: #E8EFF8;
+        }
+
+        .col-sn { width: 70px; }
+        .col-datetime { width: 140px; }
+    }
+
+    .comment-empty-state {
+        padding: 20px;
+        text-align: center;
+        color: #8897AD;
+        font-size: 14px;
+        background: #FAFCFF;
+        border-radius: 10px;
+        border: 1px dashed #D8E1ED;
+    }
 }
