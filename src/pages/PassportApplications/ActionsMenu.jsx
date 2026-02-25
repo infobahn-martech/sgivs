@@ -54,9 +54,9 @@ const ActionsMenu = ({
           <button type="button" onClick={(e) => handleItem(e, onComment)}>
             Comment
           </button>
-          <button type="button" onClick={(e) => handleItem(e, onActivityLog)}>
+          {/* <button type="button" onClick={(e) => handleItem(e, onActivityLog)}>
             Activity Log
-          </button>
+          </button> */}
           <button type="button" onClick={(e) => handleItem(e, onEditApplication)}>
             Edit application
           </button>
