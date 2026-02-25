@@ -102,10 +102,10 @@ function buildCreateFullApplicationPayload(data, totalFees = 0) {
   const contactNo = parseIntSafe(data.mobileNumber, 0);
 
   const passport_application = {
-    center_id: centerId ?? parseIntSafe(data.center_id, 1),
+    center_id: centerId,
     appointment_type_id: parseIntSafe(data.applicationType, 1),
     application_mode_id: parseIntSafe(data.applicationBy, 1),
-    reference_no: "null",
+    reference_no: null,
     appointment_ref_no: data.appointmentPostalRefNo ?? '',
     arn_number: data.arnNo ?? '',
     processed_in_gpsp: data.processedInGPSPV2 ?? 'Yes',
@@ -122,7 +122,7 @@ function buildCreateFullApplicationPayload(data, totalFees = 0) {
     tatkal_status: data.tatkalService ? 1 : 0,
     afs_service_status: (data.afs || []).length > 0 ? 1 : 0,
     payment_mode: parseIntSafe(data.paymentMode, 2),
-    created_by: employeeId ?? parseIntSafe(data.created_by, 1),
+    created_by: employeeId,
   };
 
   const courier = {
@@ -293,9 +293,9 @@ export function AddEditModal({
         const list = res?.data?.data ?? res?.data ?? [];
         const options = Array.isArray(list)
           ? list.map((item) => ({
-              value: String(item?.passport_service_id ?? item?.service_id ?? item?.id ?? ''),
-              label: item?.service_name ?? item?.service_type ?? item?.name ?? '-',
-            }))
+            value: String(item?.passport_service_id ?? item?.service_id ?? item?.id ?? ''),
+            label: item?.service_name ?? item?.service_type ?? item?.name ?? '-',
+          }))
           : [];
         setServiceRequestedOptions(options);
       })
