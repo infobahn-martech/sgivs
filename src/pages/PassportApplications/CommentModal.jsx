@@ -1,30 +1,34 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import CustomModal from '../../components/common/CustomModal';
 import usePassportApplicationReducer from '../../stores/PassportApplicationReducer';
 
-// Updated schema with isEZPass as a boolean
 const commentSchema = z.object({
     comment: z.string().nonempty('Comment is required'),
 });
 
-export default function CommentModal({ showModal, closeModal, onRefreshCenter }) {
+export default function CommentModal({ showModal, closeModal, onRefreshPassportApplications }) {
 
     const {
         register,
         handleSubmit,
         formState: { errors },
-        setValue,
-        reset,
     } = useForm({
         resolver: zodResolver(commentSchema),
+        defaultValues: { comment: showModal?.comment ?? '' },
     });
-    const [comment, setComment] = useState(showModal?.comment ?? '');
+
+    const { addComment, isCreatePassportApplicationLoading } = usePassportApplicationReducer();
 
     const onSubmit = (data) => {
-        console.log(data);
+        const passport_app_id = showModal?.passport_app_id ?? showModal?.id ?? showModal?._id;
+        if (!passport_app_id) return;
+        addComment(passport_app_id, data.comment, () => {
+            closeModal();
+            typeof onRefreshPassportApplications === 'function' && onRefreshPassportApplications();
+        });
     };
 
 
@@ -57,9 +61,9 @@ export default function CommentModal({ showModal, closeModal, onRefreshCenter })
                                 className="form-control"
                                 rows={4}
                                 placeholder="Enter your comment here"
-                                value={comment}
-                                onChange={(e) => setComment(e.target.value)}
+                                {...register('comment')}
                             />
+                            {errors.comment && <span className="text-danger">{errors.comment.message}</span>}
                         </div>
                     </div>
                 </div>
@@ -93,7 +97,7 @@ export default function CommentModal({ showModal, closeModal, onRefreshCenter })
             body={renderBody()}
             header={renderHeader()}
             footer={renderFooter()}
-            isLoading={false}
+            isLoading={isCreatePassportApplicationLoading}
         />
     );
 }

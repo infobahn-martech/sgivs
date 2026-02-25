@@ -124,6 +124,23 @@ const usePassportApplicationReducer = create((set) => ({
     }
   },
 
+  addComment: async (passport_app_id, comment, cb) => {
+    try {
+      set({ isCreatePassportApplicationLoading: true });
+      const { data } = await passportApplicationService.addComment(passport_app_id, comment);
+      set({ isCreatePassportApplicationLoading: false });
+      const { success } = useAlertReducer.getState();
+      success(data?.response?.data?.message ?? data?.message ?? 'Comment added successfully');
+      typeof cb === 'function' && cb();
+    } catch (err) {
+      const { error } = useAlertReducer.getState();
+      set({
+        errorMessage: err?.response?.data?.message ?? err?.message,
+        isCreatePassportApplicationLoading: false,
+      });
+      error(err?.response?.data?.message ?? err.message);
+    }
+  },
   getPassportApplications: async (params) => {
     try {
       set({ isLoadingGet: true });

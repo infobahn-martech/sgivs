@@ -255,7 +255,11 @@ const PassportApplications = () => {
       {printBarcodeModal && <PrintBarcodeModal showModal={printBarcodeModal} closeModal={() => setPrintBarcodeModal(false)} />}
 
       {commentModal && (
-        <CommentModal showModal={commentModal} closeModal={() => setCommentModal(false)} />
+        <CommentModal
+          showModal={commentModal}
+          closeModal={() => setCommentModal(false)}
+          onRefreshPassportApplications={onRefreshPassportApplications}
+        />
       )}
 
       {changeServicesModal && (
