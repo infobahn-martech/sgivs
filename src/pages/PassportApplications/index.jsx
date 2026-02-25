@@ -17,6 +17,8 @@ import ViewModal from './ViewModal';
 import CommentModal from './CommentModal';
 import ChangeServicesModal from './ChangeServices';
 import ActivityLog from './ActivityLog';
+import PrintReceiptModal from './PrintReceipt';
+import PrintBarcodeModal from './PrintBarcode';
 
 const PassportApplications = () => {
   const { getPassportApplications, passportApplicationsData, isLoadingGet, deleteData, isLoadingDelete } =
@@ -25,6 +27,8 @@ const PassportApplications = () => {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [modal, setModal] = useState(false);
   const [viewModal, setViewModal] = useState(false);
+  const [printReceiptModal, setPrintReceiptModal] = useState(false);
+  const [printBarcodeModal, setPrintBarcodeModal] = useState(false);
   const [commentModal, setCommentModal] = useState(false);
   const [changeServicesModal, setChangeServicesModal] = useState(false);
   const [activityLogModal, setActivityLogModal] = useState(false);
@@ -78,10 +82,12 @@ const PassportApplications = () => {
 
   const handlePrintReceipt = (row) => {
     console.log('Print Receipt:', row);
+    setPrintReceiptModal(row);
   };
 
   const handlePrintBarcode = (row) => {
     console.log('Print Barcode:', row);
+    setPrintBarcodeModal(row);
   };
 
   const handleViewApplication = (row) => setViewModal(row);
@@ -245,6 +251,8 @@ const PassportApplications = () => {
       )}
 
       {viewModal && <ViewModal showModal={viewModal} closeModal={() => setViewModal(false)} />}
+      {printReceiptModal && <PrintReceiptModal showModal={printReceiptModal} closeModal={() => setPrintReceiptModal(false)} />}
+      {printBarcodeModal && <PrintBarcodeModal showModal={printBarcodeModal} closeModal={() => setPrintBarcodeModal(false)} />}
 
       {commentModal && (
         <CommentModal showModal={commentModal} closeModal={() => setCommentModal(false)} />
