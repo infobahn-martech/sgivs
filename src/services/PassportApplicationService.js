@@ -4,7 +4,7 @@ const createPassportApplication = (data) => Gateway.post('passport-application',
 
 const createFullApplication = (data) =>
   Gateway.post('passport/create_full_application', data);
-const getPassportApplications = (params) => Gateway.get('passport-application', { params });
+const getPassportApplications = (params) => Gateway.post('/passport/list', params);
 
 const updatePassportApplication = (id, data) => Gateway.patch(`passport-application/${id}`, data);
 

@@ -19,9 +19,7 @@ import ChangeServicesModal from './ChangeServices';
 import ActivityLog from './ActivityLog';
 
 const PassportApplications = () => {
-  const USE_MOCK = true;
-
-  const { getData, passportApplicationsData, isLoadingGet, deleteData, isLoadingDelete } =
+  const { getPassportApplications, passportApplicationsData, isLoadingGet, deleteData, isLoadingDelete } =
     usePassportApplicationReducer((state) => state);
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -31,6 +29,7 @@ const PassportApplications = () => {
   const [changeServicesModal, setChangeServicesModal] = useState(false);
   const [activityLogModal, setActivityLogModal] = useState(false);
   const [feeValues, setFeeValues] = useState(null);
+
   const initialParams = {
     search: '',
     page: 1,
@@ -44,87 +43,8 @@ const PassportApplications = () => {
 
   const [params, setParams] = useState(initialParams);
 
-  // ✅ Dummy Data (updated fields)
-  const mockPassportApplicationsData = {
-    total: 5,
-    data: [
-      {
-        id: 1,
-        referenceNo: 'REF-0001',
-        name: 'Abdul Rahman',
-        center: 'Dubai Center',
-        arn: 'ARN-12345',
-        ppNo: 'P1234567 / OLD-889900',
-        dob: '1996-06-12',
-        applicationType: 'New',
-        serviceName: 'Normal Service',
-        deliveryType: 'Courier',
-        status: { value: 'Submitted', by: 'Dennis', on: '2025-01-10T09:30:00Z' },
-        createdAt: '2025-01-10T09:30:00Z',
-      },
-      {
-        id: 2,
-        referenceNo: 'REF-0002',
-        name: 'Haseeb',
-        center: 'Abu Dhabi Center',
-        arn: 'ARN-77881',
-        ppNo: 'P9988776 / OLD-112233',
-        dob: '1993-11-22',
-        applicationType: 'Renewal',
-        serviceName: 'Premium',
-        deliveryType: 'Counter',
-        status: { value: 'In Process', by: 'Joel', on: '2025-02-14T12:15:00Z' },
-        createdAt: '2025-02-14T12:15:00Z',
-      },
-      {
-        id: 3,
-        referenceNo: 'REF-0003',
-        name: 'Fathima',
-        center: 'Sharjah Center',
-        arn: 'ARN-55321',
-        ppNo: 'P2233445 / OLD-445566',
-        dob: '1999-02-02',
-        applicationType: 'New',
-        serviceName: 'Express',
-        deliveryType: 'Courier',
-        status: { value: 'Approved', by: 'Admin', on: '2025-03-05T08:45:00Z' },
-        createdAt: '2025-03-05T08:45:00Z',
-      },
-      {
-        id: 4,
-        referenceNo: 'REF-0004',
-        name: 'Joseph',
-        center: 'Ajman Center',
-        arn: 'ARN-99331',
-        ppNo: 'P6655443 / OLD-998877',
-        dob: '1988-09-10',
-        applicationType: 'Renewal',
-        serviceName: 'Normal Service',
-        deliveryType: 'Counter',
-        status: { value: 'Rejected', by: 'Supervisor', on: '2025-03-20T10:00:00Z' },
-        createdAt: '2025-03-20T10:00:00Z',
-      },
-      {
-        id: 5,
-        referenceNo: 'REF-0005',
-        name: 'Amina',
-        center: 'Dubai Center',
-        arn: 'ARN-11229',
-        ppNo: 'P4455667 / OLD-111222',
-        dob: '2000-01-30',
-        applicationType: 'New',
-        serviceName: 'Premium',
-        deliveryType: 'Courier',
-        status: { value: 'Delivered', by: 'Courier', on: '2025-04-02T11:20:00Z' },
-        createdAt: '2025-04-02T11:20:00Z',
-      },
-    ],
-  };
-
   const onRefreshPassportApplications = () => {
-    if (!USE_MOCK) {
-      getData(params);
-    }
+    getPassportApplications(params);
     setModal(false);
     setDeleteModalOpen(false);
     setViewModal(false);
@@ -134,22 +54,26 @@ const PassportApplications = () => {
     setFeeValues(null);
   };
 
+  // ✅ Fetch data whenever params change
   useEffect(() => {
-    if (!USE_MOCK) {
-      getData(params);
-    }
+    getPassportApplications(params);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params]);
 
   const handleSortChange = (selector) => {
-    setParams((prevParams) => ({
-      ...prevParams,
+    setParams((prev) => ({
+      ...prev,
       sortBy: selector,
-      sortOrder: prevParams.sortOrder === 'ASC' ? 'DESC' : 'ASC',
+      sortOrder: prev.sortOrder === 'ASC' ? 'DESC' : 'ASC',
+      page: 1,
     }));
   };
 
   const openDeleteModal = (row) => {
-    setDeleteModalOpen({ id: row?.id, name: row?.name });
+    setDeleteModalOpen({
+      id: row?.id || row?._id, // supports either id/_id
+      name: row?.name,
+    });
   };
 
   const handlePrintReceipt = (row) => {
@@ -160,55 +84,33 @@ const PassportApplications = () => {
     console.log('Print Barcode:', row);
   };
 
-  const handleViewApplication = (row) => {
-    setViewModal(row);
-  };
-
-  const handleComment = (row) => {
-    setCommentModal(row);
-  };
-
-  const handleActivityLog = (row) => {
-    setActivityLogModal(row);
-  };
-
-  const handleEditApplication = (row) => {
-    setModal(row);
-  };
-
-  const handleChangeServiceFee = (row) => {
-    setChangeServicesModal(row);
-  };
+  const handleViewApplication = (row) => setViewModal(row);
+  const handleComment = (row) => setCommentModal(row);
+  const handleActivityLog = (row) => setActivityLogModal(row);
+  const handleEditApplication = (row) => setModal(row);
+  const handleChangeServiceFee = (row) => setChangeServicesModal(row);
 
   const columns = [
-    { name: 'Reference No', selector: 'referenceNo' },
-    { name: 'Name', selector: 'name' },
-    { name: 'Center', selector: 'center' },
-    { name: 'ARN', selector: 'arn' },
-    { name: 'PP No / Old PP No', selector: 'ppNo' },
+    { name: 'Reference No', selector: 'appointment_ref_no' },
+    { name: 'Name', selector: 'applicant_name' },
+    { name: 'Center', selector: 'center_name' },
+    { name: 'ARN', selector: 'arn_number' },
+    { name: 'PP No / Old PP No', selector: 'old_passport_no' },
     {
       name: 'Date of Birth',
-      selector: 'dob',
-      cell: (row) => <span>{row?.dob ? moment(row.dob).format('DD-MMM-YYYY') : '-'}</span>,
+      selector: 'date_of_birth',
     },
-    { name: 'Application Type', selector: 'applicationType' },
-    { name: 'Service Name', selector: 'serviceName' },
-    { name: 'Delivery Type', selector: 'deliveryType' },
+    { name: 'Application Type', selector: 'application_type' },
+    { name: 'Service Name', selector: 'service_name' },
+    { name: 'Delivery Type', selector: 'delivery_type' },
     {
       name: 'Status / By, On',
-      selector: 'status',
-      cell: (row) => (
-        <span>
-          {row?.status?.value || '-'}
-          {row?.status?.by ? ` / ${row.status.by}` : ''}
-          {row?.status?.on ? `, ${formatDate(row.status.on)}` : ''}
-        </span>
-      ),
+      selector: 'status_comment',
     },
     {
       name: 'Action',
       selector: 'action',
-      notView: true,        // prevents CustomTable's onView click behavior
+      notView: true,
       colClassName: 'action-col',
       cell: (row) => (
         <ActionsMenu
@@ -226,12 +128,12 @@ const PassportApplications = () => {
     },
   ];
 
-  // ✅ Stable debounce
+  // ✅ Stable debounce for search
   const debouncedSearch = useMemo(
     () =>
       debounce((searchValue) => {
-        setParams((prevParams) => ({
-          ...prevParams,
+        setParams((prev) => ({
+          ...prev,
           search: searchValue,
           page: 1,
         }));
@@ -239,20 +141,23 @@ const PassportApplications = () => {
     []
   );
 
+  // ✅ Cleanup debounce on unmount
+  useEffect(() => {
+    return () => {
+      debouncedSearch.cancel?.();
+    };
+  }, [debouncedSearch]);
+
   const handleDelete = () => {
-    if (USE_MOCK) {
-      setDeleteModalOpen(false);
-      return;
-    }
-    if (deleteModalOpen?.id) {
-      deleteData(deleteModalOpen?.id, () => {
-        onRefreshPassportApplications();
-      });
-    }
+    const id = deleteModalOpen?.id;
+    if (!id) return;
+
+    deleteData(id, () => {
+      onRefreshPassportApplications();
+    });
   };
 
-  const tableData = USE_MOCK ? mockPassportApplicationsData : passportApplicationsData;
-  const loading = USE_MOCK ? false : isLoadingGet;
+  const loading = isLoadingGet;
 
   return (
     <>
@@ -267,25 +172,25 @@ const PassportApplications = () => {
         submitFilter={(filters) => {
           const { fromDate, toDate, ...rest } = filters;
 
-          setParams({
-            ...params,
+          setParams((prev) => ({
+            ...prev,
             ...rest,
             fromDate: fromDate ? moment(fromDate).format('YYYY-MM-DD') : null,
             toDate: toDate ? moment(toDate).format('YYYY-MM-DD') : null,
             page: 1,
-          });
+          }));
         }}
         clearOptions={() => setParams(initialParams)}
       />
 
       <CustomTable
         pagination={{ currentPage: params.page, limit: params.limit }}
-        count={tableData?.total || 0}
+        count={passportApplicationsData?.length || 0}
         columns={columns}
-        data={tableData?.data || []}
+        data={passportApplicationsData || []}
         isLoading={loading}
-        onPageChange={(page) => setParams({ ...params, page })}
-        setLimit={(limit) => setParams({ ...params, limit })}
+        onPageChange={(page) => setParams((prev) => ({ ...prev, page }))}
+        setLimit={(limit) => setParams((prev) => ({ ...prev, limit, page: 1 }))}
         onSortChange={handleSortChange}
         wrapClasses="inventory-table-wrap"
       />
@@ -330,7 +235,7 @@ const PassportApplications = () => {
       {deleteModalOpen && (
         <CustomActionModal
           isDelete
-          isLoading={USE_MOCK ? false : isLoadingDelete}
+          isLoading={isLoadingDelete}
           showModal={deleteModalOpen}
           closeModal={() => setDeleteModalOpen(false)}
           message={`Are you sure you want to delete this ${deleteModalOpen?.name}?`}
@@ -339,9 +244,7 @@ const PassportApplications = () => {
         />
       )}
 
-      {viewModal && (
-        <ViewModal showModal={viewModal} closeModal={() => setViewModal(false)} />
-      )}
+      {viewModal && <ViewModal showModal={viewModal} closeModal={() => setViewModal(false)} />}
 
       {commentModal && (
         <CommentModal showModal={commentModal} closeModal={() => setCommentModal(false)} />
