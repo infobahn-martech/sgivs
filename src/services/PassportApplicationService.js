@@ -19,6 +19,9 @@ const getBarcode = (passport_app_id) => Gateway.post('passport/barcode', { passp
 const addComment = (passport_app_id, comment) =>
   Gateway.post('passport/add_comment', { passport_app_id, comment });
 
+const getComments = (passport_app_id) =>
+  Gateway.post('passport/get_comments', { passport_app_id });
+
 export default {
   getPassportApplications,
   createPassportApplication,
@@ -29,4 +32,5 @@ export default {
   getReceipt,
   getBarcode,
   addComment,
+  getComments,
 };

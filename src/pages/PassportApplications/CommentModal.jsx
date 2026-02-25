@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import CustomModal from '../../components/common/CustomModal';
 import usePassportApplicationReducer from '../../stores/PassportApplicationReducer';
+import passportApplicationService from '../../services/PassportApplicationService';
 
 const commentSchema = z.object({
     comment: z.string().nonempty('Comment is required'),
@@ -15,12 +16,31 @@ export default function CommentModal({ showModal, closeModal, onRefreshPassportA
         register,
         handleSubmit,
         formState: { errors },
+        setValue,
     } = useForm({
         resolver: zodResolver(commentSchema),
-        defaultValues: { comment: showModal?.comment ?? '' },
+        defaultValues: { comment: '' },
     });
 
     const { addComment, isCreatePassportApplicationLoading } = usePassportApplicationReducer();
+
+    useEffect(() => {
+        if (!showModal) return;
+        const passport_app_id = showModal?.passport_app_id ?? showModal?.id ?? showModal?._id;
+        if (!passport_app_id) return;
+        const fetchComments = async () => {
+            try {
+                const { data } = await passportApplicationService.getComments(passport_app_id);
+                const value = data?.data?.comment ?? data?.data ?? data?.comment ?? data;
+                if (value != null && value !== '') {
+                    setValue('comment', typeof value === 'string' ? value : String(value));
+                }
+            } catch {
+                // ignore fetch errors, keep textarea empty
+            }
+        };
+        fetchComments();
+    }, [showModal, setValue]);
 
     const onSubmit = (data) => {
         const passport_app_id = showModal?.passport_app_id ?? showModal?.id ?? showModal?._id;
