@@ -66,10 +66,10 @@ const usePassportApplicationReducer = create((set) => ({
       typeof cb === 'function' && cb();
     }
   },
-  patchData: async ({ id, ...rest }, cb) => {
+  patchData: async (payload, cb) => {
     try {
       set({ isUpdatePassportApplicationLoading: true, isLoading: true });
-      const { data } = await passportApplicationService.updatePassportApplication(id, rest);
+      const { data } = await passportApplicationService.updatePassportApplication(payload);
       const { success } = useAlertReducer.getState();
       success(data?.response?.data?.message ?? data?.message ?? 'Application updated successfully');
       set({ isUpdatePassportApplicationLoading: false, isLoading: false });
@@ -85,10 +85,10 @@ const usePassportApplicationReducer = create((set) => ({
       typeof cb === 'function' && cb();
     }
   },
-  updatePassportApplication: async (id, data) => {
+  updatePassportApplication: async (payload) => {
     try {
       set({ isUpdatePassportApplicationLoading: true });
-      const { data } = await passportApplicationService.updatePassportApplication(id, data);
+      const { data } = await passportApplicationService.updatePassportApplication(payload);
       const { success } = useAlertReducer.getState();
       success(data?.response?.data?.message ?? data?.message);
       set({

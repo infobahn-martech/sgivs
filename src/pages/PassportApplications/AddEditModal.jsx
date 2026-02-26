@@ -86,6 +86,30 @@ function getCenterIdFromStorage() {
   }
 }
 
+// Build payload for POST passport/update
+function buildUpdatePayload(data, passportAppId) {
+  const contactCodeDigits = (data.mobileCode || '').replace(/\D/g, '');
+  const contactCode = contactCodeDigits ? parseInt(contactCodeDigits, 10) : 0;
+  const contactNo = parseIntSafe(data.mobileNumber, 0);
+  return {
+    passport_app_id: parseIntSafe(passportAppId, 0),
+    appointment_ref_no: data.appointmentPostalRefNo ?? '',
+    arn_number: data.arnNo ?? '',
+    passport_service_id: parseIntSafe(data.serviceRequested, 1),
+    first_name: data.firstName ?? '',
+    last_name: data.lastName ?? '',
+    date_of_birth: data.dob ?? '',
+    gender: data.gender ?? '',
+    contact_code: contactCode,
+    contact_no: contactNo,
+    email_address: data.email ?? '',
+    old_passport_no: data.oldPassportNo ?? '',
+    courier_type: parseIntSafe(data.courier_type_id, 0),
+    tatkal_status: data.tatkalService ? 1 : 0,
+    payment_mode: parseIntSafe(data.paymentMode, 1),
+  };
+}
+
 function buildCreateFullApplicationPayload(data, totalFees = 0) {
   const employeeId = getEmployeeIdFromStorage();
   const centerId = getCenterIdFromStorage();
@@ -402,32 +426,55 @@ export function AddEditModal({
     else onFeeValuesChange(null);
   }, [serviceRequested, feeValues, onFeeValuesChange]);
 
-  // Prefill form when editing
+  // Prefill form when editing — set values from GET/list response
+  const editId = showModal?.passport_app_id ?? showModal?.id;
   useEffect(() => {
-    if (showModal?.id) {
+    if (editId) {
+      // Map GET response to form fields (applicant_name, appointment_type, application_mode, service_name, etc.)
+      const nameParts = (showModal?.applicant_name ?? '').trim().split(/\s+/);
+      const firstName = nameParts[0] ?? '';
+      const lastName = nameParts.slice(1).join(' ') ?? '';
+      const appointmentTypeMatch = (appointmentTypeData ?? []).find(
+        (o) => String(o?.appointment_type ?? '').trim() === String(showModal?.appointment_type ?? '').trim()
+      );
+      const applicationModeMatch = (applicationModeData ?? []).find(
+        (o) => String(o?.application_mode ?? '').trim() === String(showModal?.application_mode ?? '').trim()
+      );
+      const serviceMatch = (serviceRequestedOptions ?? []).find(
+        (o) => String(o?.label ?? '').trim() === String(showModal?.service_name ?? '').trim()
+      );
       reset({
         ...defaultValues,
-        ...showModal,
-        courierRequired: !!showModal?.courierRequired,
-        tatkalService: !!showModal?.tatkalService,
-        afs: Array.isArray(showModal?.afs) ? showModal?.afs : [],
-        photocopyNotes: showModal?.photocopyNotes ?? '',
+        appointmentPostalRefNo: showModal?.appointment_ref_no ?? '',
+        applicationType: appointmentTypeMatch ? String(appointmentTypeMatch.appointment_type_id) : '',
+        applicationBy: applicationModeMatch ? String(applicationModeMatch.application_mode_id) : '',
+        arnNo: showModal?.arn_number ?? '',
+        serviceRequested: serviceMatch ? String(serviceMatch.value) : (showModal?.passport_service_id ? String(showModal.passport_service_id) : ''),
+        firstName,
+        lastName,
+        dob: showModal?.date_of_birth ?? '',
+        oldPassportNo: showModal?.old_passport_no ?? '',
+        courierRequired: !!showModal?.delivery_type,
         mobileCode: showModal?.mobileCode || '+971',
         addressLine2: showModal?.addressLine2 ?? showModal?.address_2 ?? '',
         postalCode: showModal?.postalCode ?? showModal?.postal_code ?? '',
         courier_type_id: showModal?.courier_type_id ? String(showModal.courier_type_id) : '',
-        serviceRequested: showModal?.passport_service_id ? String(showModal.passport_service_id) : '',
-
-        // ✅ safety for new fields
         paymentMode: showModal?.paymentMode ? String(showModal.paymentMode) : '',
         cardType: showModal?.cardType ?? '',
         transactionId: showModal?.transactionId ?? '',
+        gender: showModal?.gender ?? '',
+        email: showModal?.email_address ?? showModal?.email ?? '',
+        processedInGPSPV2: showModal?.processedInGPSPV2 ?? '',
+        token: showModal?.token ?? '',
+        tatkalService: !!showModal?.tatkal_status,
+        afs: Array.isArray(showModal?.afs) ? showModal.afs : [],
+        photocopyNotes: showModal?.photocopyNotes ?? '',
       });
     } else {
       reset(defaultValues);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showModal?.id]);
+  }, [editId, showModal?.applicant_name, showModal?.appointment_ref_no, showModal?.appointment_type, showModal?.application_mode, showModal?.arn_number, showModal?.date_of_birth, showModal?.old_passport_no, showModal?.service_name, appointmentTypeData, applicationModeData, serviceRequestedOptions]);
 
   const onSubmit = (data) => {
     const employeeId = getEmployeeIdFromStorage();
@@ -452,8 +499,10 @@ export function AddEditModal({
       }),
     };
 
-    if (showModal?.id) {
-      patchData({ id: showModal.id, ...normalizedData }, () => {
+    const passportAppId = showModal?.passport_app_id ?? showModal?.id;
+    if (passportAppId) {
+      const updatePayload = buildUpdatePayload(normalizedData, passportAppId);
+      patchData(updatePayload, () => {
         onRefreshPassportApplications?.();
         closeModal?.();
       });
@@ -499,7 +548,7 @@ export function AddEditModal({
   const renderHeader = () => (
     <>
       <h4 className="modal-title">
-        {showModal?.id ? 'Edit Passport Application' : 'Add Passport Application'}
+        {editId ? 'Edit Passport Application' : 'Add Passport Application'}
       </h4>
       <button
         type="button"
