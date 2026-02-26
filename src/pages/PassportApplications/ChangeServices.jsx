@@ -1,9 +1,11 @@
-import React, { useEffect } from 'react';
-import { useForm, Controller } from 'react-hook-form';
+import React, { useEffect, useState } from 'react';
+import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 
 import CustomModal from '../../components/common/CustomModal';
+import passportApplicationService from '../../services/PassportApplicationService';
+import useAlertReducer from '../../stores/AlertReducer';
 
 // ✅ Schema (numbers from inputs come as string -> use preprocess)
 const changeServicesSchema = z.object({
@@ -92,23 +94,61 @@ export default function ChangeServicesModal({
     });
 
     const cancelApplication = watch('cancelApplication');
+    const [loadingDetails, setLoadingDetails] = useState(false);
 
-    // ✅ Prefill when opening (from row)
+    // Fetch change service details when modal opens and populate form
     useEffect(() => {
-        if (showModal) {
+        const passportAppId = showModal?.passport_app_id ?? showModal?.id;
+        if (!showModal || !passportAppId) {
             reset({
-                serviceId: showModal?.serviceId ?? '',
-                referenceNo: showModal?.referenceNo ?? '',
-                applicantName: showModal?.applicantName ?? '',
-                govtFee: showModal?.govtFee ?? '',
-                icwf: showModal?.icwf ?? '',
-                sgivsServiceFee: showModal?.sgivsServiceFee ?? '',
-                isTatkal: !!showModal?.isTatkal,
-                cancelApplication: !!showModal?.cancelApplication,
-                cancelReason: showModal?.cancelReason ?? '',
-                remark: showModal?.remark ?? '',
+                serviceId: '',
+                referenceNo: '',
+                applicantName: '',
+                govtFee: '',
+                icwf: '',
+                sgivsServiceFee: '',
+                isTatkal: false,
+                cancelApplication: false,
+                cancelReason: '',
+                remark: '',
             });
+            return;
         }
+        setLoadingDetails(true);
+        passportApplicationService
+            .getChangeServiceDetails(passportAppId)
+            .then((res) => {
+                const data = res?.data?.data ?? res?.data ?? {};
+                reset({
+                    serviceId: data.service ?? '',
+                    referenceNo: data.application_ref_no ?? '',
+                    applicantName: data.applicant_name ?? '',
+                    govtFee: data.govt_fee ?? '',
+                    icwf: data.icwf_fee ?? '',
+                    sgivsServiceFee: data.sgvs_service_fee ?? '',
+                    isTatkal: !!data.tatkal_service,
+                    cancelApplication: false,
+                    cancelReason: '',
+                    remark: '',
+                });
+            })
+            .catch((err) => {
+                const { error } = useAlertReducer.getState();
+                error(err?.response?.data?.message ?? err?.message ?? 'Failed to load service details');
+                reset({
+                    serviceId: '',
+                    referenceNo: showModal?.appointment_ref_no ?? '',
+                    applicantName: showModal?.applicant_name ?? '',
+                    govtFee: '',
+                    icwf: '',
+                    sgivsServiceFee: '',
+                    isTatkal: false,
+                    cancelApplication: false,
+                    cancelReason: '',
+                    remark: '',
+                });
+            })
+            .finally(() => setLoadingDetails(false));
     }, [showModal, reset]);
 
     const onSubmit = (data) => {
@@ -315,7 +355,7 @@ export default function ChangeServicesModal({
             body={renderBody()}
             header={renderHeader()}
             footer={renderFooter()}
-            isLoading={false}
+            isLoading={loadingDetails}
         />
     );
 }
