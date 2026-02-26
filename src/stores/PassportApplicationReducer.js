@@ -8,6 +8,7 @@ const usePassportApplicationReducer = create((set) => ({
   isUpdatePassportApplicationLoading: false,
   isLoading: false,
   isDeletePassportApplicationLoading: false,
+  isLoadingDelete: false,
   errorMessage: '',
   successMessage: '',
   passportApplicationsData: [],
@@ -104,21 +105,38 @@ const usePassportApplicationReducer = create((set) => ({
       error(err?.response?.data?.message ?? err.message);
     }
   },
+  deleteData: async (passport_app_id, cb) => {
+    try {
+      set({ isDeletePassportApplicationLoading: true, isLoadingDelete: true });
+      const { data } = await passportApplicationService.deletePassportApplication(passport_app_id);
+      const { success } = useAlertReducer.getState();
+      success(data?.response?.data?.message ?? data?.message ?? 'Deleted successfully');
+      set({ isDeletePassportApplicationLoading: false, isLoadingDelete: false });
+      typeof cb === 'function' && cb();
+    } catch (err) {
+      const { error } = useAlertReducer.getState();
+      set({ isDeletePassportApplicationLoading: false, isLoadingDelete: false });
+      error(err?.response?.data?.message ?? err.message);
+      typeof cb === 'function' && cb();
+    }
+  },
   deletePassportApplication: async (id) => {
     try {
-      set({ isDeletePassportApplicationLoading: true });
+      set({ isDeletePassportApplicationLoading: true, isLoadingDelete: true });
       const { data } = await passportApplicationService.deletePassportApplication(id);
       const { success } = useAlertReducer.getState();
       success(data?.response?.data?.message ?? data?.message);
       set({
         successMessage: data?.response?.data?.message ?? data?.message,
         isDeletePassportApplicationLoading: false,
+        isLoadingDelete: false,
       });
     } catch (err) {
       const { error } = useAlertReducer.getState();
       set({
         errorMessage: err?.response?.data?.message ?? err?.message,
         isDeletePassportApplicationLoading: false,
+        isLoadingDelete: false,
       });
       error(err?.response?.data?.message ?? err.message);
     }

@@ -8,7 +8,8 @@ const getPassportApplications = (params) => Gateway.post('/passport/list', param
 
 const updatePassportApplication = (payload) => Gateway.post('passport/update', payload);
 
-const deletePassportApplication = (id) => Gateway.delete(`passport-application/${id}`);
+const deletePassportApplication = (passport_app_id) =>
+  Gateway.post('passport/delete', { passport_app_id });
 
 const paymentMode = () => Gateway.post('payment/get_all_mode');
 

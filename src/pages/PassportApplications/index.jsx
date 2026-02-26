@@ -75,8 +75,8 @@ const PassportApplications = () => {
 
   const openDeleteModal = (row) => {
     setDeleteModalOpen({
-      id: row?.id || row?._id, // supports either id/_id
-      name: row?.name,
+      id: row?.passport_app_id ?? row?.id ?? row?._id,
+      name: row?.applicant_name ?? row?.name,
     });
   };
 
