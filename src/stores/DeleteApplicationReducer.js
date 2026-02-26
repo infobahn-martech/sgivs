@@ -16,7 +16,7 @@ const useDeleteApplicationReducer = create((set) => ({
             const { data } = await deleteApplicationService.getData(params);
             const datas = data;
             set({
-                deleteApplicationData: datas?.data,
+                deleteApplicationData: { data: datas?.data ?? [], total: datas?.total ?? 0 },
                 // successMessage: data?.response?.data?.message ?? data?.message,
                 isLoadingGet: false,
             });

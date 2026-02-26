@@ -14,8 +14,8 @@ import deleteIcon from '../../assets/images/delete.svg';
 
 
 const DeleteApplication = () => {
-  // ✅ Toggle this
-  const USE_MOCK = true;
+  // Listing API integrated (use mock only for UI dev)
+  const USE_MOCK = false;
 
   const { getData, deleteApplicationData, isLoadingGet, deleteData, isLoadingDelete } =
     useDeleteApplicationReducer((state) => state);
@@ -30,7 +30,7 @@ const DeleteApplication = () => {
     toDate: null,
     sortBy: 'createdAt',
     sortOrder: 'DESC',
-    isExcelExport: 'false',
+    status: 0
   };
 
   const [params, setParams] = useState(initialParams);

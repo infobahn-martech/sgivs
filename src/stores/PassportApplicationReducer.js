@@ -19,7 +19,7 @@ const usePassportApplicationReducer = create((set) => ({
   getDataPaymentMode: async () => {
     try {
       set({ isLoadingPaymentMode: true });
-      const { data } = await passportApplicationService.paymentMode();
+      const { data } = await passportApplicationService.paymentMode({ status: 0 });
       set({ paymentModeData: data?.data, isLoadingPaymentMode: false });
       const { success } = useAlertReducer.getState();
       success(data?.message);
