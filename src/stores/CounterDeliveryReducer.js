@@ -1,22 +1,20 @@
 import { create } from 'zustand';
 import useAlertReducer from './AlertReducer';
-import otmService from '../services/otmService';
+import counterDeliveryService from '../services/counterDeliveryService';
 
-const useOTMReducer = create((set) => ({
+const useCounterDeliveryReducer = create((set) => ({
     isLoading: false,
     isLoadingGet: false,
     errorMessage: '',
     successMessage: '',
-    otmData: null,
+    counterDeliveryData: null,
 
     getData: async (params) => {
         try {
             set({ isLoadingGet: true });
-            const { data } = await otmService.getData(params);
-            const datas = data;
+            const { data } = await counterDeliveryService.getData(params);
             set({
-                otmData: datas?.data,
-                // successMessage: data?.response?.data?.message ?? data?.message,
+                counterDeliveryData: data?.data,
                 isLoadingGet: false,
             });
         } catch (err) {
@@ -30,4 +28,4 @@ const useOTMReducer = create((set) => ({
     },
 }));
 
-export default useOTMReducer;
+export default useCounterDeliveryReducer;
