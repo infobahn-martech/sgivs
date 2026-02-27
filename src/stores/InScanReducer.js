@@ -13,10 +13,8 @@ const useInScanReducer = create((set) => ({
         try {
             set({ isLoadingGet: true });
             const { data } = await inScanService.getData(params);
-            const datas = data;
             set({
-                inScanData: datas?.data,
-                // successMessage: data?.response?.data?.message ?? data?.message,
+                inScanData: data?.data,
                 isLoadingGet: false,
             });
         } catch (err) {
