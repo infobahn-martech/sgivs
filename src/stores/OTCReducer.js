@@ -1,22 +1,20 @@
 import { create } from 'zustand';
 import useAlertReducer from './AlertReducer';
-import ifmService from '../services/ifmService';
+import otcService from '../services/OTCService';
 
-const useIFMReducer = create((set) => ({
+const useOTCReducer = create((set) => ({
     isLoading: false,
     isLoadingGet: false,
     errorMessage: '',
     successMessage: '',
-    ifmData: null,
+    otcData: null,
 
     getData: async (params) => {
         try {
             set({ isLoadingGet: true });
-            const { data } = await ifmService.getData(params);
-            const datas = data;
+            const { data } = await otcService.getData(params);
             set({
-                ifmData: datas?.data,
-                // successMessage: data?.response?.data?.message ?? data?.message,
+                otcData: data?.data,
                 isLoadingGet: false,
             });
         } catch (err) {
@@ -30,4 +28,4 @@ const useIFMReducer = create((set) => ({
     },
 }));
 
-export default useIFMReducer;
+export default useOTCReducer;
