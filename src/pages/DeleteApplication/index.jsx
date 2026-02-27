@@ -87,39 +87,22 @@ const DeleteApplication = () => {
       sortField: 'applicant_name',
     },
     {
-      name: 'Gender',
-      selector: 'applicant_gender',
-      sortable: true,
-      sortField: 'applicant_gender',
-    },
-    {
       name: 'Date of Birth',
-      selector: 'applicant_dob',
+      selector: 'date_of_birth',
       sortable: true,
-      sortField: 'applicant_dob',
+      sortField: 'date_of_birth',
     },
     {
       name: 'Passport No',
-      selector: 'passport_no',
+      selector: 'old_passport_no',
       sortable: true,
-      sortField: 'passport_no',
+      sortField: 'old_passport_no',
     },
     {
       name: 'Status / By, On',
-      selector: 'status',
+      selector: 'status_comment',
       sortable: true,
-      sortField: 'status',
-      cell: (row) => (
-        <div className="d-flex flex-column">
-          <span>
-            <b>{row?.status || '-'}</b>
-          </span>
-          <small className="text-muted">
-            {row?.actionBy ? `By: ${row.actionBy}` : 'By: -'}{' '}
-            {row?.actionOn ? `• On: ${formatDate(row.actionOn)}` : ''}
-          </small>
-        </div>
-      ),
+      sortField: 'status_comment',
     },
     {
       name: 'Action',
