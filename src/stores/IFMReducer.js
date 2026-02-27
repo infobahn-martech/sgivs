@@ -13,10 +13,8 @@ const useIFMReducer = create((set) => ({
         try {
             set({ isLoadingGet: true });
             const { data } = await ifmService.getData(params);
-            const datas = data;
             set({
-                ifmData: datas?.data,
-                // successMessage: data?.response?.data?.message ?? data?.message,
+                ifmData: data?.data,
                 isLoadingGet: false,
             });
         } catch (err) {
