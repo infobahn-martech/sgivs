@@ -6,6 +6,7 @@ const useDeleteApplicationReducer = create((set) => ({
     isLoading: false,
     isLoadingGet: false,
     isLoadingDelete: false,
+    isLoadingRestore: false,
     errorMessage: '',
     successMessage: '',
     deleteApplicationData: null,
@@ -45,6 +46,26 @@ const useDeleteApplicationReducer = create((set) => ({
             set({
                 errorMessage: err?.response?.data?.message ?? err?.message,
                 isLoadingDelete: false,
+            });
+            error(err?.response?.data?.message ?? err.message);
+        }
+    },
+    restoreData: async (id, cb) => {
+        try {
+            set({ isLoadingRestore: true });
+            const { data } = await deleteApplicationService.restoreData(id);
+            set({
+                successMessage: data?.message,
+                isLoadingRestore: false,
+            });
+            const { success } = useAlertReducer.getState();
+            success(data?.message);
+            cb && cb();
+        } catch (err) {
+            const { error } = useAlertReducer.getState();
+            set({
+                errorMessage: err?.response?.data?.message ?? err?.message,
+                isLoadingRestore: false,
             });
             error(err?.response?.data?.message ?? err.message);
         }

@@ -13,10 +13,9 @@ import CustomActionModal from '../../components/common/CustomActionModal';
 import deleteIcon from '../../assets/images/delete.svg';
 
 const DeleteApplication = () => {
-  const { getData, deleteApplicationData, isLoadingGet, deleteData, isLoadingDelete } =
+  const { getData, deleteApplicationData, isLoadingGet, restoreData, isLoadingRestore } =
     useDeleteApplicationReducer((state) => state);
 
-  console.log("deleteApplicationData", deleteApplicationData);
 
   const [retrieveModalOpen, setRetrieveModalOpen] = useState(false);
 
@@ -99,7 +98,7 @@ const DeleteApplication = () => {
       sortField: 'old_passport_no',
     },
     {
-      name: 'Status / By, On',
+      name: 'Status',
       selector: 'status_comment',
       sortable: true,
       sortField: 'status_comment',
@@ -130,15 +129,15 @@ const DeleteApplication = () => {
   }, [debouncedSearch]);
 
   const handleRetrieve = () => {
-    if (retrieveModalOpen?.id) {
-      // Replace deleteData with retrieveData when your retrieve endpoint is ready
-      deleteData(retrieveModalOpen?.id, () => {
+    if (retrieveModalOpen?.passport_app_id) {
+      restoreData(retrieveModalOpen?.passport_app_id, () => {
         onRefreshCenter();
       });
     }
   };
 
   const loading = isLoadingGet;
+  const isLoadingDelete = isLoadingRestore;
 
   return (
     <>
@@ -174,7 +173,7 @@ const DeleteApplication = () => {
           showModal={retrieveModalOpen}
           closeModal={() => setRetrieveModalOpen(false)}
           isLoading={isLoadingDelete}
-          message={`Are you sure you want to retrieve ${retrieveModalOpen?.name}?`}
+          message={`Are you sure you want to retrieve ${retrieveModalOpen?.applicant_name}?`}
           onCancel={() => setRetrieveModalOpen(false)}
           onSubmit={handleRetrieve}
         />
