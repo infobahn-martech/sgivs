@@ -116,6 +116,12 @@ const ServiceManagement = () => {
       sort: true,
     },
     {
+      name: 'Tatkal Fee',
+      selector: 'tatkal_fee',
+      contentClass: 'user-pic',
+      sort: true,
+    },
+    {
       name: 'Action',
       disableViewClick: true,
       contentClass: 'action-wrap',

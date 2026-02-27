@@ -41,6 +41,12 @@ const nameSchema = z.object({
       .number({ invalid_type_error: 'Urgent Fee is required' })
       .min(0, 'Urgent Fee must be 0 or more')
   ),
+  tatkal_fee: z.preprocess(
+    (v) => (v === '' || v === null || v === undefined ? undefined : Number(v)),
+    z
+      .number({ invalid_type_error: 'Tatkal Fee is required' })
+      .min(0, 'Tatkal Fee must be 0 or more')
+  ),
 });
 
 export function AddEditModal({ showModal, closeModal, onRefreshService }) {
@@ -61,6 +67,7 @@ export function AddEditModal({ showModal, closeModal, onRefreshService }) {
       service_fee: '',
       urgent_fee: '',
     },
+    tatkal_fee: '',
   });
 
   const { postData, patchData, isLoading, getAllServiceType, serviceTypes } =
@@ -90,6 +97,7 @@ export function AddEditModal({ showModal, closeModal, onRefreshService }) {
       setValue('icwf_fee', showModal?.icwf_fee ?? '');
       setValue('service_fee', showModal?.service_fee ?? '');
       setValue('urgent_fee', showModal?.urgent_fee ?? '');
+      setValue('tatkal_fee', showModal?.tatkal_fee ?? '');
     } else {
       reset({
         service_name: '',
@@ -98,6 +106,7 @@ export function AddEditModal({ showModal, closeModal, onRefreshService }) {
         icwf_fee: '',
         service_fee: '',
         urgent_fee: '',
+        tatkal_fee: '',
       });
     }
   }, [showModal, reset, setValue]);
@@ -117,6 +126,7 @@ export function AddEditModal({ showModal, closeModal, onRefreshService }) {
       icwf_fee: data.icwf_fee,
       service_fee: data.service_fee,
       urgent_fee: data.urgent_fee,
+      tatkal_fee: data.tatkal_fee,
     };
 
     if (showModal?.service_id) {
@@ -281,6 +291,28 @@ export function AddEditModal({ showModal, closeModal, onRefreshService }) {
             />
             {errors.urgent_fee && (
               <span className="error">{errors.urgent_fee.message}</span>
+            )}
+          </div>
+        </div>
+
+
+        {/* Tatkal Fee */}
+        <div className="col-sm-6">
+          <div className="form-group forms-custom">
+            <label className="label">
+              Tatkal Fee<span className="text-danger">*</span>
+            </label>
+            <input
+              type="number"
+              className="form-control"
+              min={0}
+              step="0.01"
+              placeholder="Enter tatkal fee"
+              disabled={isLoading}
+              {...register('tatkal_fee')}
+            />
+            {errors.tatkal_fee && (
+              <span className="error">{errors.tatkal_fee.message}</span>
             )}
           </div>
         </div>
