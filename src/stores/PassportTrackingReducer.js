@@ -58,10 +58,8 @@ const usePassportTrackingReducer = create((set) => ({
     try {
       set({ isLoadingGet: true });
       const { data } = await passportTrackingService.getData(params);
-      const datas = data;
       set({
-        passportTrackingData: datas?.data,
-        // successMessage: data?.response?.data?.message ?? data?.message,
+        passportTrackingData: data?.data,
         isLoadingGet: false,
       });
     } catch (err) {
