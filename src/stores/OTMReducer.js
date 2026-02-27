@@ -13,10 +13,8 @@ const useOTMReducer = create((set) => ({
         try {
             set({ isLoadingGet: true });
             const { data } = await otmService.getData(params);
-            const datas = data;
             set({
-                otmData: datas?.data,
-                // successMessage: data?.response?.data?.message ?? data?.message,
+                otmData: data?.data,
                 isLoadingGet: false,
             });
         } catch (err) {
