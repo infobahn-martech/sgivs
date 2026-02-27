@@ -1,5 +1,5 @@
 import Gateway from '../config/gateway';
 
-const getData = (params) => Gateway.get('/out-scan', { params });
+const getData = (params) => Gateway.post('/passport/list', { ...params, status: 2 });
 
 export default { getData };

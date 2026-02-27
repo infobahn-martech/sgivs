@@ -13,10 +13,8 @@ const useOutScanReducer = create((set) => ({
         try {
             set({ isLoadingGet: true });
             const { data } = await outScanService.getData(params);
-            const datas = data;
             set({
-                outScanData: datas?.data,
-                // successMessage: data?.response?.data?.message ?? data?.message,
+                outScanData: data?.data,
                 isLoadingGet: false,
             });
         } catch (err) {

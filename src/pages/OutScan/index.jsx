@@ -12,10 +12,7 @@ import CustomActionModal from '../../components/common/CustomActionModal';
 import AddEditModal from './AddEditModal';
 
 const OutScan = () => {
-  const USE_MOCK = true;
-
-  // ✅ Add retrieveData here if your store has it
-  const { getData, outScanData, isLoadingGet, isLoadingDelete /*, retrieveData */ } =
+  const { getData, outScanData, isLoadingGet, isLoadingDelete } =
     useOutScanReducer((state) => state);
 
   const [retrieveModalOpen, setRetrieveModalOpen] = useState(false);
@@ -34,56 +31,16 @@ const OutScan = () => {
   const [params, setParams] = useState(initialParams);
   const [addEditModal, setAddEditModal] = useState(false);
   const [selectedOutScan, setSelectedOutScan] = useState(null);
-  // ✅ Dummy Data (Required fields)
-  const mockOutScanData = {
-    total: 5,
-    data: [
-      {
-        id: 1,
-        date: '2025-01-10T09:30:00Z',
-        center: 'Dubai Center',
-        by: 'Admin',
-        totalApplication: 12,
-      },
-      {
-        id: 2,
-        date: '2025-02-14T12:15:00Z',
-        center: 'Abu Dhabi Center',
-        by: 'Operator',
-        totalApplication: 7,
-      },
-      {
-        id: 3,
-        date: '2025-03-05T08:45:00Z',
-        center: 'Sharjah Center',
-        by: 'Admin',
-        totalApplication: 19,
-      },
-      {
-        id: 4,
-        date: '2025-03-20T10:00:00Z',
-        center: 'Ajman Center',
-        by: 'Supervisor',
-        totalApplication: 5,
-      },
-      {
-        id: 5,
-        date: '2025-04-02T11:20:00Z',
-        center: 'Dubai Center',
-        by: 'Admin',
-        totalApplication: 9,
-      },
-    ],
-  };
 
   const onRefresh = () => {
-    if (!USE_MOCK) getData(params);
+    getData(params);
     setRetrieveModalOpen(false);
   };
 
   useEffect(() => {
-    if (!USE_MOCK) getData(params);
-  }, [params, USE_MOCK, getData]);
+    getData(params);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params]);
 
   const handleSortChange = (selector) => {
     setParams((prev) => ({
@@ -140,21 +97,8 @@ const OutScan = () => {
   }, [debouncedSearch]);
 
   const handleRetrieve = () => {
-    if (USE_MOCK) {
-      setRetrieveModalOpen(false);
-      return;
-    }
-
-    // ✅ Replace with your actual API call
-    // if (retrieveModalOpen?.id) {
-    //   retrieveData(retrieveModalOpen.id, () => onRefresh());
-    // }
-
     setRetrieveModalOpen(false);
   };
-
-  const tableData = USE_MOCK ? mockOutScanData : outScanData;
-  const loading = USE_MOCK ? false : isLoadingGet;
 
   return (
     <>
@@ -185,10 +129,10 @@ const OutScan = () => {
 
       <CustomTable
         pagination={{ currentPage: params.page, limit: params.limit }}
-        count={tableData?.total || 0}
+        count={outScanData?.total || 0}
         columns={columns}
-        data={tableData?.data || []}
-        isLoading={loading}
+        data={outScanData?.data || []}
+        isLoading={isLoadingGet}
         onPageChange={(page) => setParams({ ...params, page })}
         setLimit={(limit) => setParams({ ...params, limit })}
         onSortChange={handleSortChange}
@@ -199,7 +143,7 @@ const OutScan = () => {
         <CustomActionModal
           showModal={retrieveModalOpen}
           closeModal={() => setRetrieveModalOpen(false)}
-          isLoading={USE_MOCK ? false : isLoadingDelete}
+          isLoading={isLoadingDelete}
           message={`Are you sure you want to retrieve this record?`}
           onCancel={() => setRetrieveModalOpen(false)}
           onSubmit={handleRetrieve}
