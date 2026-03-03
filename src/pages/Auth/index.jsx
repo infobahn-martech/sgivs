@@ -144,6 +144,50 @@ const Login = () => {
 
             <form onSubmit={handleSubmit(onSubmit)} noValidate>
               <div className="form-sec-wrp">
+
+                {/* USERNAME */}
+                <div className={`form-group ${errors.username ? 'has-error' : ''}`}>
+                  <label className="form-label" htmlFor="username">
+                    Username
+                  </label>
+                  <input
+                    id="username"
+                    type="text"
+                    className="form-control login-v2__input"
+                    placeholder="Enter your username"
+                    autoComplete="username"
+                    aria-invalid={!!errors.username}
+                    aria-describedby={errors.username ? 'username-error' : undefined}
+                    {...register('username')}
+                  />
+                  {errors.username && (
+                    <span className="error" id="username-error" role="alert">
+                      {errors.username.message}
+                    </span>
+                  )}
+                </div>
+
+                {/* PASSWORD */}
+                <div className={`form-group ${errors.password ? 'has-error' : ''}`}>
+                  <label className="form-label" htmlFor="password">
+                    Password
+                  </label>
+                  <input
+                    id="password"
+                    type="password"
+                    className="form-control login-v2__input"
+                    placeholder="Enter your password"
+                    autoComplete="current-password"
+                    aria-invalid={!!errors.password}
+                    aria-describedby={errors.password ? 'password-error' : undefined}
+                    {...register('password')}
+                  />
+                  {errors.password && (
+                    <span className="error" id="password-error" role="alert">
+                      {errors.password.message}
+                    </span>
+                  )}
+                </div>
                 {/* COUNTRY */}
                 <div className="form-group">
                   <label className="form-label" htmlFor="country_id">
@@ -222,50 +266,6 @@ const Login = () => {
                     />
                     Sign in as Back Office Staff
                   </label>
-                </div>
-
-                {/* USERNAME */}
-                <div className={`form-group ${errors.username ? 'has-error' : ''}`}>
-                  <label className="form-label" htmlFor="username">
-                    Username
-                  </label>
-                  <input
-                    id="username"
-                    type="text"
-                    className="form-control login-v2__input"
-                    placeholder="Enter your username"
-                    autoComplete="username"
-                    aria-invalid={!!errors.username}
-                    aria-describedby={errors.username ? 'username-error' : undefined}
-                    {...register('username')}
-                  />
-                  {errors.username && (
-                    <span className="error" id="username-error" role="alert">
-                      {errors.username.message}
-                    </span>
-                  )}
-                </div>
-
-                {/* PASSWORD */}
-                <div className={`form-group ${errors.password ? 'has-error' : ''}`}>
-                  <label className="form-label" htmlFor="password">
-                    Password
-                  </label>
-                  <input
-                    id="password"
-                    type="password"
-                    className="form-control login-v2__input"
-                    placeholder="Enter your password"
-                    autoComplete="current-password"
-                    aria-invalid={!!errors.password}
-                    aria-describedby={errors.password ? 'password-error' : undefined}
-                    {...register('password')}
-                  />
-                  {errors.password && (
-                    <span className="error" id="password-error" role="alert">
-                      {errors.password.message}
-                    </span>
-                  )}
                 </div>
 
                 <div className="login-v2__actions" style={{ textAlign: 'right' }}>

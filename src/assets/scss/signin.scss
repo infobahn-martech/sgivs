@@ -31,10 +31,11 @@
         padding: 20px;
     }
 
-    .inner-wrp {
+        .inner-wrp {
         display: flex;
         align-items: stretch;
         flex: 1;
+        min-height: 0;
         flex-wrap: wrap;
 
         @media (max-width: 650px) {
@@ -179,37 +180,39 @@
        ========================= */
         .panel-right {
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             justify-content: center;
             flex: 1;
             flex-direction: column;
-            padding-left: 90px;
+            min-height: 0;
+            overflow-y: auto;
+            padding: 24px 0 24px 90px;
 
             @media ($sm-1199) {
-                padding-left: 60px;
+                padding: 24px 0 24px 60px;
             }
 
             @media ($sm-991) {
-                padding-left: 45px;
+                padding: 24px 0 24px 45px;
             }
 
             @media ($sm-767) {
-                padding-left: 30px;
+                padding: 24px 0 24px 30px;
                 max-width: 50%;
             }
 
             @media (max-width: 650px) {
                 max-width: 100%;
                 flex: unset;
-                padding: 0 30px;
+                padding: 24px 30px;
             }
 
             @media ($sm-579) {
-                padding: 0 20px;
+                padding: 24px 20px;
             }
 
             @media ($sm-479) {
-                padding: 0 10px;
+                padding: 24px 10px;
             }
 
             .form-wrp-center {
