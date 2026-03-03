@@ -96,14 +96,7 @@ const Login = () => {
 
   const onSubmit = async (data) => {
     try {
-      await login({
-        username: data.username,
-        password: data.password,
-        country_id: data.country_id || null,
-        center_id: data.center_id || null,
-        counter_id: data.counter_id || null,
-        sign_in_as_back_office_staff: data.signInAsBackOfficeStaff || false,
-      });
+      await login({ username: data.username, password: data.password });
       navigate('/');
     } catch {
       // Error already shown via AlertReducer
@@ -188,6 +181,7 @@ const Login = () => {
                     </span>
                   )}
                 </div>
+
                 {/* COUNTRY */}
                 <div className="form-group">
                   <label className="form-label" htmlFor="country_id">
@@ -256,7 +250,7 @@ const Login = () => {
                 </div>
 
                 {/* SIGN IN AS BACK OFFICE STAFF */}
-                <div className="form-group" style={{ marginBottom: 22 }}>
+                <div className="form-group">
                   <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
                     <input
                       type="checkbox"

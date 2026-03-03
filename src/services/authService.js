@@ -1,8 +1,8 @@
 import Gateway from '../config/gateway';
 
 // ✅ SESSION login (cookie will be set by backend)
-const doLoginValidate = (username, password, extra = {}) =>
-  Gateway.post('users/login', { username, password, ...extra });
+const doLoginValidate = (username, password) =>
+  Gateway.post('users/login', { username, password });
 
 // OPTIONAL: if backend has logout to destroy session
 const logout = () => Gateway.post('users/logout');

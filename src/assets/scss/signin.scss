@@ -10,25 +10,28 @@
 
 .user-log-wrp {
     width: 100%;
+    height: 100vh;
     min-height: 100vh;
+    max-height: 100vh;
+    overflow: hidden;
     display: flex;
     flex-direction: column;
-    padding: 43px 44px;
+    padding: 20px 30px;
 
     background: radial-gradient(1200px 800px at 80% 20%, rgba(44, 160, 218, 0.10), transparent 60%),
         radial-gradient(900px 600px at 15% 85%, rgba(5, 26, 83, 0.10), transparent 55%),
         #ffffff;
 
     @media ($sm-1679) {
-        padding: 30px;
+        padding: 20px 28px;
     }
 
     @media ($sm-1441) {
-        padding: 25px;
+        padding: 16px 24px;
     }
 
     @media ($sm-1199) {
-        padding: 20px;
+        padding: 16px 20px;
     }
 
         .inner-wrp {
@@ -176,43 +179,42 @@
         }
 
         /* =========================
-       RIGHT PANEL
+       RIGHT PANEL (compact - fit viewport, no scroll)
        ========================= */
         .panel-right {
             display: flex;
-            align-items: flex-start;
+            align-items: center;
             justify-content: center;
             flex: 1;
             flex-direction: column;
             min-height: 0;
-            overflow-y: auto;
-            padding: 24px 0 24px 90px;
+            padding: 16px 0 16px 90px;
 
             @media ($sm-1199) {
-                padding: 24px 0 24px 60px;
+                padding: 16px 0 16px 60px;
             }
 
             @media ($sm-991) {
-                padding: 24px 0 24px 45px;
+                padding: 16px 0 16px 45px;
             }
 
             @media ($sm-767) {
-                padding: 24px 0 24px 30px;
+                padding: 16px 0 16px 30px;
                 max-width: 50%;
             }
 
             @media (max-width: 650px) {
                 max-width: 100%;
                 flex: unset;
-                padding: 24px 30px;
+                padding: 16px 30px;
             }
 
             @media ($sm-579) {
-                padding: 24px 20px;
+                padding: 16px 20px;
             }
 
             @media ($sm-479) {
-                padding: 24px 10px;
+                padding: 16px 10px;
             }
 
             .form-wrp-center {
@@ -222,28 +224,28 @@
                 padding: 6px;
 
                 .top-blk {
-                    margin-bottom: 34px;
+                    margin-bottom: 16px;
                     display: flex;
                     flex-direction: column;
                     align-items: flex-start;
 
                     .login-v2__logo-wrap {
                         background: #051a53;
-                        padding: 10px 16px;
-                        border-radius: 12px;
-                        margin-bottom: 1rem;
+                        padding: 8px 14px;
+                        border-radius: 10px;
+                        margin-bottom: 0.5rem;
                     }
 
                     .login-v2__logo {
-                        max-height: 48px;
+                        max-height: 40px;
                         display: block;
                         object-fit: contain;
                     }
 
                     .title {
-                        margin-bottom: 14px;
+                        margin-bottom: 6px;
                         line-height: 1.05;
-                        font-size: 44px;
+                        font-size: 32px;
                         font-weight: 800;
                         color: #051a53;
                         letter-spacing: -0.03em;
@@ -270,7 +272,7 @@
                     }
 
                     .desc {
-                        font-size: 15px;
+                        font-size: 13px;
                         color: rgba(11, 27, 43, 0.70);
                         font-weight: 500;
                         line-height: 1.7;
@@ -283,7 +285,7 @@
 
                 .form-sec-wrp {
                     .form-group {
-                        margin-bottom: 22px;
+                        margin-bottom: 12px;
                         position: relative;
 
                         .error {
@@ -304,10 +306,10 @@
                         display: inline-block;
                     }
 
-                    /* ✅ 10/10 inputs */
+                    /* ✅ inputs - compact */
                     .form-control {
                         border-radius: 999px;
-                        height: 54px;
+                        height: 42px;
                         padding: 0 22px;
 
                         background: #ffffff;
@@ -338,9 +340,9 @@
 
                     .link {
                         color: #051a53;
-                        font-size: 13px;
+                        font-size: 12px;
                         font-weight: 800;
-                        margin-bottom: 18px;
+                        margin-bottom: 10px;
                         display: inline-block;
                         text-align: right;
                         text-decoration: none;
@@ -356,10 +358,10 @@
                         }
                     }
 
-                    /* ✅ 10/10 button */
+                    /* ✅ button - compact */
                     .btn-rounded {
                         width: 100%;
-                        height: 56px;
+                        height: 44px;
                         border: none;
                         border-radius: 999px;
                         font-size: 16px;
@@ -400,7 +402,7 @@
 
             /* footer refinement */
             .login-v2__footer {
-                margin-top: 26px;
+                margin-top: 12px;
 
                 .copy {
                     margin: 0;
@@ -427,7 +429,7 @@
 /* SIGNUP LINK */
 
 .login-v2__signup {
-    margin-top: 18px;
+    margin-top: 12px;
     text-align: center;
     font-size: 14px;
     font-weight: 500;
