@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -9,6 +9,8 @@ import '../../assets/scss/footer.scss';
 import '../../assets/scss/signin.scss';
 
 import useAuthReducer from '../../stores/AuthReducer';
+import useCenterReducer from '../../stores/CenterReducer';
+import useCounterReducer from '../../stores/CounterReducer';
 import { Link, useNavigate } from 'react-router-dom';
 import { Spinner } from 'react-bootstrap';
 import SignUp from '../SignUp';
@@ -24,19 +26,84 @@ const Login = () => {
   const [showSignUpModal, setShowSignUpModal] = useState(false);
 
   const { login, isLoginLoading } = useAuthReducer((state) => state);
+  const { countryList, getCountries } = useCenterReducer((state) => state);
+  const {
+    centers,
+    counters,
+    getAllCenter,
+    getAllCounter,
+    clearCounterData,
+  } = useCounterReducer((state) => state);
 
   const {
     register,
     handleSubmit,
+    watch,
+    setValue,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(loginSchema),
     mode: 'onSubmit',
+    defaultValues: {
+      country_id: '',
+      center_id: '',
+      counter_id: '',
+      signInAsBackOfficeStaff: false,
+    },
   });
+
+  const countryId = watch('country_id');
+  const centerId = watch('center_id');
+
+  useEffect(() => {
+    getCountries();
+    getAllCenter();
+  }, [getCountries, getAllCenter]);
+
+  useEffect(() => {
+    if (centerId) {
+      getAllCounter(centerId);
+    } else {
+      clearCounterData();
+      setValue('counter_id', '');
+    }
+  }, [centerId, getAllCounter, clearCounterData, setValue]);
+
+  useEffect(() => {
+    setValue('center_id', '');
+    setValue('counter_id', '');
+    clearCounterData();
+  }, [countryId, setValue, clearCounterData]);
+
+  const centerOptions = useMemo(() => {
+    const list = Array.isArray(centers) ? centers : [];
+    if (!countryId) return list;
+    const filtered = list.filter(
+      (c) => String(c?.country_id ?? c?.countryId ?? '') === String(countryId)
+    );
+    return filtered.length > 0 ? filtered : list;
+  }, [centers, countryId]);
+
+  const countryOptions = useMemo(
+    () => Array.isArray(countryList) ? countryList : [],
+    [countryList]
+  );
+
+  const counterOptions = useMemo(
+    () => Array.isArray(counters) ? counters : [],
+    [counters]
+  );
 
   const onSubmit = async (data) => {
     try {
-      await login({ username: data.username, password: data.password });
+      await login({
+        username: data.username,
+        password: data.password,
+        country_id: data.country_id || null,
+        center_id: data.center_id || null,
+        counter_id: data.counter_id || null,
+        sign_in_as_back_office_staff: data.signInAsBackOfficeStaff || false,
+      });
       navigate('/');
     } catch {
       // Error already shown via AlertReducer
@@ -77,6 +144,86 @@ const Login = () => {
 
             <form onSubmit={handleSubmit(onSubmit)} noValidate>
               <div className="form-sec-wrp">
+                {/* COUNTRY */}
+                <div className="form-group">
+                  <label className="form-label" htmlFor="country_id">
+                    Country
+                  </label>
+                  <select
+                    id="country_id"
+                    className="form-control login-v2__input"
+                    {...register('country_id')}
+                  >
+                    <option value="">Select Country</option>
+                    {countryOptions.map((item) => (
+                      <option
+                        key={item.country_id ?? item.id}
+                        value={item.country_id ?? item.id}
+                      >
+                        {item.country_name ?? item.name ?? '-'}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* CENTER */}
+                <div className="form-group">
+                  <label className="form-label" htmlFor="center_id">
+                    Center
+                  </label>
+                  <select
+                    id="center_id"
+                    className="form-control login-v2__input"
+                    {...register('center_id')}
+                  >
+                    <option value="">Select Center</option>
+                    {centerOptions.map((item) => (
+                      <option
+                        key={item.center_id ?? item.id}
+                        value={item.center_id ?? item.id}
+                      >
+                        {item.center_name ?? item.name ?? '-'}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* COUNTER */}
+                <div className="form-group">
+                  <label className="form-label" htmlFor="counter_id">
+                    Counter
+                  </label>
+                  <select
+                    id="counter_id"
+                    className="form-control login-v2__input"
+                    {...register('counter_id')}
+                    disabled={!centerId}
+                  >
+                    <option value="">Select Counter</option>
+                    {counterOptions.map((item) => (
+                      <option
+                        key={item.counter_id ?? item.id}
+                        value={item.counter_id ?? item.id}
+                      >
+                        {item.counter_name ?? item.name ?? '-'}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* SIGN IN AS BACK OFFICE STAFF */}
+                <div className="form-group" style={{ marginBottom: 22 }}>
+                  <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      id="signInAsBackOfficeStaff"
+                      className="form-check-input"
+                      {...register('signInAsBackOfficeStaff')}
+                    />
+                    Sign in as Back Office Staff
+                  </label>
+                </div>
+
                 {/* USERNAME */}
                 <div className={`form-group ${errors.username ? 'has-error' : ''}`}>
                   <label className="form-label" htmlFor="username">

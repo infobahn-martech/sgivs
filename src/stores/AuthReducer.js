@@ -37,11 +37,17 @@ const useAuthReducer = create((set) => ({
   userNotifyLoading: false,
 
   // ✅ SESSION LOGIN
-  login: async ({ username, password }) => {
+  login: async ({ username, password, country_id, center_id, counter_id, sign_in_as_back_office_staff }) => {
     try {
       set({ isLoginLoading: true });
 
-      const { data } = await authService.doLoginValidate(username, password);
+      const extra = {};
+      if (country_id != null && country_id !== '') extra.country_id = country_id;
+      if (center_id != null && center_id !== '') extra.center_id = center_id;
+      if (counter_id != null && counter_id !== '') extra.counter_id = counter_id;
+      if (sign_in_as_back_office_staff != null) extra.sign_in_as_back_office_staff = !!sign_in_as_back_office_staff;
+
+      const { data } = await authService.doLoginValidate(username, password, extra);
 
       // Backend response example:
       // { status: "success", message: "Login successful" }
