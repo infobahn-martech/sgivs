@@ -5,7 +5,10 @@ import { zodResolver } from '@hookform/resolvers/zod';
 
 import CustomModal from '../../components/common/CustomModal';
 import passportApplicationService from '../../services/PassportApplicationService';
+import serviceService from '../../services/serviceService';
 import useAlertReducer from '../../stores/AlertReducer';
+
+const SERVICE_TYPE_ID = 1;
 
 // ✅ Schema (numbers from inputs come as string -> use preprocess)
 const changeServicesSchema = z.object({
@@ -54,12 +57,7 @@ export default function ChangeServicesModal({
     closeModal,
     onRefreshPassportApplications,
 }) {
-    // ✅ Replace these with API data if needed
-    const serviceOptions = [
-        { value: 'normal', label: 'Normal Service' },
-        { value: 'premium', label: 'Premium' },
-        { value: 'express', label: 'Express' },
-    ];
+    const [serviceOptions, setServiceOptions] = useState([]);
 
     const cancelReasonOptions = [
         { value: 'wrong_details', label: 'Entered wrong details' },
@@ -96,6 +94,24 @@ export default function ChangeServicesModal({
     const cancelApplication = watch('cancelApplication');
     const [loadingDetails, setLoadingDetails] = useState(false);
 
+    // Fetch service options from service/service_by_service_type/1
+    useEffect(() => {
+        if (!showModal) return;
+        serviceService
+            .getServicesByServiceType(SERVICE_TYPE_ID)
+            .then((res) => {
+                const list = res?.data?.data ?? res?.data ?? [];
+                const options = Array.isArray(list)
+                    ? list.map((item) => ({
+                          value: String(item?.passport_service_id ?? item?.service_id ?? item?.id ?? ''),
+                          label: item?.service_name ?? item?.service_type ?? item?.name ?? '-',
+                      }))
+                    : [];
+                setServiceOptions(options);
+            })
+            .catch(() => setServiceOptions([]));
+    }, [showModal]);
+
     // Fetch change service details when modal opens and populate form
     useEffect(() => {
         const passportAppId = showModal?.passport_app_id ?? showModal?.id;
@@ -120,7 +136,7 @@ export default function ChangeServicesModal({
             .then((res) => {
                 const data = res?.data?.data ?? res?.data ?? {};
                 reset({
-                    serviceId: data.service ?? '',
+                    serviceId: data.service_id != null ? String(data.service_id) : '',
                     referenceNo: data.application_ref_no ?? '',
                     applicantName: data.applicant_name ?? '',
                     govtFee: data.govt_fee ?? '',
@@ -151,14 +167,33 @@ export default function ChangeServicesModal({
             .finally(() => setLoadingDetails(false));
     }, [showModal, reset]);
 
+    const [submitting, setSubmitting] = useState(false);
+
     const onSubmit = (data) => {
-        console.log('Change Service/Fee Payload:', data);
+        const passportAppId = showModal?.passport_app_id ?? showModal?.id;
+        if (!passportAppId) return;
 
-        // ✅ call API here (post/patch)
-        // patchData(showModal.id, data, () => onRefreshPassportApplications?.());
+        const payload = {
+            passport_app_id: Number(passportAppId),
+            passport_service_id: Number(data.serviceId),
+            tatkal_status: data.isTatkal ? 1 : 0,
+            cancellation: data.cancelApplication ? 'yes' : 'no',
+        };
 
-        onRefreshPassportApplications?.();
-        closeModal?.();
+        setSubmitting(true);
+        passportApplicationService
+            .updateChangeServiceFees(payload)
+            .then(() => {
+                const { success } = useAlertReducer.getState();
+                success('Change Service / Fee updated successfully');
+                onRefreshPassportApplications?.();
+                closeModal?.();
+            })
+            .catch((err) => {
+                const { error } = useAlertReducer.getState();
+                error(err?.response?.data?.message ?? err?.message ?? 'Failed to update change service fees');
+            })
+            .finally(() => setSubmitting(false));
     };
 
     const renderHeader = () => (
@@ -195,6 +230,7 @@ export default function ChangeServicesModal({
                             type="text"
                             className="form-control"
                             placeholder="REF-0001"
+                            disabled
                             {...register('referenceNo')}
                         />
                         {errors?.referenceNo && (
@@ -211,6 +247,7 @@ export default function ChangeServicesModal({
                             type="text"
                             className="form-control"
                             placeholder="Enter applicant name"
+                            disabled
                             {...register('applicantName')}
                         />
                         {errors?.applicantName && (
@@ -227,6 +264,7 @@ export default function ChangeServicesModal({
                             type="number"
                             className="form-control"
                             placeholder="0"
+                            disabled
                             {...register('govtFee')}
                         />
                         {errors?.govtFee && <p className="text-danger mt-1">{errors.govtFee.message}</p>}
@@ -237,7 +275,7 @@ export default function ChangeServicesModal({
                 <div className="col-md-6">
                     <div className="form-group">
                         <label className="form-label">ICWF</label>
-                        <input type="number" className="form-control" placeholder="0" {...register('icwf')} />
+                        <input type="number" className="form-control" placeholder="0" disabled {...register('icwf')} />
                         {errors?.icwf && <p className="text-danger mt-1">{errors.icwf.message}</p>}
                     </div>
                 </div>
@@ -250,6 +288,7 @@ export default function ChangeServicesModal({
                             type="number"
                             className="form-control"
                             placeholder="0"
+                            disabled
                             {...register('sgivsServiceFee')}
                         />
                         {errors?.sgivsServiceFee && (
@@ -337,11 +376,11 @@ export default function ChangeServicesModal({
 
     const renderFooter = () => (
         <div className="modal-footer bottom-btn-sec">
-            <button type="button" className="btn btn-cancel" onClick={closeModal}>
+            <button type="button" className="btn btn-cancel" onClick={closeModal} disabled={submitting}>
                 Cancel
             </button>
-            <button type="button" className="btn btn-submit" onClick={handleSubmit(onSubmit)}>
-                Save
+            <button type="button" className="btn btn-submit" onClick={handleSubmit(onSubmit)} disabled={submitting}>
+                {submitting ? 'Saving...' : 'Save'}
             </button>
         </div>
     );
