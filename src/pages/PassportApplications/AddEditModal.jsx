@@ -55,6 +55,12 @@ const AFS_TO_VAS_SERVICE_ID = {
   FormFilling: 3,
   SMS: 4,
 };
+const VAS_SERVICE_ID_TO_AFS = {
+  1: 'Photocopy',
+  2: 'Photograph',
+  3: 'FormFilling',
+  4: 'SMS',
+};
 
 // Passport service type id used to fetch services via service/service_by_service_type/{service_type_id}
 const PASSPORT_SERVICE_TYPE_ID = 1;
@@ -285,7 +291,8 @@ export function AddEditModal({
   onFeeValuesChange,
   serviceTypeId = PASSPORT_SERVICE_TYPE_ID,
 }) {
-  const { postData, patchData, isLoading } = usePassportApplicationReducer((state) => state);
+  const { postData, patchData, isLoading, getPassportApplicationDetails, isLoadingGetDetails } =
+    usePassportApplicationReducer((state) => state);
 
   const { getData: getDataAppointmentType, appointmentTypeData } =
     useAppointmentTypeReducer((state) => state);
@@ -426,55 +433,58 @@ export function AddEditModal({
     else onFeeValuesChange(null);
   }, [serviceRequested, feeValues, onFeeValuesChange]);
 
-  // Prefill form when editing — set values from GET/list response
+  // When opening in edit mode: fetch details from API and set form values
   const editId = showModal?.passport_app_id ?? showModal?.id;
   useEffect(() => {
-    if (editId) {
-      // Map GET response to form fields (applicant_name, appointment_type, application_mode, service_name, etc.)
-      const nameParts = (showModal?.applicant_name ?? '').trim().split(/\s+/);
-      const firstName = nameParts[0] ?? '';
-      const lastName = nameParts.slice(1).join(' ') ?? '';
-      const appointmentTypeMatch = (appointmentTypeData ?? []).find(
-        (o) => String(o?.appointment_type ?? '').trim() === String(showModal?.appointment_type ?? '').trim()
-      );
-      const applicationModeMatch = (applicationModeData ?? []).find(
-        (o) => String(o?.application_mode ?? '').trim() === String(showModal?.application_mode ?? '').trim()
-      );
-      const serviceMatch = (serviceRequestedOptions ?? []).find(
-        (o) => String(o?.label ?? '').trim() === String(showModal?.service_name ?? '').trim()
-      );
+    if (!editId) {
+      reset(defaultValues);
+      return;
+    }
+    getPassportApplicationDetails(editId, (err, details) => {
+      if (err || !details) return;
+      const pa = details?.passport_application ?? {};
+      const courier = details?.courier ?? {};
+      const payment = details?.payment ?? {};
+      const vasServices = details?.vas_services ?? [];
+      const contactCode = pa.contact_code != null ? pa.contact_code : '';
+      const mobileCode = contactCode ? `+${contactCode}` : '+971';
+      const afsFromVas = [...new Set(vasServices.map((v) => VAS_SERVICE_ID_TO_AFS[v.vas_service_id]).filter(Boolean))];
+      const hasCourier = !!(courier.address_1 || courier.address_2 || courier.state || courier.city || courier.courier_type_id);
       reset({
         ...defaultValues,
-        appointmentPostalRefNo: showModal?.appointment_ref_no ?? '',
-        applicationType: appointmentTypeMatch ? String(appointmentTypeMatch.appointment_type_id) : '',
-        applicationBy: applicationModeMatch ? String(applicationModeMatch.application_mode_id) : '',
-        arnNo: showModal?.arn_number ?? '',
-        serviceRequested: serviceMatch ? String(serviceMatch.value) : (showModal?.passport_service_id ? String(showModal.passport_service_id) : ''),
-        firstName,
-        lastName,
-        dob: showModal?.date_of_birth ?? '',
-        oldPassportNo: showModal?.old_passport_no ?? '',
-        courierRequired: !!showModal?.delivery_type,
-        mobileCode: showModal?.mobileCode || '+971',
-        addressLine2: showModal?.addressLine2 ?? showModal?.address_2 ?? '',
-        postalCode: showModal?.postalCode ?? showModal?.postal_code ?? '',
-        courier_type_id: showModal?.courier_type_id ? String(showModal.courier_type_id) : '',
-        paymentMode: showModal?.paymentMode ? String(showModal.paymentMode) : '',
-        cardType: showModal?.cardType ?? '',
-        transactionId: showModal?.transactionId ?? '',
-        gender: showModal?.gender ?? '',
-        email: showModal?.email_address ?? showModal?.email ?? '',
-        processedInGPSPV2: showModal?.processedInGPSPV2 ?? '',
-        token: showModal?.token ?? '',
-        tatkalService: !!showModal?.tatkal_status,
-        afs: Array.isArray(showModal?.afs) ? showModal.afs : [],
-        photocopyNotes: showModal?.photocopyNotes ?? '',
+        appointmentPostalRefNo: pa.appointment_ref_no ?? '',
+        applicationType: pa.appointment_type_id != null ? String(pa.appointment_type_id) : '',
+        applicationBy: pa.application_mode_id != null ? String(pa.application_mode_id) : '',
+        arnNo: pa.arn_number ?? '',
+        processedInGPSPV2: pa.processed_in_gpsp ?? '',
+        serviceRequested: pa.passport_service_id != null ? String(pa.passport_service_id) : '',
+        token: pa.token_no ?? '',
+        firstName: pa.first_name ?? '',
+        lastName: pa.last_name ?? '',
+        dob: pa.date_of_birth ?? '',
+        gender: pa.gender ?? '',
+        mobileCode,
+        mobileNumber: pa.contact_no != null ? String(pa.contact_no) : '',
+        email: pa.email_address ?? '',
+        oldPassportNo: pa.old_passport_no ?? '',
+        courierRequired: hasCourier,
+        residenceCountry: '',
+        addressLine1: courier.address_1 ?? '',
+        addressLine2: courier.address_2 ?? '',
+        postalCode: courier.postal_code != null ? String(courier.postal_code) : '',
+        courier_type_id: courier.courier_type_id != null ? String(courier.courier_type_id) : '',
+        state: courier.state ?? '',
+        city: courier.city ?? '',
+        tatkalService: !!pa.tatkal_status,
+        afs: afsFromVas,
+        photocopyNotes: '',
+        paymentMode: payment.payment_mode_id != null ? String(payment.payment_mode_id) : (pa.payment_mode != null ? String(pa.payment_mode) : ''),
+        cardType: payment.card_type ?? '',
+        transactionId: payment.transactionID ?? '',
       });
-    } else {
-      reset(defaultValues);
-    }
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editId, showModal?.applicant_name, showModal?.appointment_ref_no, showModal?.appointment_type, showModal?.application_mode, showModal?.arn_number, showModal?.date_of_birth, showModal?.old_passport_no, showModal?.service_name, appointmentTypeData, applicationModeData, serviceRequestedOptions]);
+  }, [editId]);
 
   const onSubmit = (data) => {
     const employeeId = getEmployeeIdFromStorage();
@@ -1121,10 +1131,10 @@ export function AddEditModal({
       <button
         type="submit"
         className="btn btn-submit"
-        disabled={isLoading}
+        disabled={isLoadingGetDetails || isLoading}
         onClick={handleSubmit(onSubmit)}
       >
-        {isLoading ? 'Loading...' : 'Save'}
+        {isLoadingGetDetails ? 'Loading...' : isLoading ? 'Saving...' : 'Save'}
       </button>
     </div>
   );
@@ -1138,7 +1148,7 @@ export function AddEditModal({
       body={renderBody()}
       header={renderHeader()}
       footer={renderFooter()}
-      isLoading={false}
+      isLoading={isLoadingGetDetails || isLoading}
     />
   );
 }

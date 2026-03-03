@@ -26,6 +26,9 @@ const getComments = (passport_app_id) =>
 const getChangeServiceDetails = (passport_app_id) =>
   Gateway.post('passport/get_change_service_details', { passport_app_id });
 
+const getPassportApplicationDetails = (passport_app_id) =>
+  Gateway.post('passport/get_passport_application_details', { passport_app_id });
+
 export default {
   getPassportApplications,
   createPassportApplication,
@@ -38,4 +41,5 @@ export default {
   addComment,
   getComments,
   getChangeServiceDetails,
+  getPassportApplicationDetails,
 };
