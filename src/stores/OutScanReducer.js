@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import useAlertReducer from './AlertReducer';
 import outScanService from '../services/outScanService';
 
-const EMPLOYEE_ID_KEY = 'employee_id'; // change if your key name differs
+const employee_id_key = 'employee_id'; // change if your key name differs
 const OUTSCAN_STATUS_ID = 9;
 
 const useOutScanReducer = create((set) => ({
@@ -32,19 +32,19 @@ const useOutScanReducer = create((set) => ({
         try {
             set({ isLoading: true });
 
-            const employee_id_raw = localStorage.getItem(EMPLOYEE_ID_KEY);
-            const employee_id = employee_id_raw ? Number(employee_id_raw) : null;
+            // const employee_id_raw = localStorage.getItem(employee_id_key);
+            // const employee_id = employee_id_raw ? Number(employee_id_raw) : null;
 
-            if (!employee_id) {
-                const { error } = useAlertReducer.getState();
-                error('Employee ID not found in local storage');
-                set({ isLoading: false });
-                return;
-            }
+            // if (!employee_id) {
+            //     const { error } = useAlertReducer.getState();
+            //     error('Employee ID not found in local storage');
+            //     set({ isLoading: false });
+            //     return;
+            // }
 
             await outScanService.bulkStatusChange({
                 status_id: OUTSCAN_STATUS_ID,
-                employee_id,
+                employee_id: 2,
                 application_numbers,
             });
 
