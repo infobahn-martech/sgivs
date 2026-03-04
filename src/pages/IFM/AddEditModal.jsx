@@ -56,7 +56,7 @@ export default function AddEditModal({ showModal, closeModal, onRefreshOTM }) {
     const renderHeader = () => (
         <>
             <h4 className="modal-title">
-                {showModal?.id ? 'Edit Out Scan to Mission' : 'Add Out Scan to Mission'}
+                {showModal?.id ? 'Edit IFM' : 'Add IFM'}
             </h4>
             <button
                 type="button"

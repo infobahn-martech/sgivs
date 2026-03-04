@@ -5,12 +5,12 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import CustomModal from '../../components/common/CustomModal';
 import useOutScanReducer from '../../stores/OutScanReducer';
 
-// Updated schema with isEZPass as a boolean
 const nameSchema = z.object({
-    applicationNumber: z
+    application_numbers: z
         .string()
-        .nonempty('Application Number is required')
-        .max(20, 'Application Number must be 10 characters or less'),
+        .trim()
+        .nonempty('Application Number(s) is required')
+        .max(5000, 'Too many characters'),
 });
 
 export default function AddEditModal({ showModal, closeModal, onRefreshOutScan }) {
@@ -22,46 +22,39 @@ export default function AddEditModal({ showModal, closeModal, onRefreshOutScan }
         reset,
     } = useForm({
         resolver: zodResolver(nameSchema),
-        defaultValues: {
-            applicationNumber: '',
-        },
+        defaultValues: { application_numbers: '' },
     });
 
-    const { postData, patchData, isLoading } = useOutScanReducer(
-        (state) => state
-    );
+    const { postData, isLoading } = useOutScanReducer((state) => state);
 
-    // Prefill form when editing
     useEffect(() => {
-        if (showModal?.id) {
-            setValue('applicationNumber', showModal?.applicationNumber || '');
-        } else {
-            reset();
+        if (showModal) {
+            // If you want to prefill while editing, map your data here.
+            // For now, reset each open.
+            reset({ application_numbers: '' });
         }
-    }, [showModal?.id]);
+    }, [showModal, reset]);
 
-    const onSubmit = (data) => {
-        if (showModal?.id) {
-            patchData({ id: showModal.id, ...data }, () => {
-                onRefreshOutScan();
-            });
-        } else {
-            postData(data, () => {
-                onRefreshOutScan();
-            });
-        }
-        closeModal();
+    const onSubmit = (values) => {
+        // Normalize: remove extra spaces, keep newline-separated
+        const application_numbers = values.application_numbers
+            .split('\n')
+            .map((x) => x.trim())
+            .filter(Boolean)
+            .join('\n');
+
+        postData({ application_numbers }, () => {
+            onRefreshOutScan?.();
+            closeModal?.(); // close only after success
+        });
     };
 
     const renderHeader = () => (
         <>
-            <h4 className="modal-title">
-                {showModal?.id ? 'Edit Out Scan' : 'Add Out Scan'}
-            </h4>
+            <h4 className="modal-title">Add Out Scan</h4>
             <button
                 type="button"
-                class="btn-close"
-                data-bs-dismiss="modal"
+                className="btn-close"
                 aria-label="Close"
                 onClick={closeModal}
             />
@@ -69,48 +62,40 @@ export default function AddEditModal({ showModal, closeModal, onRefreshOutScan }
     );
 
     const renderBody = () => (
-        <>
-            <div className="modal-body custom-scroll">
-                <div className="row">
-                    <div className="col-12">
-                        <div className="form-group">
-                            <label htmlFor="applicationNumber" className="form-label">
-                                Application Number<span className="text-danger">*</span>
-                            </label>
-                            <input
-                                type="text"
-                                id="applicationNumber"
-                                className="form-control"
-                                autoComplete="off"
-                                maxLength={20}
-                                {...register('applicationNumber')}
-                            />
-                            {errors.applicationNumber && (
-                                <span className="error">{errors.applicationNumber.message}</span>
-                            )}
-                        </div>
+        <div className="modal-body custom-scroll">
+            <div className="row">
+                <div className="col-12">
+                    <div className="form-group">
+                        <label htmlFor="application_numbers" className="form-label">
+                            Application Number(s)<span className="text-danger">*</span>
+                        </label>
+
+                        <textarea
+                            id="application_numbers"
+                            className="form-control"
+                            rows={6}
+                            placeholder={"APPT001"}
+                            {...register('application_numbers')}
+                        />
+
+                        {errors.application_numbers && (
+                            <span className="error">{errors.application_numbers.message}</span>
+                        )}
                     </div>
                 </div>
             </div>
-        </>
+        </div>
     );
 
     const renderFooter = () => (
-        <>
-            <div className="modal-footer bottom-btn-sec">
-                <button type="button" className="btn btn-cancel" onClick={closeModal}>
-                    Cancel
-                </button>
-                <button
-                    type="submit"
-                    className="btn btn-submit"
-                    disabled={isLoading}
-                    onClick={handleSubmit(onSubmit)}
-                >
-                    {isLoading ? 'Loading...' : 'Save'}
-                </button>
-            </div>
-        </>
+        <div className="modal-footer bottom-btn-sec">
+            <button type="button" className="btn btn-cancel" onClick={closeModal} disabled={isLoading}>
+                Cancel
+            </button>
+            <button type="button" className="btn btn-submit" disabled={isLoading} onClick={handleSubmit(onSubmit)}>
+                {isLoading ? 'Loading...' : 'Save'}
+            </button>
+        </div>
     );
 
     return (

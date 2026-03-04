@@ -1,5 +1,15 @@
 import Gateway from '../config/gateway';
 
-const getData = (params) => Gateway.post('/passport/list', { ...params, status: 2 });
+// LIST (status = 2)
+const getData = (params) =>
+    Gateway.post('/passport/list', { ...params, status: 2 });
 
-export default { getData };
+// BULK STATUS CHANGE (Out Scan -> status_id = 9)
+const bulkStatusChange = ({ status_id, employee_id, application_numbers }) =>
+    Gateway.post('/passport_scan/bulk-status-change', {
+        status_id,
+        employee_id,
+        application_numbers, // "APPT001\nAPPT002"
+    });
+
+export default { getData, bulkStatusChange };
