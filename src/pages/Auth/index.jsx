@@ -52,6 +52,8 @@ const Login = () => {
     },
   });
 
+  console.log("counters", counters);
+  console.log(countryList);
   const countryId = watch('country_id');
   const centerId = watch('center_id');
 
@@ -96,7 +98,12 @@ const Login = () => {
 
   const onSubmit = async (data) => {
     try {
-      await login({ username: data.username, password: data.password });
+      await login({
+        username: data.username,
+        password: data.password,
+        center_id: data.center_id || null,
+        counter_id: data.counter_id || null,
+      });
       navigate('/');
     } catch {
       // Error already shown via AlertReducer

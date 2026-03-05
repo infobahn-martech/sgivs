@@ -82,7 +82,7 @@ const useCounterReducer = create((set) => ({
       const { data } = await counterService.getAllCenter();
       const datas = data;
       set({
-        centers: datas?.data?.data,
+        centers: datas?.data,
         isLoadingGet: false,
       });
     } catch (err) {
@@ -91,6 +91,8 @@ const useCounterReducer = create((set) => ({
       });
     }
   },
+
+
   getAllCounter: async (id) => {
     try {
       set({ isLoadingGet: true });
@@ -98,7 +100,7 @@ const useCounterReducer = create((set) => ({
         data: { data },
       } = await counterService.getAllCounter(id);
       set({
-        counters: data?.data,
+        counters: data,
         isLoadingGet: false,
       });
     } catch (err) {

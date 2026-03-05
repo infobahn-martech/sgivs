@@ -3,7 +3,7 @@ import useAlertReducer from './AlertReducer';
 import outScanService from '../services/outScanService';
 
 const employee_id_key = 'employee_id'; // change if your key name differs
-const OUTSCAN_STATUS_ID = 9;
+const OUTSCAN_STATUS_ID = 2;
 
 const useOutScanReducer = create((set) => ({
     isLoading: false,
