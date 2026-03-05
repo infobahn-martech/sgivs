@@ -1,11 +1,148 @@
-import React, { useState, useEffect } from 'react';
-import CustomModal from '../../components/common/CustomModal';
+import React, { useState, useEffect, useRef } from 'react';
+import moment from 'moment';
+import JsBarcode from 'jsbarcode';
 import passportApplicationService from '../../services/PassportApplicationService';
 import useAlertReducer from '../../stores/AlertReducer';
 
-export function PrintBarcodeModal({ showModal, closeModal, title = 'Print Barcode' }) {
+function BarcodeSvg({ value, options = {} }) {
+    const svgRef = useRef(null);
+    useEffect(() => {
+        if (svgRef.current && value) {
+            try {
+                JsBarcode(svgRef.current, String(value), {
+                    format: 'CODE128',
+                    width: 2.5,
+                    height: 60,
+                    displayValue: false,
+                    margin: 10,
+                    ...options,
+                });
+            } catch (e) {
+                // Fallback if barcode fails
+            }
+        }
+    }, [value, options]);
+    return value ? <svg ref={svgRef} className="barcode-svg" /> : null;
+}
+
+function BarcodeContent({ data }) {
+    if (!data || typeof data !== 'object') return null;
+
+    const barcodeValue = data.barcode_value || data.appointment_ref || data.arn_number || '—';
+    const arn = data.arn_number || data.appointment_ref || data.barcode_value || '—';
+    const applicantName = data.applicant_name || '—';
+    const applicationDate = data.application_date
+        ? moment(data.application_date).format('DD/MM/YYYY')
+        : data.created_on
+            ? moment(data.created_on).format('DD/MM/YYYY')
+            : '—';
+    const deliveryMode = data.delivery_mode || data.delivery_type || '—';
+    const icacCenter = data.icac_center || data.center_name || data.mission_name || '—';
+
+    return (
+        <div className="passport-barcode" id="passport-barcode-print">
+            <style>{`
+                .passport-barcode {
+                    max-width: 400px;
+                    margin: 0 auto;
+                    padding: 24px;
+                    font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+                    font-size: 14px;
+                    line-height: 1.5;
+                    color: #1a1a1a;
+                }
+                .passport-barcode .barcode-title {
+                    font-size: 18px;
+                    font-weight: 700;
+                    text-align: center;
+                    margin-bottom: 20px;
+                    color: #0d47a1;
+                    letter-spacing: 0.5px;
+                }
+                .passport-barcode .barcode-section {
+                    text-align: center;
+                    padding: 16px 0;
+                    background: #fafafa;
+                    border-radius: 8px;
+                    margin-bottom: 20px;
+                    border: 1px solid #e8e8e8;
+                }
+                .passport-barcode .barcode-section .barcode-value {
+                    font-size: 16px;
+                    font-weight: 600;
+                    letter-spacing: 2px;
+                    margin: 8px 0;
+                    font-family: 'Consolas', 'Monaco', monospace;
+                }
+                .passport-barcode .barcode-section svg {
+                    max-width: 100%;
+                    height: auto;
+                }
+                .passport-barcode .details-table {
+                    width: 100%;
+                    border-collapse: collapse;
+                }
+                .passport-barcode .details-table td {
+                    padding: 10px 0;
+                    border-bottom: 1px solid #eee;
+                    vertical-align: top;
+                }
+                .passport-barcode .details-table td:first-child {
+                    font-weight: 500;
+                    color: #555;
+                    width: 42%;
+                }
+                .passport-barcode .details-table td:last-child {
+                    font-weight: 600;
+                    color: #111;
+                }
+                .passport-barcode .details-table tr:last-child td {
+                    border-bottom: none;
+                }
+                @media print {
+                    .passport-barcode { padding: 16px; }
+                    .passport-barcode .barcode-section { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                }
+            `}</style>
+
+            <div className="barcode-title">Passport Barcode</div>
+
+            <div className="barcode-section">
+                <div className="barcode-value">{barcodeValue}</div>
+                <BarcodeSvg value={barcodeValue} options={{ height: 70 }} />
+                <div className="barcode-value">{barcodeValue}</div>
+            </div>
+
+            <table className="details-table">
+                <tbody>
+                    <tr>
+                        <td>ARN</td>
+                        <td>{arn}</td>
+                    </tr>
+                    <tr>
+                        <td>Applicant Name</td>
+                        <td>{applicantName}</td>
+                    </tr>
+                    <tr>
+                        <td>Application Date</td>
+                        <td>{applicationDate}</td>
+                    </tr>
+                    <tr>
+                        <td>Delivery Mode</td>
+                        <td>{deliveryMode}</td>
+                    </tr>
+                    <tr>
+                        <td>ICAC</td>
+                        <td>{icacCenter}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    );
+}
+
+export function PrintBarcodeModal({ showModal, closeModal }) {
     const [barcodeData, setBarcodeData] = useState(null);
-    const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
         if (!showModal) {
@@ -13,84 +150,117 @@ export function PrintBarcodeModal({ showModal, closeModal, title = 'Print Barcod
             return;
         }
         const passport_app_id = showModal?.passport_app_id || showModal?.id || showModal?._id;
-        if (!passport_app_id) return;
+        if (!passport_app_id) {
+            closeModal();
+            return;
+        }
 
         const fetchBarcode = async () => {
-            setIsLoading(true);
-            setBarcodeData(null);
             try {
                 const { data } = await passportApplicationService.getBarcode(passport_app_id);
                 setBarcodeData(data?.data ?? data);
             } catch (err) {
                 const { error } = useAlertReducer.getState();
                 error(err?.response?.data?.message ?? err?.message ?? 'Failed to load barcode');
-            } finally {
-                setIsLoading(false);
+                closeModal();
             }
         };
         fetchBarcode();
-    }, [showModal]);
+    }, [showModal, closeModal]);
 
-    const renderHeader = () => (
-        <>
-            <h4 className="modal-title">{title}</h4>
-            <button
-                type="button"
-                className="btn-close"
-                data-bs-dismiss="modal"
-                aria-label="Close"
-                onClick={closeModal}
-            />
-        </>
-    );
+    useEffect(() => {
+        if (!barcodeData || !showModal) return;
 
-    const renderBody = () => (
-        <div className="modal-body custom-scroll view-modal-body">
-            <div className="print-receipt-content">
-                {isLoading && (
-                    <p className="text-muted">Loading barcode...</p>
-                )}
-                {!isLoading && barcodeData && (
-                    <>
-                        {typeof barcodeData === 'string' && barcodeData.startsWith('http') && (
-                            <iframe src={barcodeData} title="Barcode" style={{ width: '100%', minHeight: '300px', border: 'none' }} />
-                        )}
-                        {typeof barcodeData === 'string' && barcodeData.startsWith('data:') && (
-                            <img src={barcodeData} alt="Barcode" style={{ maxWidth: '100%' }} />
-                        )}
-                        {typeof barcodeData === 'object' && barcodeData?.url && (
-                            <iframe src={barcodeData.url} title="Barcode" style={{ width: '100%', minHeight: '300px', border: 'none' }} />
-                        )}
-                        {typeof barcodeData === 'object' && barcodeData?.html && (
-                            <div dangerouslySetInnerHTML={{ __html: barcodeData.html }} />
-                        )}
-                        {typeof barcodeData === 'object' && barcodeData?.image && (
-                            <img src={barcodeData.image} alt="Barcode" style={{ maxWidth: '100%' }} />
-                        )}
-                        {barcodeData && !barcodeData?.url && !barcodeData?.html && !barcodeData?.image && typeof barcodeData !== 'string' && (
-                            <pre>{JSON.stringify(barcodeData, null, 2)}</pre>
-                        )}
-                    </>
-                )}
-                {!isLoading && !barcodeData && showModal && (
-                    <>
-                        <h4>Print Barcode</h4>
-                        <p className="text-muted">No barcode data available.</p>
-                    </>
-                )}
-            </div>
-        </div>
-    );
+        // URL – open in new window and print
+        const url = typeof barcodeData === 'string' && barcodeData.startsWith('http')
+            ? barcodeData
+            : barcodeData?.url;
+        if (url) {
+            const w = window.open(url, '_blank');
+            if (w) {
+                w.onload = () => {
+                    w.focus();
+                    w.print();
+                };
+            }
+            closeModal();
+            return;
+        }
+
+        // HTML string
+        if (barcodeData?.html) {
+            const w = window.open('', '_blank');
+            w.document.write(barcodeData.html);
+            w.document.close();
+            w.focus();
+            setTimeout(() => w.print(), 300);
+            closeModal();
+            return;
+        }
+
+        // Image – open in new window and print
+        if (barcodeData?.image) {
+            const w = window.open('', '_blank');
+            w.document.write(`
+                <html>
+                    <head><title>Print Barcode</title></head>
+                    <body style="margin:0;display:flex;justify-content:center;align-items:center;min-height:100vh;">
+                        <img src="${barcodeData.image}" alt="Barcode" style="max-width:100%;" />
+                    </body>
+                </html>
+            `);
+            w.document.close();
+            w.focus();
+            setTimeout(() => w.print(), 300);
+            closeModal();
+            return;
+        }
+
+        // Formatted barcode (object)
+        if (typeof barcodeData === 'object' && !barcodeData?.url && !barcodeData?.html && !barcodeData?.image) {
+            const timer = setTimeout(() => {
+                const el = document.getElementById('passport-barcode-print');
+                if (!el) {
+                    closeModal();
+                    return;
+                }
+                const printWindow = window.open('', '_blank');
+                printWindow.document.write(`
+                    <html>
+                        <head><title>Print Barcode</title></head>
+                        <body style="margin:0;padding:20px;">${el.outerHTML}</body>
+                    </html>
+                `);
+                printWindow.document.close();
+                printWindow.focus();
+                setTimeout(() => printWindow.print(), 300);
+                closeModal();
+            }, 400);
+            return () => clearTimeout(timer);
+        }
+    }, [barcodeData, showModal, closeModal]);
+
+    if (!showModal) return null;
+
+    const isObjectBarcode =
+        barcodeData &&
+        typeof barcodeData === 'object' &&
+        !barcodeData?.url &&
+        !barcodeData?.html &&
+        !barcodeData?.image;
 
     return (
-        <CustomModal
-            className="modal fade print-receipt-modal card-type-verification-modal show"
-            dialgName="modal-dialog-scrollable"
-            show={!!showModal}
-            closeModal={closeModal}
-            body={renderBody()}
-            header={renderHeader()}
-        />
+        <div
+            style={{
+                position: 'fixed',
+                left: -9999,
+                top: 0,
+                visibility: isObjectBarcode ? 'visible' : 'hidden',
+            }}
+            aria-hidden="true"
+        >
+            {isObjectBarcode && <BarcodeContent data={barcodeData} />}
+        </div>
     );
 }
 

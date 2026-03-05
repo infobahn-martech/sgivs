@@ -150,7 +150,7 @@ function buildCreateFullApplicationPayload(data, totalFees = 0) {
     email_address: data.email ?? '',
     old_passport_no: data.oldPassportNo ?? '',
     tatkal_status: data.tatkalService ? 1 : 0,
-    afs_service_status: (data.afs || []).length > 0 ? 1 : 0,
+    vas_service_status: (data.afs || []).length > 0 ? 1 : 0,
     payment_mode: parseIntSafe(data.paymentMode, 2),
     created_by: employeeId,
   };
