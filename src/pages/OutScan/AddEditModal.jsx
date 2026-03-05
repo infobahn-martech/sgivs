@@ -18,7 +18,6 @@ export default function AddEditModal({ showModal, closeModal, onRefreshOutScan }
         register,
         handleSubmit,
         formState: { errors },
-        setValue,
         reset,
     } = useForm({
         resolver: zodResolver(nameSchema),
@@ -29,8 +28,6 @@ export default function AddEditModal({ showModal, closeModal, onRefreshOutScan }
 
     useEffect(() => {
         if (showModal) {
-            // If you want to prefill while editing, map your data here.
-            // For now, reset each open.
             reset({ application_numbers: '' });
         }
     }, [showModal, reset]);

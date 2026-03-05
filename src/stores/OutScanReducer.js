@@ -1,9 +1,20 @@
 import { create } from 'zustand';
 import useAlertReducer from './AlertReducer';
 import outScanService from '../services/outScanService';
+import { getItem } from '../helpers/localStorage';
+import { OUTSCAN_STATUS_ID } from '../utils/helpers';
 
-const employee_id_key = 'employee_id'; // change if your key name differs
-const OUTSCAN_STATUS_ID = 2;
+// Status ID mapping:
+// 0 - Inactive / Deleted Application
+// 1 - Document Uploaded
+// 2 - OutScanned from Spoke
+// 3 - Inscan at hub
+// 4 - Outscanned to mission
+// 5 - Inscan from Mission
+// 6 - Outscan to Spoke
+// 7 - Counter Delivery
+// 8 - Outscanned to Courier
+// 9 - Delivered to Customer
 
 const useOutScanReducer = create((set) => ({
     isLoading: false,
@@ -28,23 +39,24 @@ const useOutScanReducer = create((set) => ({
     },
 
     // For Out Scan "Add" -> call bulk_status_change
-    postData: async ({ application_numbers }, cb) => {
+    // status_id: 2 = OutScanned from Spoke (default). Pass different status_id as needed.
+    postData: async ({ application_numbers, status_id = OUTSCAN_STATUS_ID }, cb) => {
         try {
             set({ isLoading: true });
 
-            // const employee_id_raw = localStorage.getItem(employee_id_key);
-            // const employee_id = employee_id_raw ? Number(employee_id_raw) : null;
+            const employee_id_raw = getItem('employee_id');
+            const employee_id = employee_id_raw ? Number(employee_id_raw) : null;
 
-            // if (!employee_id) {
-            //     const { error } = useAlertReducer.getState();
-            //     error('Employee ID not found in local storage');
-            //     set({ isLoading: false });
-            //     return;
-            // }
+            if (!employee_id) {
+                const { error } = useAlertReducer.getState();
+                error('Employee ID not found in local storage');
+                set({ isLoading: false });
+                return;
+            }
 
             await outScanService.bulkStatusChange({
-                status_id: OUTSCAN_STATUS_ID,
-                employee_id: 2,
+                status_id,
+                employee_id,
                 application_numbers,
             });
 
