@@ -27,7 +27,7 @@ const useOutScanReducer = create((set) => ({
         }
     },
 
-    // For Out Scan "Add" -> call bulk-status-change
+    // For Out Scan "Add" -> call bulk_status_change
     postData: async ({ application_numbers }, cb) => {
         try {
             set({ isLoading: true });

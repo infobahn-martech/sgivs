@@ -6,7 +6,7 @@ const getData = (params) =>
 
 // BULK STATUS CHANGE (Out Scan -> status_id = 9)
 const bulkStatusChange = ({ status_id, employee_id, application_numbers }) =>
-    Gateway.post('/passport_scan/bulk-status-change', {
+    Gateway.post('/passport_scan/bulk_status_change', {
         status_id,
         employee_id,
         application_numbers, // "APPT001\nAPPT002"
