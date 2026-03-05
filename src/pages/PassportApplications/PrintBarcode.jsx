@@ -105,7 +105,6 @@ function BarcodeContent({ data }) {
                 }
             `}</style>
 
-            <div className="barcode-title">Passport Barcode</div>
 
             <div className="barcode-section">
                 <div className="barcode-value">{barcodeValue}</div>
