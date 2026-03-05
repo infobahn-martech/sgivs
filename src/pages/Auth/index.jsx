@@ -100,7 +100,6 @@ const Login = () => {
   );
 
   const onSubmit = async (data) => {
-    debugger;
     try {
       await login({
         username: data.username,
