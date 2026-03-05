@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import useAlertReducer from './AlertReducer';
 import ifmService from '../services/ifmService';
+import { getItem } from '../helpers/localStorage';
+import { IFM_STATUS_ID } from '../utils/helpers';
 
 const useIFMReducer = create((set) => ({
     isLoading: false,
@@ -8,6 +10,33 @@ const useIFMReducer = create((set) => ({
     errorMessage: '',
     successMessage: '',
     ifmData: null,
+
+    postData: async ({ application_numbers }, cb) => {
+        try {
+            set({ isLoading: true });
+            const employee_id_raw = getItem('employee_id');
+            const employee_id = employee_id_raw ? Number(employee_id_raw) : null;
+            if (!employee_id) {
+                const { error } = useAlertReducer.getState();
+                error('Employee ID not found in local storage');
+                set({ isLoading: false });
+                return;
+            }
+            await ifmService.bulkStatusChange({
+                status_id: IFM_STATUS_ID,
+                employee_id,
+                application_numbers,
+            });
+            const { success } = useAlertReducer.getState();
+            success('IFM updated successfully');
+            set({ isLoading: false });
+            cb?.();
+        } catch (err) {
+            const { error } = useAlertReducer.getState();
+            error(err?.response?.data?.message ?? err.message);
+            set({ isLoading: false });
+        }
+    },
 
     getData: async (params) => {
         try {
