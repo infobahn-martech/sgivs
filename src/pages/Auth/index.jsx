@@ -19,6 +19,9 @@ import logoImg from '../../assets/images/mainLogo.png';
 const loginSchema = z.object({
   username: z.string().nonempty('Username is required'),
   password: z.string().nonempty('Password is required'),
+  country_id: z.string().optional(),
+  center_id: z.string().optional(),
+  counter_id: z.string().optional(),
 });
 
 const Login = () => {
@@ -97,6 +100,7 @@ const Login = () => {
   );
 
   const onSubmit = async (data) => {
+    debugger;
     try {
       await login({
         username: data.username,
