@@ -52,15 +52,15 @@ const useAuthReducer = create((set) => ({
       }
 
       // ✅ Store employee_id, center_id, role_id from login response
-      const { employee_id, center_id, role_id } = data;
-      if (employee_id != null) setItem('employee_id', String(employee_id));
-      if (center_id != null) setItem('center_id', String(center_id));
-      if (role_id != null) setItem('role_id', String(role_id));
+      const { employee_id: resEmployeeId, center_id: resCenterId, role_id: resRoleId } = data;
+      if (resEmployeeId != null) setItem('employee_id', String(resEmployeeId));
+      if (resCenterId != null) setItem('center_id', String(resCenterId));
+      if (resRoleId != null) setItem('role_id', String(resRoleId));
 
       set({
         isAuthenticated: true,
         isLoginLoading: false,
-        authData: { employee_id, center_id, role_id },
+        authData: { employee_id: resEmployeeId, center_id: resCenterId, role_id: resRoleId },
       });
 
       const { success } = useAlertReducer.getState();
