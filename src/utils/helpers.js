@@ -12,3 +12,5 @@ export const OTM_STATUS_ID = 4;
 export const IFM_STATUS_ID = 5;
 // OTS status_id (6 = Outscan to Spoke)
 export const OTS_STATUS_ID = 6;
+// OTC status_id (8 = Outscanned to Courier)
+export const OTC_STATUS_ID = 8;
