@@ -104,8 +104,8 @@ const Login = () => {
       await login({
         username: data.username,
         password: data.password,
-        center_id: data.center_id || null,
-        counter_id: data.counter_id || null,
+        center_id: data.center_id || 1,
+        counter_id: data.counter_id || 1,
       });
       navigate('/');
     } catch {

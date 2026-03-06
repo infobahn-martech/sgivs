@@ -21,8 +21,9 @@ const OutScan = () => {
     search: '',
     page: 1,
     limit: 10,
-    fromDate: null,
-    toDate: null,
+    date: null, // YYYY-MM-DD
+    center_id: null,
+    employee_id: null,
     sortBy: 'date',
     sortOrder: 'DESC',
     isExcelExport: 'false',
@@ -114,13 +115,14 @@ const OutScan = () => {
         hideFilter
         onSearch={debouncedSearch}
         submitFilter={(filters) => {
-          const { fromDate, toDate, ...rest } = filters;
+          const { fromDate, toDate, date, center_id, employee_id, ...rest } = filters;
 
           setParams({
             ...params,
             ...rest,
-            fromDate: fromDate ? moment(fromDate).format('YYYY-MM-DD') : null,
-            toDate: toDate ? moment(toDate).format('YYYY-MM-DD') : null,
+            date: date ? moment(date).format('YYYY-MM-DD') : (fromDate ? moment(fromDate).format('YYYY-MM-DD') : null),
+            center_id: center_id ?? null,
+            employee_id: employee_id ?? null,
             page: 1,
           });
         }}

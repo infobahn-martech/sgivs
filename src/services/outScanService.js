@@ -1,8 +1,19 @@
 import Gateway from '../config/gateway';
 
-// LIST (status = 2)
-const getData = (params) =>
-    Gateway.post('/passport/list', { ...params, status: 2 });
+// // LIST (status = 2)
+// const getData = (params) =>
+//     Gateway.post('/passport/list', { ...params, status: 2 });
+
+const getData = (params) => {
+    const { date, center_id, employee_id, ...rest } = params || {};
+    const queryParams = {
+        ...rest,
+        ...(date && { date }),           // YYYY-MM-DD
+        ...(center_id && { center_id }),
+        ...(employee_id && { employee_id }),
+    };
+    return Gateway.get('/outscan/spoke_list', { params: queryParams });
+};
 
 // BULK STATUS CHANGE (Out Scan -> status_id = 9)
 const bulkStatusChange = ({ status_id, employee_id, application_numbers }) =>
