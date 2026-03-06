@@ -12,7 +12,7 @@ const getData = (params) => {
         ...(center_id && { center_id }),
         ...(employee_id && { employee_id }),
     };
-    return Gateway.get('/outscan/spoke_list', { params: queryParams });
+    return Gateway.post('/outscan/spoke_list', queryParams);
 };
 
 // BULK STATUS CHANGE (Out Scan -> status_id = 9)
