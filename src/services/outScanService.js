@@ -11,6 +11,7 @@ const getData = (params) => {
         ...(date && { date }),           // YYYY-MM-DD
         ...(center_id && { center_id }),
         ...(employee_id && { employee_id }),
+        status: 1,
     };
     return Gateway.post('/outscan/spoke_list', queryParams);
 };

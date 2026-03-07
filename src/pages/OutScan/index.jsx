@@ -15,6 +15,8 @@ const OutScan = () => {
   const { getData, outScanData, isLoadingGet, isLoadingDelete } =
     useOutScanReducer((state) => state);
 
+  console.log("outScanData", outScanData);
+
   const [retrieveModalOpen, setRetrieveModalOpen] = useState(false);
 
   const initialParams = {
@@ -62,22 +64,21 @@ const OutScan = () => {
     },
     {
       name: 'Center',
-      selector: 'center',
+      selector: 'center_name',
       sortable: true,
-      sortField: 'center',
+      sortField: 'center_name',
     },
     {
       name: 'By',
-      selector: 'by',
+      selector: 'employee_name',
       sortable: true,
-      sortField: 'by',
+      sortField: 'employee_name',
     },
     {
       name: 'Total Application',
-      selector: 'totalApplication',
+      selector: 'total_application',
       sortable: true,
-      sortField: 'totalApplication',
-      cell: (row) => <span>{row?.totalApplication ?? 0}</span>,
+      sortField: 'total_application',
     },
   ];
 
@@ -133,7 +134,7 @@ const OutScan = () => {
         pagination={{ currentPage: params.page, limit: params.limit }}
         count={outScanData?.total || 0}
         columns={columns}
-        data={outScanData?.data || []}
+        data={outScanData || []}
         isLoading={isLoadingGet}
         onPageChange={(page) => setParams({ ...params, page })}
         setLimit={(limit) => setParams({ ...params, limit })}
