@@ -36,15 +36,15 @@ export const headerConfig = [
   // Passport Manager
   { title: 'Passport Applications', icon: transactionICo, path: '/passport-applications' },
   { title: 'Deleted Application', icon: transactionICo, path: '/delete-application' },
-  { title: 'Outscanned From Spoke', icon: transactionICo, path: '/outscan' },
-  { title: 'Inscan At Hub', icon: transactionICo, path: '/inscan' },
-  { title: 'Out Scan to Mission', icon: transactionICo, path: '/outscan-to-mission' },
+  { title: 'Outscanned From Spoke', icon: transactionICo, path: '/outscan-from-spoke' },
+  { title: 'Outscanned To Spoke', icon: transactionICo, path: '/outscan-to-spoke' },
+  { title: 'Inscan At Hub', icon: transactionICo, path: '/inscan-at-hub' },
   { title: 'Inscan From Mission', icon: transactionICo, path: '/inscan-from-mission' },
-  { title: 'Outscan To Spoke', icon: transactionICo, path: '/outscan-to-spoke' },
+  { title: 'Out Scan to Mission', icon: transactionICo, path: '/outscan-to-mission' },
   { title: 'Counter Delivery', icon: transactionICo, path: '/counter-delivery' },
   { title: 'Outscan To Courier', icon: transactionICo, path: '/outscan-to-courier' },
   { title: 'Passport Tracking', icon: transactionICo, path: '/passport-tracking' },
-  { title: 'Reference Number', icon: transactionICo, path: '/get-reference-numbers' },
+  { title: 'Get Reference Numbers', icon: transactionICo, path: '/get-reference-numbers' },
 
   // Visa Manager
   { title: 'Visa Applications', icon: transactionICo, path: '/visa-applications' },
