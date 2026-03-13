@@ -5,23 +5,23 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import CustomModal from '../../components/common/CustomModal';
 import useVisaApplicationReducer from '../../stores/VisaApplicationReducer';
 
-// ===================== OPTIONS (Replace with API options if needed) =====================
+// ===================== OPTIONS =====================
 const applicationTypeOptions = [
-  { value: 'New', label: 'New' },
-  { value: 'Renewal', label: 'Renewal' },
-  { value: 'Reissue', label: 'Reissue' },
+  { value: 'New', label: 'New', id: 1 },
+  { value: 'Renewal', label: 'Renewal', id: 2 },
+  { value: 'Reissue', label: 'Reissue', id: 3 },
 ];
 
 const applicationByOptions = [
-  { value: 'Applicant', label: 'Applicant' },
-  { value: 'Agent', label: 'Agent' },
-  { value: 'Representative', label: 'Representative' },
+  { value: 'Applicant', label: 'Applicant', id: 1 },
+  { value: 'Agent', label: 'Agent', id: 2 },
+  { value: 'Representative', label: 'Representative', id: 3 },
 ];
 
 const serviceRequestedOptions = [
-  { value: 'Normal', label: 'Normal' },
-  { value: 'Tatkal', label: 'Tatkal' },
-  { value: 'Premium', label: 'Premium' },
+  { value: 'Normal', label: 'Normal', id: 1 },
+  { value: 'Tatkal', label: 'Tatkal', id: 2 },
+  { value: 'Premium', label: 'Premium', id: 3 },
 ];
 
 const tokenOptions = [
@@ -36,12 +36,6 @@ const genderOptions = [
   { value: 'Other', label: 'Other' },
 ];
 
-const centerOptions = [
-  { value: 'Dubai Center', label: 'Dubai Center' },
-  { value: 'Abu Dhabi Center', label: 'Abu Dhabi Center' },
-  { value: 'Sharjah Center', label: 'Sharjah Center' },
-  { value: 'Ajman Center', label: 'Ajman Center' },
-];
 
 const countryCodeOptions = [
   { value: '+971', label: '+971 (UAE)' },
@@ -71,18 +65,23 @@ const nationalityOptions = [
 ];
 
 const paymentModeOptions = [
-  { value: 'Cash', label: 'Cash' },
-  { value: 'Card', label: 'Credit card / Debit card' },
-  { value: 'POS', label: 'Other POS Transaction' },
+  { value: 'Cash', label: 'Cash', id: 1 },
+  { value: 'Card', label: 'Credit card / Debit card', id: 2 },
+  { value: 'POS', label: 'Other POS Transaction', id: 3 },
 ];
 
-// Application Facilitation Services (multiple checkbox)
 const afsOptions = [
-  { value: 'Photocopy', label: 'Photocopy' },
-  { value: 'Photograph', label: 'Photograph' },
-  { value: 'FormFilling', label: 'Form filling' },
-  { value: 'SMS', label: 'SMS' },
+  { value: 'Photocopy', label: 'Photocopy', id: 1 },
+  { value: 'Photograph', label: 'Photograph', id: 2 },
+  { value: 'FormFilling', label: 'Form filling', id: 3 },
+  { value: 'SMS', label: 'SMS', id: 4 },
 ];
+
+// ===================== HELPERS =====================
+const getOptionId = (options, value) => {
+  const matched = options.find((item) => item.value === value);
+  return matched?.id || null;
+};
 
 // ===================== VALIDATION =====================
 const schema = z
@@ -94,7 +93,6 @@ const schema = z
 
     applicationType: z.string().nonempty('Application type is required'),
     applicationBy: z.string().nonempty('Application by is required'),
-    center: z.string().nonempty('Center is required'),
 
     webFileNo: z.string().nonempty('Web file number is required').max(50),
     consproMFileNo: z.string().nonempty('Consprom file number is required').max(50),
@@ -142,27 +140,23 @@ const schema = z
     paymentMode: z.string().nonempty('Payment mode is required'),
   })
   .superRefine((val, ctx) => {
-    // Emergency visa => priority reason required
-    if (val.emergencyVisa) {
-      if (!val.priorityReason || !val.priorityReason.trim()) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ['priorityReason'],
-          message: 'Priority Reason is required for Emergency Visa',
-        });
-      }
+    if (val.emergencyVisa && !val.priorityReason?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['priorityReason'],
+        message: 'Priority Reason is required for Emergency Visa',
+      });
     }
 
-    // Courier required => courier fields required
     if (val.courierRequired) {
-      if (!val.courierParentName || !val.courierParentName.trim()) {
+      if (!val.courierParentName?.trim()) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ['courierParentName'],
           message: 'Father/mother/spouse name (for courier delivery) is required',
         });
       }
-      if (!val.returnCourierAddress || !val.returnCourierAddress.trim()) {
+      if (!val.returnCourierAddress?.trim()) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ['returnCourierAddress'],
@@ -174,7 +168,14 @@ const schema = z
 
 // ===================== COMPONENT =====================
 export function AddEditModal({ showModal, closeModal, onRefreshVisaApplications }) {
-  const { postData, patchData, isLoading } = useVisaApplicationReducer((state) => state);
+  const {
+    createVisaApplication,
+    updateVisaApplication,
+    isCreateVisaApplicationLoading,
+    isUpdateVisaApplicationLoading,
+  } = useVisaApplicationReducer((state) => state);
+
+  const isLoading = isCreateVisaApplicationLoading || isUpdateVisaApplicationLoading;
 
   const defaultValues = useMemo(
     () => ({
@@ -222,6 +223,9 @@ export function AddEditModal({ showModal, closeModal, onRefreshVisaApplications 
       afs: [],
 
       paymentMode: '',
+      cardType: '',
+      transactionId: '',
+      createdBy: 4,
     }),
     []
   );
@@ -242,8 +246,8 @@ export function AddEditModal({ showModal, closeModal, onRefreshVisaApplications 
   const emergencyVisa = watch('emergencyVisa');
   const courierRequired = watch('courierRequired');
   const selectedAfs = watch('afs') || [];
+  const paymentMode = watch('paymentMode');
 
-  // Prefill form when editing
   useEffect(() => {
     if (showModal?.id) {
       reset({
@@ -259,8 +263,7 @@ export function AddEditModal({ showModal, closeModal, onRefreshVisaApplications 
     } else {
       reset(defaultValues);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showModal?.id]);
+  }, [showModal?.id, reset, defaultValues, showModal]);
 
   const toggleAfsItem = (value) => {
     const current = new Set(selectedAfs);
@@ -295,27 +298,89 @@ export function AddEditModal({ showModal, closeModal, onRefreshVisaApplications 
     setValue('returnCourierAddress', '', { shouldValidate: true });
   };
 
-  const onSubmit = (data) => {
-    // If not emergency => clear priority fields
-    // If no courier => clear courier fields
-    const payload = {
-      ...data,
-      ...(data.emergencyVisa ? {} : { priorityReason: '' }),
-      ...(data.courierRequired ? {} : { courierParentName: '', returnCourierAddress: '' }),
+  const buildPayload = (data) => {
+    const centerId = getOptionId(centerOptions, data.center);
+    const visaServiceId = getOptionId(serviceRequestedOptions, data.serviceRequested);
+    const appointmentModeId = getOptionId(applicationByOptions, data.applicationBy);
+    const appointmentTypeId = getOptionId(applicationTypeOptions, data.applicationType);
+    const paymentModeId = getOptionId(paymentModeOptions, data.paymentMode);
+
+    const mobileNumberCombined = `${data.mobileCode}${data.mobileNumber}`.replace(/\s+/g, '');
+
+    const vasServices = (data.afs || [])
+      .map((item) => {
+        const serviceId = getOptionId(afsOptions, item);
+        if (!serviceId) return null;
+        return {
+          vas_service_id: serviceId,
+          quantity: 1,
+        };
+      })
+      .filter(Boolean);
+
+    const extraCommentParts = [
+      `Appointment/Postal Ref No: ${data.appointmentPostalRefNo}`,
+      `Web File No: ${data.webFileNo}`,
+      `Consprom File No: ${data.consproMFileNo}`,
+      `Token: ${data.token}`,
+      `Email: ${data.email}`,
+      `Visa Duration: ${data.visaDuration}`,
+      `Visa Entry: ${data.visaEntry}`,
+      `Nationality: ${data.nationality}`,
+      `Passport Expiry Date: ${data.passportExpiryDate}`,
+      `Father/Husband Name: ${data.fatherHusbandName}`,
+      `Combino Not Found: ${data.combinoNotFound ? 'Yes' : 'No'}`,
+      `Emergency Visa: ${data.emergencyVisa ? 'Yes' : 'No'}`,
+      data.priorityReason ? `Priority Reason: ${data.priorityReason}` : null,
+      `Courier Required: ${data.courierRequired ? 'Yes' : 'No'}`,
+      data.courierParentName ? `Courier Parent Name: ${data.courierParentName}` : null,
+      data.returnCourierAddress ? `Return Courier Address: ${data.returnCourierAddress}` : null,
+      `Urgent Fee: ${data.urgentFee ? 'Yes' : 'No'}`,
+    ].filter(Boolean);
+
+    return {
+      visa_application: {
+        center_id: centerId,
+        visa_service_id: visaServiceId,
+        appointment_mode_id: appointmentModeId,
+        appointment_type_id: appointmentTypeId,
+        first_name: data.firstName,
+        surname: data.surname,
+        dob: data.dob,
+        gender: data.gender,
+        mobile_number: mobileNumberCombined,
+        passport_no: data.passportNo,
+        created_by: Number(data.createdBy) || 4,
+      },
+      payment: {
+        payment_mode_id: paymentModeId,
+        card_type: data.paymentMode === 'Card' ? 'Credit Card' : '',
+        transaction_id: data.transactionId || '',
+      },
+      vas_services: vasServices,
+      comment: {
+        comment: extraCommentParts.join('\n'),
+      },
     };
+  };
+
+  const onSubmit = async (data) => {
+    const payload = buildPayload(data);
 
     if (showModal?.id) {
-      patchData({ id: showModal.id, ...payload }, () => {
+      const success = await updateVisaApplication(showModal.id, payload);
+      if (success) {
         onRefreshVisaApplications?.();
         closeModal?.();
-      });
+      }
       return;
     }
 
-    postData(payload, () => {
+    const success = await createVisaApplication(payload);
+    if (success) {
       onRefreshVisaApplications?.();
       closeModal?.();
-    });
+    }
   };
 
   const renderHeader = () => (
@@ -333,7 +398,6 @@ export function AddEditModal({ showModal, closeModal, onRefreshVisaApplications 
 
   const renderBody = () => (
     <div className="modal-body custom-scroll">
-      {/* ========== Row 1 ========== */}
       <div className="row">
         <div className="col-md-6">
           <div className="form-group">
@@ -363,7 +427,6 @@ export function AddEditModal({ showModal, closeModal, onRefreshVisaApplications 
         </div>
       </div>
 
-      {/* ========== Row 2 ========== */}
       <div className="row">
         <div className="col-md-6">
           <div className="form-group">
@@ -381,26 +444,8 @@ export function AddEditModal({ showModal, closeModal, onRefreshVisaApplications 
             {errors.applicationBy && <span className="error">{errors.applicationBy.message}</span>}
           </div>
         </div>
-
-        <div className="col-md-6">
-          <div className="form-group">
-            <label className="form-label">
-              Center <span className="text-danger">*</span>
-            </label>
-            <select className="form-control" {...register('center')}>
-              <option value="">Select</option>
-              {centerOptions.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-            {errors.center && <span className="error">{errors.center.message}</span>}
-          </div>
-        </div>
       </div>
 
-      {/* ========== Row 3 ========== */}
       <div className="row">
         <div className="col-md-6">
           <div className="form-group">
@@ -423,7 +468,6 @@ export function AddEditModal({ showModal, closeModal, onRefreshVisaApplications 
         </div>
       </div>
 
-      {/* ========== Emergency Visa ========== */}
       <div className="row">
         <div className="col-12">
           <div className="form-group d-flex align-items-center gap-2">
@@ -449,7 +493,6 @@ export function AddEditModal({ showModal, closeModal, onRefreshVisaApplications 
         </div>
       )}
 
-      {/* ========== Row 4 ========== */}
       <div className="row">
         <div className="col-md-6">
           <div className="form-group">
@@ -488,7 +531,6 @@ export function AddEditModal({ showModal, closeModal, onRefreshVisaApplications 
 
       <hr />
 
-      {/* ========== Personal Details ========== */}
       <div className="row">
         <div className="col-md-6">
           <div className="form-group">
@@ -557,7 +599,6 @@ export function AddEditModal({ showModal, closeModal, onRefreshVisaApplications 
         </div>
       </div>
 
-      {/* ========== Contact ========== */}
       <div className="row">
         <div className="col-md-6">
           <div className="form-group">
@@ -591,7 +632,6 @@ export function AddEditModal({ showModal, closeModal, onRefreshVisaApplications 
         </div>
       </div>
 
-      {/* ========== Visa Details ========== */}
       <div className="row">
         <div className="col-md-6">
           <div className="form-group">
@@ -628,7 +668,6 @@ export function AddEditModal({ showModal, closeModal, onRefreshVisaApplications 
         </div>
       </div>
 
-      {/* ========== Passport Details ========== */}
       <div className="row">
         <div className="col-md-4">
           <div className="form-group">
@@ -661,7 +700,6 @@ export function AddEditModal({ showModal, closeModal, onRefreshVisaApplications 
         </div>
       </div>
 
-      {/* Combino Not Found */}
       <div className="row">
         <div className="col-12">
           <div className="form-group d-flex align-items-center gap-2">
@@ -675,7 +713,6 @@ export function AddEditModal({ showModal, closeModal, onRefreshVisaApplications 
 
       <hr />
 
-      {/* ========== Courier Section ========== */}
       <div className="row">
         <div className="col-12">
           <div className="form-group d-flex align-items-center gap-2">
@@ -737,7 +774,6 @@ export function AddEditModal({ showModal, closeModal, onRefreshVisaApplications 
         </div>
       )}
 
-      {/* ========== AFS (Multiple Checkbox) ========== */}
       <div className="row">
         <div className="col-12">
           <div className="form-group">
@@ -764,7 +800,6 @@ export function AddEditModal({ showModal, closeModal, onRefreshVisaApplications 
         </div>
       </div>
 
-      {/* ========== Payment Mode ========== */}
       <div className="row">
         <div className="col-md-6">
           <div className="form-group">
@@ -782,6 +817,28 @@ export function AddEditModal({ showModal, closeModal, onRefreshVisaApplications 
             {errors.paymentMode && <span className="error">{errors.paymentMode.message}</span>}
           </div>
         </div>
+
+        {paymentMode === 'Card' && (
+          <>
+            <div className="col-md-3">
+              <div className="form-group">
+                <label className="form-label">Card Type</label>
+                <select className="form-control" {...register('cardType')}>
+                  <option value="">Select</option>
+                  <option value="Credit Card">Credit Card</option>
+                  <option value="Debit Card">Debit Card</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="col-md-3">
+              <div className="form-group">
+                <label className="form-label">Transaction ID</label>
+                <input type="text" className="form-control" autoComplete="off" {...register('transactionId')} />
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
@@ -791,7 +848,7 @@ export function AddEditModal({ showModal, closeModal, onRefreshVisaApplications 
       <button type="button" className="btn btn-cancel" onClick={closeModal}>
         Cancel
       </button>
-      <button type="submit" className="btn btn-submit" disabled={isLoading} onClick={handleSubmit(onSubmit)}>
+      <button type="button" className="btn btn-submit" disabled={isLoading} onClick={handleSubmit(onSubmit)}>
         {isLoading ? 'Loading...' : 'Save'}
       </button>
     </div>

@@ -2,91 +2,153 @@ import { create } from 'zustand';
 import visaApplicationService from '../services/VisaApplicationService';
 import useAlertReducer from './AlertReducer';
 
-
 const useVisaApplicationReducer = create((set) => ({
-  isCreateVisaApplicationLoading: false,
-  isUpdateVisaApplicationLoading: false,
-  isDeleteVisaApplicationLoading: false,
+  isLoading: false,
+  isLoadingGet: false,
   errorMessage: '',
   successMessage: '',
   visaApplicationsData: [],
-  isLoadingGet: false,
   pagination: {},
 
-  createVisaApplication: async (data) => {
+  postData: async (payload, callback) => {
     try {
-      set({ isCreateVisaApplicationLoading: true });
-      const { data } = await visaApplicationService.createVisaApplication(data);
-      set({ isCreateVisaApplicationLoading: false });
+      set({ isLoading: true, errorMessage: '' });
+
+      const response = await visaApplicationService.createVisaApplication(payload);
+      const responseData = response?.data;
+
       const { success } = useAlertReducer.getState();
-      success(data?.response?.data?.message ?? data?.message);
-    } catch (err) {
-      const { error } = useAlertReducer.getState();
+      success(
+        responseData?.response?.data?.message ??
+        responseData?.message ??
+        'Visa application created successfully'
+      );
+
       set({
-        errorMessage: err?.response?.data?.message ?? err?.message,
-        isCreateVisaApplicationLoading: false,
+        isLoading: false,
+        successMessage:
+          responseData?.response?.data?.message ??
+          responseData?.message ??
+          'Visa application created successfully',
       });
-      error(err?.response?.data?.message ?? err.message);
+
+      if (typeof callback === 'function') callback();
+      return true;
+    } catch (err) {
+      const message = err?.response?.data?.message ?? err?.message ?? 'Something went wrong';
+      const { error } = useAlertReducer.getState();
+
+      set({
+        isLoading: false,
+        errorMessage: message,
+      });
+
+      error(message);
+      return false;
     }
   },
-  updateVisaApplication: async (id, data) => {
+
+  patchData: async (payload, callback) => {
     try {
-      set({ isUpdateVisaApplicationLoading: true });
-      const { data } = await visaApplicationService.updateVisaApplication(id, data);
+      set({ isLoading: true, errorMessage: '' });
+
+      const response = await visaApplicationService.updateVisaApplication(payload);
+      const responseData = response?.data;
+
       const { success } = useAlertReducer.getState();
-      success(data?.response?.data?.message ?? data?.message);
+      success(
+        responseData?.response?.data?.message ??
+        responseData?.message ??
+        'Visa application updated successfully'
+      );
+
       set({
-        successMessage: data?.response?.data?.message ?? data?.message,
-        isUpdateVisaApplicationLoading: false,
+        isLoading: false,
+        successMessage:
+          responseData?.response?.data?.message ??
+          responseData?.message ??
+          'Visa application updated successfully',
       });
+
+      if (typeof callback === 'function') callback();
+      return true;
     } catch (err) {
+      const message = err?.response?.data?.message ?? err?.message ?? 'Something went wrong';
       const { error } = useAlertReducer.getState();
+
       set({
-        errorMessage: err?.response?.data?.message ?? err?.message,
-        isDeleteVisaApplicationLoading: false,
+        isLoading: false,
+        errorMessage: message,
       });
-      error(err?.response?.data?.message ?? err.message);
+
+      error(message);
+      return false;
     }
   },
+
   deleteVisaApplication: async (id) => {
     try {
-      set({ isDeleteVisaApplicationLoading: true });
-      const { data } = await visaApplicationService.deleteVisaApplication(id);
+      set({ isLoading: true, errorMessage: '' });
+
+      const response = await visaApplicationService.deleteVisaApplication(id);
+      const responseData = response?.data;
+
       const { success } = useAlertReducer.getState();
-      success(data?.response?.data?.message ?? data?.message);
+      success(
+        responseData?.response?.data?.message ??
+        responseData?.message ??
+        'Visa application deleted successfully'
+      );
+
       set({
-        successMessage: data?.response?.data?.message ?? data?.message,
-        isDeleteVisaApplicationLoading: false,
+        isLoading: false,
+        successMessage:
+          responseData?.response?.data?.message ??
+          responseData?.message ??
+          'Visa application deleted successfully',
       });
+
+      return true;
     } catch (err) {
+      const message = err?.response?.data?.message ?? err?.message ?? 'Something went wrong';
       const { error } = useAlertReducer.getState();
+
       set({
-        errorMessage: err?.response?.data?.message ?? err?.message,
-        isDeleteVisaApplicationLoading: false,
+        isLoading: false,
+        errorMessage: message,
       });
-      error(err?.response?.data?.message ?? err.message);
+
+      error(message);
+      return false;
     }
   },
 
   getVisaApplications: async (params) => {
     try {
       set({ isLoadingGet: true });
-      const { data } = await visaApplicationService.getVisaApplications(params);
-      const visaApplicationsData = data?.data;
-      set({ visaApplicationsData, isLoadingGet: false, pagination: data?.pagination });
+
+      const response = await visaApplicationService.getVisaApplications(params);
+      const responseData = response?.data;
+      const visaApplicationsData = responseData?.data ?? [];
+
+      set({
+        visaApplicationsData,
+        pagination: responseData?.pagination ?? {},
+        isLoadingGet: false,
+      });
     } catch (err) {
+      const message = err?.response?.data?.message ?? err?.message ?? 'Something went wrong';
       const { error } = useAlertReducer.getState();
+
       set({
         isLoadingGet: false,
         visaApplicationsData: [],
         pagination: {},
       });
-      error(err?.response?.data?.message ?? err.message);
+
+      error(message);
     }
   },
-
-
-
 }));
 
 export default useVisaApplicationReducer;

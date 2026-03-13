@@ -1,10 +1,15 @@
 import Gateway from '../config/gateway';
 
-const createVisaApplication = (data) => Gateway.post('visa-application', data);
+// Create
+const createVisaApplication = (payload) => Gateway.post('visa/create', payload);
+
+// List
 const getVisaApplications = (params) => Gateway.get('visa-application', { params });
 
-const updateVisaApplication = (id, data) => Gateway.patch(`visa-application/${id}`, data);
+// Update
+const updateVisaApplication = (payload) => Gateway.patch('visa/update', payload);
 
+// Delete
 const deleteVisaApplication = (id) => Gateway.delete(`visa-application/${id}`);
 
 export default {
