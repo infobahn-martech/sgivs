@@ -3,21 +3,12 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import CustomModal from '../../components/common/CustomModal';
+import Phonenumber from '../../components/common/Phonenumber';
 import useVisaApplicationReducer from '../../stores/VisaApplicationReducer';
+import useAppointmentTypeReducer from '../../stores/AppointmentTypeReducer';
+import useApplicationModeReducer from '../../stores/ApplicationModeReducer';
 
-// ===================== OPTIONS =====================
-const applicationTypeOptions = [
-  { value: 'New', label: 'New', id: 1 },
-  { value: 'Renewal', label: 'Renewal', id: 2 },
-  { value: 'Reissue', label: 'Reissue', id: 3 },
-];
-
-const applicationByOptions = [
-  { value: 'Applicant', label: 'Applicant', id: 1 },
-  { value: 'Agent', label: 'Agent', id: 2 },
-  { value: 'Representative', label: 'Representative', id: 3 },
-];
-
+// ===================== STATIC OPTIONS =====================
 const serviceRequestedOptions = [
   { value: 'Normal', label: 'Normal', id: 1 },
   { value: 'Tatkal', label: 'Tatkal', id: 2 },
@@ -34,14 +25,6 @@ const genderOptions = [
   { value: 'Male', label: 'Male' },
   { value: 'Female', label: 'Female' },
   { value: 'Other', label: 'Other' },
-];
-
-
-const countryCodeOptions = [
-  { value: '+971', label: '+971 (UAE)' },
-  { value: '+91', label: '+91 (India)' },
-  { value: '+44', label: '+44 (UK)' },
-  { value: '+1', label: '+1 (USA)' },
 ];
 
 const visaDurationOptions = [
@@ -77,20 +60,181 @@ const afsOptions = [
   { value: 'SMS', label: 'SMS', id: 4 },
 ];
 
+const CARD_PAYMENT_MODE_ID = '2';
+
 // ===================== HELPERS =====================
+function parseIntSafe(val, fallback = 0) {
+  const n = parseInt(val, 10);
+  return Number.isNaN(n) ? fallback : n;
+}
+
+function getEmployeeIdFromStorage() {
+  try {
+    const val = localStorage.getItem('employee_id');
+    if (val == null) return null;
+    const n = parseInt(val, 10);
+    return Number.isNaN(n) ? null : n;
+  } catch {
+    return null;
+  }
+}
+
+function getCenterIdFromStorage() {
+  try {
+    const val = localStorage.getItem('center_id');
+    if (val == null) return null;
+    const n = parseInt(val, 10);
+    return Number.isNaN(n) ? null : n;
+  } catch {
+    return null;
+  }
+}
+
 const getOptionId = (options, value) => {
   const matched = options.find((item) => item.value === value);
   return matched?.id || null;
 };
 
+function buildCreateVisaPayload(data) {
+  const employeeId = getEmployeeIdFromStorage();
+  const centerIdFromStorage = getCenterIdFromStorage();
+
+  const centerId =
+    centerIdFromStorage ?? 1;
+
+  const visaServiceId = getOptionId(serviceRequestedOptions, data.serviceRequested) ?? 1;
+  const paymentModeId = getOptionId(paymentModeOptions, data.paymentMode) ?? 1;
+
+  const mobileNumber = `${data.mobileCode || ''}${data.mobileNumber || ''}`.replace(/\s+/g, '');
+
+  const vas_services = (data.afs || [])
+    .map((item) => {
+      const serviceId = getOptionId(afsOptions, item);
+      if (!serviceId) return null;
+      return {
+        vas_service_id: serviceId,
+        quantity: 1,
+      };
+    })
+    .filter(Boolean);
+
+  const commentParts = [
+    `Appointment/Postal Ref No: ${data.appointmentPostalRefNo ?? ''}`,
+    `Web File No: ${data.webFileNo ?? ''}`,
+    `Consprom File No: ${data.consproMFileNo ?? ''}`,
+    `Token: ${data.token ?? ''}`,
+    `Email: ${data.email ?? ''}`,
+    `Visa Duration: ${data.visaDuration ?? ''}`,
+    `Visa Entry: ${data.visaEntry ?? ''}`,
+    `Nationality: ${data.nationality ?? ''}`,
+    `Passport Expiry Date: ${data.passportExpiryDate ?? ''}`,
+    `Father/Husband Name: ${data.fatherHusbandName ?? ''}`,
+    `Combino Not Found: ${data.combinoNotFound ? 'Yes' : 'No'}`,
+    `Emergency Visa: ${data.emergencyVisa ? 'Yes' : 'No'}`,
+    data.priorityReason ? `Priority Reason: ${data.priorityReason}` : null,
+    `Courier Required: ${data.courierRequired ? 'Yes' : 'No'}`,
+    data.courierParentName ? `Courier Parent Name: ${data.courierParentName}` : null,
+    data.returnCourierAddress ? `Return Courier Address: ${data.returnCourierAddress}` : null,
+    `Urgent Fee: ${data.urgentFee ? 'Yes' : 'No'}`,
+  ].filter(Boolean);
+
+  return {
+    visa_application: {
+      center_id: centerId,
+      visa_service_id: parseIntSafe(visaServiceId, 1),
+      appointment_mode_id: parseIntSafe(data.applicationBy, 1),
+      appointment_type_id: parseIntSafe(data.applicationType, 1),
+      first_name: data.firstName ?? '',
+      surname: data.surname ?? '',
+      dob: data.dob ?? '',
+      gender: data.gender ?? '',
+      mobile_number: mobileNumber,
+      passport_no: data.passportNo ?? '',
+      created_by: employeeId ?? 4,
+    },
+    payment: {
+      payment_mode_id: parseIntSafe(paymentModeId, 1),
+      card_type: String(paymentModeId) === String(CARD_PAYMENT_MODE_ID) ? data.cardType ?? '' : '',
+      transaction_id: String(paymentModeId) === String(CARD_PAYMENT_MODE_ID) ? data.transactionId ?? '' : '',
+    },
+    vas_services,
+    comment: {
+      comment: commentParts.join('\n'),
+    },
+  };
+}
+
+function buildUpdateVisaPayload(data, visaAppId) {
+  const centerIdFromStorage = getCenterIdFromStorage();
+  const centerId =
+    centerIdFromStorage ?? 1;
+
+  const visaServiceId = getOptionId(serviceRequestedOptions, data.serviceRequested) ?? 1;
+  const paymentModeId = getOptionId(paymentModeOptions, data.paymentMode) ?? 1;
+
+  const mobileNumber = `${data.mobileCode || ''}${data.mobileNumber || ''}`.replace(/\s+/g, '');
+
+  const vas_services = (data.afs || [])
+    .map((item) => {
+      const serviceId = getOptionId(afsOptions, item);
+      if (!serviceId) return null;
+      return {
+        vas_service_id: serviceId,
+        quantity: 1,
+      };
+    })
+    .filter(Boolean);
+
+  const commentParts = [
+    `Appointment/Postal Ref No: ${data.appointmentPostalRefNo ?? ''}`,
+    `Web File No: ${data.webFileNo ?? ''}`,
+    `Consprom File No: ${data.consproMFileNo ?? ''}`,
+    `Token: ${data.token ?? ''}`,
+    `Email: ${data.email ?? ''}`,
+    `Visa Duration: ${data.visaDuration ?? ''}`,
+    `Visa Entry: ${data.visaEntry ?? ''}`,
+    `Nationality: ${data.nationality ?? ''}`,
+    `Passport Expiry Date: ${data.passportExpiryDate ?? ''}`,
+    `Father/Husband Name: ${data.fatherHusbandName ?? ''}`,
+    `Combino Not Found: ${data.combinoNotFound ? 'Yes' : 'No'}`,
+    `Emergency Visa: ${data.emergencyVisa ? 'Yes' : 'No'}`,
+    data.priorityReason ? `Priority Reason: ${data.priorityReason}` : null,
+    `Courier Required: ${data.courierRequired ? 'Yes' : 'No'}`,
+    data.courierParentName ? `Courier Parent Name: ${data.courierParentName}` : null,
+    data.returnCourierAddress ? `Return Courier Address: ${data.returnCourierAddress}` : null,
+    `Urgent Fee: ${data.urgentFee ? 'Yes' : 'No'}`,
+  ].filter(Boolean);
+
+  return {
+    visa_application_id: parseIntSafe(visaAppId, 0),
+    visa_application: {
+      center_id: centerId,
+      visa_service_id: parseIntSafe(visaServiceId, 1),
+      appointment_mode_id: parseIntSafe(data.applicationBy, 1),
+      appointment_type_id: parseIntSafe(data.applicationType, 1),
+      first_name: data.firstName ?? '',
+      surname: data.surname ?? '',
+      dob: data.dob ?? '',
+      gender: data.gender ?? '',
+      mobile_number: mobileNumber,
+      passport_no: data.passportNo ?? '',
+    },
+    payment: {
+      payment_mode_id: parseIntSafe(paymentModeId, 1),
+      card_type: String(paymentModeId) === String(CARD_PAYMENT_MODE_ID) ? data.cardType ?? '' : '',
+      transaction_id: String(paymentModeId) === String(CARD_PAYMENT_MODE_ID) ? data.transactionId ?? '' : '',
+    },
+    vas_services,
+    comment: {
+      comment: commentParts.join('\n'),
+    },
+  };
+}
+
 // ===================== VALIDATION =====================
 const schema = z
   .object({
-    appointmentPostalRefNo: z
-      .string()
-      .nonempty('Appointment/Postal Reference Number is required')
-      .max(50),
-
+    appointmentPostalRefNo: z.string().nonempty('Appointment/Postal Reference Number is required').max(50),
     applicationType: z.string().nonempty('Application type is required'),
     applicationBy: z.string().nonempty('Application by is required'),
 
@@ -138,6 +282,8 @@ const schema = z
     afs: z.array(z.string()).optional(),
 
     paymentMode: z.string().nonempty('Payment mode is required'),
+    cardType: z.string().optional(),
+    transactionId: z.string().optional(),
   })
   .superRefine((val, ctx) => {
     if (val.emergencyVisa && !val.priorityReason?.trim()) {
@@ -164,25 +310,46 @@ const schema = z
         });
       }
     }
+
+    if (String(val.paymentMode) === String(CARD_PAYMENT_MODE_ID)) {
+      if (!val.cardType?.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['cardType'],
+          message: 'Card Type is required',
+        });
+      }
+      if (!val.transactionId?.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['transactionId'],
+          message: 'Transaction ID is required',
+        });
+      }
+    }
   });
 
 // ===================== COMPONENT =====================
 export function AddEditModal({ showModal, closeModal, onRefreshVisaApplications }) {
-  const {
-    createVisaApplication,
-    updateVisaApplication,
-    isCreateVisaApplicationLoading,
-    isUpdateVisaApplicationLoading,
-  } = useVisaApplicationReducer((state) => state);
+  const { postData, patchData, isLoading } = useVisaApplicationReducer((state) => state);
 
-  const isLoading = isCreateVisaApplicationLoading || isUpdateVisaApplicationLoading;
+  const { getData: getDataAppointmentType, appointmentTypeData } =
+    useAppointmentTypeReducer((state) => state);
+
+  const { getData: getDataApplicationMode, applicationModeData } =
+    useApplicationModeReducer((state) => state);
+
+  useEffect(() => {
+    getDataAppointmentType({});
+    getDataApplicationMode({});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const defaultValues = useMemo(
     () => ({
       appointmentPostalRefNo: '',
       applicationType: '',
       applicationBy: '',
-      center: '',
 
       webFileNo: '',
       consproMFileNo: '',
@@ -225,7 +392,6 @@ export function AddEditModal({ showModal, closeModal, onRefreshVisaApplications 
       paymentMode: '',
       cardType: '',
       transactionId: '',
-      createdBy: 4,
     }),
     []
   );
@@ -247,6 +413,9 @@ export function AddEditModal({ showModal, closeModal, onRefreshVisaApplications 
   const courierRequired = watch('courierRequired');
   const selectedAfs = watch('afs') || [];
   const paymentMode = watch('paymentMode');
+  const mobileCode = watch('mobileCode');
+  const mobileNumber = watch('mobileNumber');
+  const isCardPayment = String(paymentMode) === String(CARD_PAYMENT_MODE_ID);
 
   useEffect(() => {
     if (showModal?.id) {
@@ -259,11 +428,23 @@ export function AddEditModal({ showModal, closeModal, onRefreshVisaApplications 
         combinoNotFound: !!showModal?.combinoNotFound,
         afs: Array.isArray(showModal?.afs) ? showModal?.afs : [],
         mobileCode: showModal?.mobileCode || '+971',
+        paymentMode: showModal?.paymentMode ? String(showModal.paymentMode) : '',
+        applicationType:
+          showModal?.applicationType != null ? String(showModal.applicationType) : '',
+        applicationBy:
+          showModal?.applicationBy != null ? String(showModal.applicationBy) : '',
       });
     } else {
       reset(defaultValues);
     }
   }, [showModal?.id, reset, defaultValues, showModal]);
+
+  useEffect(() => {
+    if (!isCardPayment) {
+      setValue('cardType', '', { shouldValidate: true });
+      setValue('transactionId', '', { shouldValidate: true });
+    }
+  }, [isCardPayment, setValue]);
 
   const toggleAfsItem = (value) => {
     const current = new Set(selectedAfs);
@@ -282,105 +463,44 @@ export function AddEditModal({ showModal, closeModal, onRefreshVisaApplications 
 
   const onToggleCourier = (e) => {
     const checked = e.target.checked;
+    setValue('courierRequired', checked, { shouldValidate: true });
 
-    if (checked) {
-      const ok = window.confirm('Courier is required. Do you want to enter courier delivery details now?');
-      if (!ok) {
-        setValue('courierRequired', false, { shouldValidate: true });
-        return;
-      }
-      setValue('courierRequired', true, { shouldValidate: true });
-      return;
+    if (!checked) {
+      setValue('courierParentName', '', { shouldValidate: true });
+      setValue('returnCourierAddress', '', { shouldValidate: true });
     }
-
-    setValue('courierRequired', false, { shouldValidate: true });
-    setValue('courierParentName', '', { shouldValidate: true });
-    setValue('returnCourierAddress', '', { shouldValidate: true });
   };
 
-  const buildPayload = (data) => {
-    const centerId = getOptionId(centerOptions, data.center);
-    const visaServiceId = getOptionId(serviceRequestedOptions, data.serviceRequested);
-    const appointmentModeId = getOptionId(applicationByOptions, data.applicationBy);
-    const appointmentTypeId = getOptionId(applicationTypeOptions, data.applicationType);
-    const paymentModeId = getOptionId(paymentModeOptions, data.paymentMode);
-
-    const mobileNumberCombined = `${data.mobileCode}${data.mobileNumber}`.replace(/\s+/g, '');
-
-    const vasServices = (data.afs || [])
-      .map((item) => {
-        const serviceId = getOptionId(afsOptions, item);
-        if (!serviceId) return null;
-        return {
-          vas_service_id: serviceId,
-          quantity: 1,
-        };
-      })
-      .filter(Boolean);
-
-    const extraCommentParts = [
-      `Appointment/Postal Ref No: ${data.appointmentPostalRefNo}`,
-      `Web File No: ${data.webFileNo}`,
-      `Consprom File No: ${data.consproMFileNo}`,
-      `Token: ${data.token}`,
-      `Email: ${data.email}`,
-      `Visa Duration: ${data.visaDuration}`,
-      `Visa Entry: ${data.visaEntry}`,
-      `Nationality: ${data.nationality}`,
-      `Passport Expiry Date: ${data.passportExpiryDate}`,
-      `Father/Husband Name: ${data.fatherHusbandName}`,
-      `Combino Not Found: ${data.combinoNotFound ? 'Yes' : 'No'}`,
-      `Emergency Visa: ${data.emergencyVisa ? 'Yes' : 'No'}`,
-      data.priorityReason ? `Priority Reason: ${data.priorityReason}` : null,
-      `Courier Required: ${data.courierRequired ? 'Yes' : 'No'}`,
-      data.courierParentName ? `Courier Parent Name: ${data.courierParentName}` : null,
-      data.returnCourierAddress ? `Return Courier Address: ${data.returnCourierAddress}` : null,
-      `Urgent Fee: ${data.urgentFee ? 'Yes' : 'No'}`,
-    ].filter(Boolean);
-
-    return {
-      visa_application: {
-        center_id: centerId,
-        visa_service_id: visaServiceId,
-        appointment_mode_id: appointmentModeId,
-        appointment_type_id: appointmentTypeId,
-        first_name: data.firstName,
-        surname: data.surname,
-        dob: data.dob,
-        gender: data.gender,
-        mobile_number: mobileNumberCombined,
-        passport_no: data.passportNo,
-        created_by: Number(data.createdBy) || 4,
-      },
-      payment: {
-        payment_mode_id: paymentModeId,
-        card_type: data.paymentMode === 'Card' ? 'Credit Card' : '',
-        transaction_id: data.transactionId || '',
-      },
-      vas_services: vasServices,
-      comment: {
-        comment: extraCommentParts.join('\n'),
-      },
+  const onSubmit = (data) => {
+    const normalizedData = {
+      ...data,
+      ...(!data.emergencyVisa && { priorityReason: '' }),
+      ...(!data.courierRequired && {
+        courierParentName: '',
+        returnCourierAddress: '',
+      }),
+      ...(!isCardPayment && {
+        cardType: '',
+        transactionId: '',
+      }),
     };
-  };
 
-  const onSubmit = async (data) => {
-    const payload = buildPayload(data);
+    const visaApplicationId = showModal?.visa_application_id ?? showModal?.id;
 
-    if (showModal?.id) {
-      const success = await updateVisaApplication(showModal.id, payload);
-      if (success) {
+    if (visaApplicationId) {
+      const updatePayload = buildUpdateVisaPayload(normalizedData, visaApplicationId);
+      patchData(updatePayload, () => {
         onRefreshVisaApplications?.();
         closeModal?.();
-      }
+      });
       return;
     }
 
-    const success = await createVisaApplication(payload);
-    if (success) {
+    const createPayload = buildCreateVisaPayload(normalizedData);
+    postData(createPayload, () => {
       onRefreshVisaApplications?.();
       closeModal?.();
-    }
+    });
   };
 
   const renderHeader = () => (
@@ -412,13 +532,13 @@ export function AddEditModal({ showModal, closeModal, onRefreshVisaApplications 
         <div className="col-md-6">
           <div className="form-group">
             <label className="form-label">
-              Application type <span className="text-danger">*</span>
+              Application Type <span className="text-danger">*</span>
             </label>
             <select className="form-control" {...register('applicationType')}>
               <option value="">Select</option>
-              {applicationTypeOptions.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
+              {appointmentTypeData?.map((o) => (
+                <option key={o.appointment_type_id} value={String(o.appointment_type_id)}>
+                  {o.appointment_type}
                 </option>
               ))}
             </select>
@@ -431,13 +551,13 @@ export function AddEditModal({ showModal, closeModal, onRefreshVisaApplications 
         <div className="col-md-6">
           <div className="form-group">
             <label className="form-label">
-              Application by (Agent / Applicant / Representative) <span className="text-danger">*</span>
+              Application By <span className="text-danger">*</span>
             </label>
             <select className="form-control" {...register('applicationBy')}>
               <option value="">Select</option>
-              {applicationByOptions.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
+              {applicationModeData?.map((o) => (
+                <option key={o.application_mode_id} value={String(o.application_mode_id)}>
+                  {o.application_mode}
                 </option>
               ))}
             </select>
@@ -601,24 +721,17 @@ export function AddEditModal({ showModal, closeModal, onRefreshVisaApplications 
 
       <div className="row">
         <div className="col-md-6">
-          <div className="form-group">
-            <label className="form-label">
-              Mobile number <span className="text-danger">*</span>
-            </label>
-            <div className="d-flex gap-2">
-              <select className="form-control" style={{ maxWidth: 160 }} {...register('mobileCode')}>
-                {countryCodeOptions.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
-              <input type="text" className="form-control" autoComplete="off" maxLength={20} {...register('mobileNumber')} />
-            </div>
-            {(errors.mobileCode || errors.mobileNumber) && (
-              <span className="error">{errors.mobileCode?.message || errors.mobileNumber?.message}</span>
-            )}
-          </div>
+          <Phonenumber
+            value={mobileCode && mobileNumber ? `${mobileCode}${mobileNumber}` : mobileCode || ''}
+            onChange={(_, { mobileCode: code, mobileNumber: number }) => {
+              setValue('mobileCode', code || '+971', { shouldValidate: true });
+              setValue('mobileNumber', number || '', { shouldValidate: true });
+            }}
+            error={errors.mobileCode?.message || errors.mobileNumber?.message}
+            label="Mobile Number"
+            required
+            defaultCountry="AE"
+          />
         </div>
 
         <div className="col-md-6">
@@ -800,16 +913,29 @@ export function AddEditModal({ showModal, closeModal, onRefreshVisaApplications 
         </div>
       </div>
 
+      <hr />
       <div className="row">
         <div className="col-md-6">
           <div className="form-group">
             <label className="form-label">
               Payment mode <span className="text-danger">*</span>
             </label>
-            <select className="form-control" {...register('paymentMode')}>
+            <select
+              className="form-control"
+              {...register('paymentMode')}
+              onChange={(e) => {
+                const val = e.target.value;
+                setValue('paymentMode', val, { shouldValidate: true });
+
+                if (String(val) !== String(CARD_PAYMENT_MODE_ID)) {
+                  setValue('cardType', '', { shouldValidate: true });
+                  setValue('transactionId', '', { shouldValidate: true });
+                }
+              }}
+            >
               <option value="">Select</option>
               {paymentModeOptions.map((o) => (
-                <option key={o.value} value={o.value}>
+                <option key={o.value} value={String(o.id)}>
                   {o.label}
                 </option>
               ))}
@@ -817,29 +943,35 @@ export function AddEditModal({ showModal, closeModal, onRefreshVisaApplications 
             {errors.paymentMode && <span className="error">{errors.paymentMode.message}</span>}
           </div>
         </div>
-
-        {paymentMode === 'Card' && (
-          <>
-            <div className="col-md-3">
-              <div className="form-group">
-                <label className="form-label">Card Type</label>
-                <select className="form-control" {...register('cardType')}>
-                  <option value="">Select</option>
-                  <option value="Credit Card">Credit Card</option>
-                  <option value="Debit Card">Debit Card</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="col-md-3">
-              <div className="form-group">
-                <label className="form-label">Transaction ID</label>
-                <input type="text" className="form-control" autoComplete="off" {...register('transactionId')} />
-              </div>
-            </div>
-          </>
-        )}
       </div>
+
+      {isCardPayment && (
+        <div className="row">
+          <div className="col-md-6">
+            <div className="form-group">
+              <label className="form-label">
+                Card Type <span className="text-danger">*</span>
+              </label>
+              <select className="form-control" {...register('cardType')}>
+                <option value="">Select</option>
+                <option value="Credit Card">Credit Card</option>
+                <option value="Debit Card">Debit Card</option>
+              </select>
+              {errors.cardType && <span className="error">{errors.cardType.message}</span>}
+            </div>
+          </div>
+
+          <div className="col-md-6">
+            <div className="form-group">
+              <label className="form-label">
+                Transaction ID <span className="text-danger">*</span>
+              </label>
+              <input type="text" className="form-control" autoComplete="off" {...register('transactionId')} />
+              {errors.transactionId && <span className="error">{errors.transactionId.message}</span>}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 
@@ -848,8 +980,8 @@ export function AddEditModal({ showModal, closeModal, onRefreshVisaApplications 
       <button type="button" className="btn btn-cancel" onClick={closeModal}>
         Cancel
       </button>
-      <button type="button" className="btn btn-submit" disabled={isLoading} onClick={handleSubmit(onSubmit)}>
-        {isLoading ? 'Loading...' : 'Save'}
+      <button type="submit" className="btn btn-submit" disabled={isLoading} onClick={handleSubmit(onSubmit)}>
+        {isLoading ? 'Saving...' : 'Save'}
       </button>
     </div>
   );
@@ -863,7 +995,7 @@ export function AddEditModal({ showModal, closeModal, onRefreshVisaApplications 
       body={renderBody()}
       header={renderHeader()}
       footer={renderFooter()}
-      isLoading={false}
+      isLoading={isLoading}
     />
   );
 }
