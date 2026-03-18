@@ -16,6 +16,8 @@ import CommentModal from './CommentModal';
 import ChangeServicesModal from './ChangeServices';
 import ActivityLog from './ActivityLog';
 import AddRemoveBiometric from './AddRemoveBiometric';
+import PrintReceiptModal from './PrintReceipt';
+import PrintBarcodeModal from './PrintBarcode';
 
 const VisaApplications = () => {
   const { getVisaApplications, visaApplicationsData, isLoadingGet, deleteData, isLoadingDelete } =
@@ -24,6 +26,8 @@ const VisaApplications = () => {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [modal, setModal] = useState(false);
   const [viewModal, setViewModal] = useState(false);
+  const [printReceiptModal, setPrintReceiptModal] = useState(false);
+  const [printBarcodeModal, setPrintBarcodeModal] = useState(false);
   const [commentModal, setCommentModal] = useState(false);
   const [changeServicesModal, setChangeServicesModal] = useState(false);
   const [addRemoveBiometricModal, setAddRemoveBiometricModal] = useState(false);
@@ -47,6 +51,9 @@ const VisaApplications = () => {
     getVisaApplications(params);
     setModal(false);
     setDeleteModalOpen(false);
+    setViewModal(false);
+    setPrintReceiptModal(false);
+    setPrintBarcodeModal(false);
   };
 
   useEffect(() => {
@@ -66,11 +73,11 @@ const VisaApplications = () => {
   };
 
   const handlePrintReceipt = (row) => {
-    console.log('Print Receipt:', row);
+    setPrintReceiptModal(row);
   };
 
   const handlePrintBarcode = (row) => {
-    console.log('Print Barcode:', row);
+    setPrintBarcodeModal(row);
   };
 
   const handleViewApplication = (row) => {
@@ -237,6 +244,19 @@ const VisaApplications = () => {
         <ViewModal
           showModal={viewModal}
           closeModal={() => setViewModal(false)}
+        />
+      )}
+
+      {printReceiptModal && (
+        <PrintReceiptModal
+          showModal={printReceiptModal}
+          closeModal={() => setPrintReceiptModal(false)}
+        />
+      )}
+      {printBarcodeModal && (
+        <PrintBarcodeModal
+          showModal={printBarcodeModal}
+          closeModal={() => setPrintBarcodeModal(false)}
         />
       )}
 
