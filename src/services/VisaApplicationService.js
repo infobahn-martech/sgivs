@@ -4,7 +4,7 @@ import Gateway from '../config/gateway';
 const createVisaApplication = (payload) => Gateway.post('visa/create', payload);
 
 // List
-const getVisaApplications = (params) => Gateway.get('visa-application', { params });
+const getVisaApplications = (params) => Gateway.post('visa/list', { params });
 
 // Update
 const updateVisaApplication = (payload) => Gateway.patch('visa/update', payload);

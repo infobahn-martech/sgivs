@@ -18,9 +18,7 @@ import ActivityLog from './ActivityLog';
 import AddRemoveBiometric from './AddRemoveBiometric';
 
 const VisaApplications = () => {
-  const USE_MOCK = true;
-
-  const { getData, visaApplicationsData, isLoadingGet, deleteData, isLoadingDelete } =
+  const { getVisaApplications, visaApplicationsData, isLoadingGet, deleteData, isLoadingDelete } =
     useVisaApplicationReducer((state) => state);
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -30,6 +28,7 @@ const VisaApplications = () => {
   const [changeServicesModal, setChangeServicesModal] = useState(false);
   const [addRemoveBiometricModal, setAddRemoveBiometricModal] = useState(false);
   const [activityLogModal, setActivityLogModal] = useState(false);
+
   const initialParams = {
     search: '',
     page: 1,
@@ -39,100 +38,20 @@ const VisaApplications = () => {
     sortBy: 'createdAt',
     sortOrder: 'DESC',
     isExcelExport: 'false',
+    status_id: 1
   };
 
   const [params, setParams] = useState(initialParams);
 
-  const mockVisaApplicationsData = {
-    total: 5,
-    data: [
-      {
-        id: 1,
-        referenceNo: 'REF-0001',
-        name: 'Abdul Rahman',
-        center: 'Dubai Center',
-        consproMFileNo: 'CPM-10001',
-        nationality: 'UAE',
-        passportNo: 'P1234567',
-        applicationType: 'New',
-        serviceName: 'Normal Service',
-        deliveryType: 'Courier',
-        status: { value: 'Submitted', by: 'Dennis', on: '2025-01-10T09:30:00Z' },
-        createdAt: '2025-01-10T09:30:00Z',
-      },
-      {
-        id: 2,
-        referenceNo: 'REF-0002',
-        name: 'Haseeb',
-        center: 'Abu Dhabi Center',
-        consproMFileNo: 'CPM-10002',
-        nationality: 'Pakistan',
-        passportNo: 'P9988776',
-        applicationType: 'Renewal',
-        serviceName: 'Premium',
-        deliveryType: 'Counter',
-        status: { value: 'In Process', by: 'Joel', on: '2025-02-14T12:15:00Z' },
-        createdAt: '2025-02-14T12:15:00Z',
-      },
-      {
-        id: 3,
-        referenceNo: 'REF-0003',
-        name: 'Fathima',
-        center: 'Sharjah Center',
-        consproMFileNo: 'CPM-10003',
-        nationality: 'India',
-        passportNo: 'P2233445',
-        applicationType: 'New',
-        serviceName: 'Express',
-        deliveryType: 'Courier',
-        status: { value: 'Approved', by: 'Admin', on: '2025-03-05T08:45:00Z' },
-        createdAt: '2025-03-05T08:45:00Z',
-      },
-      {
-        id: 4,
-        referenceNo: 'REF-0004',
-        name: 'Joseph',
-        center: 'Ajman Center',
-        consproMFileNo: 'CPM-10004',
-        nationality: 'Philippines',
-        passportNo: 'P6655443',
-        applicationType: 'Renewal',
-        serviceName: 'Normal Service',
-        deliveryType: 'Counter',
-        status: { value: 'Rejected', by: 'Supervisor', on: '2025-03-20T10:00:00Z' },
-        createdAt: '2025-03-20T10:00:00Z',
-      },
-      {
-        id: 5,
-        referenceNo: 'REF-0005',
-        name: 'Amina',
-        center: 'Dubai Center',
-        consproMFileNo: 'CPM-10005',
-        nationality: 'Egypt',
-        passportNo: 'P4455667',
-        applicationType: 'New',
-        serviceName: 'Premium',
-        deliveryType: 'Courier',
-        status: { value: 'Delivered', by: 'Courier', on: '2025-04-02T11:20:00Z' },
-        createdAt: '2025-04-02T11:20:00Z',
-      },
-    ],
-  };
-
-
   const onRefreshVisaApplications = () => {
-    if (!USE_MOCK) {
-      getData(params);
-    }
+    getVisaApplications(params);
     setModal(false);
     setDeleteModalOpen(false);
   };
 
   useEffect(() => {
-    if (!USE_MOCK) {
-      getData(params);
-    }
-  }, [params]);
+    getVisaApplications(params);
+  }, [params, getVisaApplications]);
 
   const handleSortChange = (selector) => {
     setParams((prevParams) => ({
@@ -146,7 +65,6 @@ const VisaApplications = () => {
     setDeleteModalOpen({ id: row?.id, name: row?.name });
   };
 
-  // ✅ action handlers (replace with your actual flows)
   const handlePrintReceipt = (row) => {
     console.log('Print Receipt:', row);
   };
@@ -168,20 +86,16 @@ const VisaApplications = () => {
   };
 
   const handleEditApplication = (row) => {
-    console.log('Edit application:', row);
-    setModal(row); // if you want to open modal in edit mode, you can store editRow state
+    setModal(row);
   };
 
   const handleChangeServiceFee = (row) => {
-    console.log('Change service/fee:', row);
     setChangeServicesModal(row);
   };
 
   const handleAddRemoveBiometric = (row) => {
-    console.log('Add/Remove Biometric:', row);
     setAddRemoveBiometricModal(row);
   };
-
 
   const columns = [
     { name: 'Reference No', selector: 'referenceNo' },
@@ -226,8 +140,6 @@ const VisaApplications = () => {
     },
   ];
 
-
-  // ✅ Stable debounce
   const debouncedSearch = useMemo(
     () =>
       debounce((searchValue) => {
@@ -240,21 +152,19 @@ const VisaApplications = () => {
     []
   );
 
-  const handleDelete = () => {
-    if (USE_MOCK) {
-      setDeleteModalOpen(false);
-      return;
-    }
+  useEffect(() => {
+    return () => {
+      debouncedSearch.cancel();
+    };
+  }, [debouncedSearch]);
 
+  const handleDelete = () => {
     if (deleteModalOpen?.id) {
-      deleteData(deleteModalOpen?.id, () => {
+      deleteData(deleteModalOpen.id, () => {
         onRefreshVisaApplications();
       });
     }
   };
-
-  const tableData = USE_MOCK ? mockVisaApplicationsData : visaApplicationsData;
-  const loading = USE_MOCK ? false : isLoadingGet;
 
   return (
     <>
@@ -269,25 +179,36 @@ const VisaApplications = () => {
         submitFilter={(filters) => {
           const { fromDate, toDate, ...rest } = filters;
 
-          setParams({
-            ...params,
+          setParams((prev) => ({
+            ...prev,
             ...rest,
             fromDate: fromDate ? moment(fromDate).format('YYYY-MM-DD') : null,
             toDate: toDate ? moment(toDate).format('YYYY-MM-DD') : null,
             page: 1,
-          });
+          }));
         }}
         clearOptions={() => setParams(initialParams)}
       />
 
       <CustomTable
         pagination={{ currentPage: params.page, limit: params.limit }}
-        count={tableData?.total || 0}
+        count={visaApplicationsData?.total || 0}
         columns={columns}
-        data={tableData?.data || []}
-        isLoading={loading}
-        onPageChange={(page) => setParams({ ...params, page })}
-        setLimit={(limit) => setParams({ ...params, limit })}
+        data={visaApplicationsData?.data || []}
+        isLoading={isLoadingGet}
+        onPageChange={(page) =>
+          setParams((prev) => ({
+            ...prev,
+            page,
+          }))
+        }
+        setLimit={(limit) =>
+          setParams((prev) => ({
+            ...prev,
+            limit,
+            page: 1,
+          }))
+        }
         onSortChange={handleSortChange}
         wrapClasses="inventory-table-wrap"
       />
@@ -303,7 +224,7 @@ const VisaApplications = () => {
       {deleteModalOpen && (
         <CustomActionModal
           isDelete
-          isLoading={USE_MOCK ? false : isLoadingDelete}
+          isLoading={isLoadingDelete}
           showModal={deleteModalOpen}
           closeModal={() => setDeleteModalOpen(false)}
           message={`Are you sure you want to delete this ${deleteModalOpen?.name}?`}
