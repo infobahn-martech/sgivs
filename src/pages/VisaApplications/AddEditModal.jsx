@@ -99,8 +99,7 @@ function buildCreateVisaPayload(data) {
   const employeeId = getEmployeeIdFromStorage();
   const centerIdFromStorage = getCenterIdFromStorage();
 
-  const centerId =
-    centerIdFromStorage ?? 1;
+  const centerId = centerIdFromStorage ?? 1;
 
   const visaServiceId = getOptionId(serviceRequestedOptions, data.serviceRequested) ?? 1;
   const paymentModeId = getOptionId(paymentModeOptions, data.paymentMode) ?? 1;
@@ -144,6 +143,12 @@ function buildCreateVisaPayload(data) {
       visa_service_id: parseIntSafe(visaServiceId, 1),
       appointment_mode_id: parseIntSafe(data.applicationBy, 1),
       appointment_type_id: parseIntSafe(data.applicationType, 1),
+
+      visa_duration_id: 1,
+      visa_entry_id: 1,
+      nationality_id: 1,
+      status: 1,
+
       first_name: data.firstName ?? '',
       surname: data.surname ?? '',
       dob: data.dob ?? '',
@@ -166,8 +171,7 @@ function buildCreateVisaPayload(data) {
 
 function buildUpdateVisaPayload(data, visaAppId) {
   const centerIdFromStorage = getCenterIdFromStorage();
-  const centerId =
-    centerIdFromStorage ?? 1;
+  const centerId = centerIdFromStorage ?? 1;
 
   const visaServiceId = getOptionId(serviceRequestedOptions, data.serviceRequested) ?? 1;
   const paymentModeId = getOptionId(paymentModeOptions, data.paymentMode) ?? 1;
@@ -212,6 +216,12 @@ function buildUpdateVisaPayload(data, visaAppId) {
       visa_service_id: parseIntSafe(visaServiceId, 1),
       appointment_mode_id: parseIntSafe(data.applicationBy, 1),
       appointment_type_id: parseIntSafe(data.applicationType, 1),
+
+      visa_duration_id: 1,
+      visa_entry_id: 1,
+      nationality_id: 1,
+      status: 1,
+
       first_name: data.firstName ?? '',
       surname: data.surname ?? '',
       dob: data.dob ?? '',
