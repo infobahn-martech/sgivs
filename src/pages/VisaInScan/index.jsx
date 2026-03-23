@@ -11,8 +11,6 @@ import { formatDate } from '../../config/config';
 import AddEditModal from './AddEditModal';
 
 const VisaInScan = () => {
-  const USE_MOCK = true;
-
   const { getData, visaInScanData, isLoadingGet } = useVisaInScanReducer((state) => state);
 
   const initialParams = {
@@ -24,27 +22,16 @@ const VisaInScan = () => {
     sortBy: 'date',
     sortOrder: 'DESC',
     isExcelExport: 'false',
+    status_id: 2,
   };
 
   const [params, setParams] = useState(initialParams);
   const [addEditModal, setAddEditModal] = useState(false);
   const [selectedInScan, setSelectedInScan] = useState(null);
 
-  // ✅ Dummy Data (Required fields)
-  const mockInScanData = {
-    total: 5,
-    data: [
-      { id: 1, date: '2025-01-10T09:30:00Z', by: 'Admin', totalApplication: 12 },
-      { id: 2, date: '2025-02-14T12:15:00Z', by: 'Operator', totalApplication: 7 },
-      { id: 3, date: '2025-03-05T08:45:00Z', by: 'Admin', totalApplication: 19 },
-      { id: 4, date: '2025-03-20T10:00:00Z', by: 'Supervisor', totalApplication: 5 },
-      { id: 5, date: '2025-04-02T11:20:00Z', by: 'Admin', totalApplication: 9 },
-    ],
-  };
-
   useEffect(() => {
-    if (!USE_MOCK) getData(params);
-  }, [params, USE_MOCK, getData]);
+    getData(params);
+  }, [params, getData]);
 
   const handleSortChange = (selector) => {
     setParams((prev) => ({
@@ -64,16 +51,17 @@ const VisaInScan = () => {
     },
     {
       name: 'By',
-      selector: 'by',
+      selector: 'created_by',
       sortable: true,
-      sortField: 'by',
+      sortField: 'created_by',
+      cell: (row) => <span>{row?.created_by || '-'}</span>,
     },
     {
       name: 'Total Application',
-      selector: 'totalApplication',
+      selector: 'total_application',
       sortable: true,
-      sortField: 'totalApplication',
-      cell: (row) => <span>{row?.totalApplication ?? 0}</span>,
+      sortField: 'total_application',
+      cell: (row) => <span>{row?.total_application ?? 0}</span>,
     },
   ];
 
@@ -93,9 +81,6 @@ const VisaInScan = () => {
     return () => debouncedSearch.cancel();
   }, [debouncedSearch]);
 
-  const tableData = USE_MOCK ? mockInScanData : visaInScanData;
-  const loading = USE_MOCK ? false : isLoadingGet;
-
   return (
     <>
       <CommonHeader
@@ -112,28 +97,29 @@ const VisaInScan = () => {
         submitFilter={(filters) => {
           const { fromDate, toDate, ...rest } = filters;
 
-          setParams({
-            ...params,
+          setParams((prev) => ({
+            ...prev,
             ...rest,
             fromDate: fromDate ? moment(fromDate).format('YYYY-MM-DD') : null,
             toDate: toDate ? moment(toDate).format('YYYY-MM-DD') : null,
             page: 1,
-          });
+          }));
         }}
         clearOptions={() => setParams(initialParams)}
       />
 
       <CustomTable
         pagination={{ currentPage: params.page, limit: params.limit }}
-        count={tableData?.total || 0}
+        count={visaInScanData?.total || visaInScanData?.data?.length || 0}
         columns={columns}
-        data={tableData?.data || []}
-        isLoading={loading}
-        onPageChange={(page) => setParams({ ...params, page })}
-        setLimit={(limit) => setParams({ ...params, limit })}
+        data={visaInScanData?.data || []}
+        isLoading={isLoadingGet}
+        onPageChange={(page) => setParams((prev) => ({ ...prev, page }))}
+        setLimit={(limit) => setParams((prev) => ({ ...prev, limit, page: 1 }))}
         onSortChange={handleSortChange}
         wrapClasses="inventory-table-wrap"
       />
+
       {addEditModal && (
         <AddEditModal
           showModal={addEditModal}
