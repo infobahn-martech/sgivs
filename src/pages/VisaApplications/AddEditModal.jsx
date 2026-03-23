@@ -27,26 +27,6 @@ const genderOptions = [
   { value: 'Other', label: 'Other' },
 ];
 
-const visaDurationOptions = [
-  { value: '14 Days', label: '14 Days' },
-  { value: '30 Days', label: '30 Days' },
-  { value: '60 Days', label: '60 Days' },
-  { value: '90 Days', label: '90 Days' },
-];
-
-const visaEntryOptions = [
-  { value: 'Single', label: 'Single Entry' },
-  { value: 'Multiple', label: 'Multiple Entry' },
-];
-
-const nationalityOptions = [
-  { value: 'UAE', label: 'UAE' },
-  { value: 'India', label: 'India' },
-  { value: 'Pakistan', label: 'Pakistan' },
-  { value: 'Philippines', label: 'Philippines' },
-  { value: 'Egypt', label: 'Egypt' },
-];
-
 const paymentModeOptions = [
   { value: 'Cash', label: 'Cash', id: 1 },
   { value: 'Card', label: 'Credit card / Debit card', id: 2 },
@@ -95,6 +75,11 @@ const getOptionId = (options, value) => {
   return matched?.id || null;
 };
 
+const getLabelById = (list, idKey, labelKey, value) => {
+  const matched = list?.find((item) => String(item[idKey]) === String(value));
+  return matched?.[labelKey] ?? '';
+};
+
 function buildCreateVisaPayload(data) {
   const employeeId = getEmployeeIdFromStorage();
   const centerIdFromStorage = getCenterIdFromStorage();
@@ -123,9 +108,10 @@ function buildCreateVisaPayload(data) {
     `Consprom File No: ${data.consproMFileNo ?? ''}`,
     `Token: ${data.token ?? ''}`,
     `Email: ${data.email ?? ''}`,
-    `Visa Duration: ${data.visaDuration ?? ''}`,
-    `Visa Entry: ${data.visaEntry ?? ''}`,
-    `Nationality: ${data.nationality ?? ''}`,
+    `Visa Duration: ${data.visaDurationLabel ?? ''}`,
+    `Visa Entry: ${data.visaEntryLabel ?? ''}`,
+    `Nationality: ${data.nationalityLabel ?? ''}`,
+    `Status: ${data.statusLabel ?? ''}`,
     `Passport Expiry Date: ${data.passportExpiryDate ?? ''}`,
     `Father/Husband Name: ${data.fatherHusbandName ?? ''}`,
     `Combino Not Found: ${data.combinoNotFound ? 'Yes' : 'No'}`,
@@ -144,10 +130,10 @@ function buildCreateVisaPayload(data) {
       appointment_mode_id: parseIntSafe(data.applicationBy, 1),
       appointment_type_id: parseIntSafe(data.applicationType, 1),
 
-      visa_duration_id: 1,
-      visa_entry_id: 1,
-      nationality_id: 1,
-      status: 1,
+      visa_duration_id: parseIntSafe(data.visaDuration, 1),
+      visa_entry_id: parseIntSafe(data.visaEntry, 1),
+      nationality_id: parseIntSafe(data.nationality, 1),
+      status: parseIntSafe(data.status, 1),
 
       first_name: data.firstName ?? '',
       surname: data.surname ?? '',
@@ -195,9 +181,10 @@ function buildUpdateVisaPayload(data, visaAppId) {
     `Consprom File No: ${data.consproMFileNo ?? ''}`,
     `Token: ${data.token ?? ''}`,
     `Email: ${data.email ?? ''}`,
-    `Visa Duration: ${data.visaDuration ?? ''}`,
-    `Visa Entry: ${data.visaEntry ?? ''}`,
-    `Nationality: ${data.nationality ?? ''}`,
+    `Visa Duration: ${data.visaDurationLabel ?? ''}`,
+    `Visa Entry: ${data.visaEntryLabel ?? ''}`,
+    `Nationality: ${data.nationalityLabel ?? ''}`,
+    `Status: ${data.statusLabel ?? ''}`,
     `Passport Expiry Date: ${data.passportExpiryDate ?? ''}`,
     `Father/Husband Name: ${data.fatherHusbandName ?? ''}`,
     `Combino Not Found: ${data.combinoNotFound ? 'Yes' : 'No'}`,
@@ -217,10 +204,10 @@ function buildUpdateVisaPayload(data, visaAppId) {
       appointment_mode_id: parseIntSafe(data.applicationBy, 1),
       appointment_type_id: parseIntSafe(data.applicationType, 1),
 
-      visa_duration_id: 1,
-      visa_entry_id: 1,
-      nationality_id: 1,
-      status: 1,
+      visa_duration_id: parseIntSafe(data.visaDuration, 1),
+      visa_entry_id: parseIntSafe(data.visaEntry, 1),
+      nationality_id: parseIntSafe(data.nationality, 1),
+      status: parseIntSafe(data.status, 1),
 
       first_name: data.firstName ?? '',
       surname: data.surname ?? '',
@@ -247,6 +234,7 @@ const schema = z
     appointmentPostalRefNo: z.string().nonempty('Appointment/Postal Reference Number is required').max(50),
     applicationType: z.string().nonempty('Application type is required'),
     applicationBy: z.string().nonempty('Application by is required'),
+    status: z.string().nonempty('Status is required'),
 
     webFileNo: z.string().nonempty('Web file number is required').max(50),
     consproMFileNo: z.string().nonempty('Consprom file number is required').max(50),
@@ -341,7 +329,16 @@ const schema = z
 
 // ===================== COMPONENT =====================
 export function AddEditModal({ showModal, closeModal, onRefreshVisaApplications }) {
-  const { postData, patchData, isLoading } = useVisaApplicationReducer((state) => state);
+  const {
+    postData,
+    patchData,
+    isLoading,
+    getVisaMetaData,
+    visaDurationData,
+    visaEntryData,
+    nationalityData,
+    visaStatusData,
+  } = useVisaApplicationReducer((state) => state);
 
   const { getData: getDataAppointmentType, appointmentTypeData } =
     useAppointmentTypeReducer((state) => state);
@@ -352,6 +349,7 @@ export function AddEditModal({ showModal, closeModal, onRefreshVisaApplications 
   useEffect(() => {
     getDataAppointmentType({});
     getDataApplicationMode({});
+    getVisaMetaData?.();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -360,6 +358,7 @@ export function AddEditModal({ showModal, closeModal, onRefreshVisaApplications 
       appointmentPostalRefNo: '',
       applicationType: '',
       applicationBy: '',
+      status: '',
 
       webFileNo: '',
       consproMFileNo: '',
@@ -428,7 +427,7 @@ export function AddEditModal({ showModal, closeModal, onRefreshVisaApplications 
   const isCardPayment = String(paymentMode) === String(CARD_PAYMENT_MODE_ID);
 
   useEffect(() => {
-    if (showModal?.id) {
+    if (showModal?.id || showModal?.visa_application_id) {
       reset({
         ...defaultValues,
         ...showModal,
@@ -440,14 +439,25 @@ export function AddEditModal({ showModal, closeModal, onRefreshVisaApplications 
         mobileCode: showModal?.mobileCode || '+971',
         paymentMode: showModal?.paymentMode ? String(showModal.paymentMode) : '',
         applicationType:
-          showModal?.applicationType != null ? String(showModal.applicationType) : '',
+          showModal?.applicationType != null
+            ? String(showModal.applicationType)
+            : String(showModal?.appointment_type_id ?? ''),
         applicationBy:
-          showModal?.applicationBy != null ? String(showModal.applicationBy) : '',
+          showModal?.applicationBy != null
+            ? String(showModal.applicationBy)
+            : String(showModal?.appointment_mode_id ?? ''),
+        visaDuration: String(showModal?.visaDuration ?? showModal?.visa_duration_id ?? ''),
+        visaEntry: String(showModal?.visaEntry ?? showModal?.visa_entry_id ?? ''),
+        nationality: String(showModal?.nationality ?? showModal?.nationality_id ?? ''),
+        status:
+          showModal?.status != null
+            ? String(showModal.status)
+            : String(showModal?.status_id ?? ''),
       });
     } else {
       reset(defaultValues);
     }
-  }, [showModal?.id, reset, defaultValues, showModal]);
+  }, [showModal, reset, defaultValues]);
 
   useEffect(() => {
     if (!isCardPayment) {
@@ -484,6 +494,30 @@ export function AddEditModal({ showModal, closeModal, onRefreshVisaApplications 
   const onSubmit = (data) => {
     const normalizedData = {
       ...data,
+      visaDurationLabel: getLabelById(
+        visaDurationData,
+        'visa_duration_id',
+        'visa_duration',
+        data.visaDuration
+      ),
+      visaEntryLabel: getLabelById(
+        visaEntryData,
+        'visa_entry_id',
+        'visa_entry',
+        data.visaEntry
+      ),
+      nationalityLabel: getLabelById(
+        nationalityData,
+        'nationality_id',
+        'nationality',
+        data.nationality
+      ),
+      statusLabel: getLabelById(
+        visaStatusData,
+        'status_id',
+        'status',
+        data.status
+      ),
       ...(!data.emergencyVisa && { priorityReason: '' }),
       ...(!data.courierRequired && {
         courierParentName: '',
@@ -534,8 +568,16 @@ export function AddEditModal({ showModal, closeModal, onRefreshVisaApplications 
             <label className="form-label">
               Appointment / Postal Reference Number <span className="text-danger">*</span>
             </label>
-            <input type="text" className="form-control" autoComplete="off" maxLength={50} {...register('appointmentPostalRefNo')} />
-            {errors.appointmentPostalRefNo && <span className="error">{errors.appointmentPostalRefNo.message}</span>}
+            <input
+              type="text"
+              className="form-control"
+              autoComplete="off"
+              maxLength={50}
+              {...register('appointmentPostalRefNo')}
+            />
+            {errors.appointmentPostalRefNo && (
+              <span className="error">{errors.appointmentPostalRefNo.message}</span>
+            )}
           </div>
         </div>
 
@@ -574,6 +616,23 @@ export function AddEditModal({ showModal, closeModal, onRefreshVisaApplications 
             {errors.applicationBy && <span className="error">{errors.applicationBy.message}</span>}
           </div>
         </div>
+
+        <div className="col-md-6">
+          <div className="form-group">
+            <label className="form-label">
+              Status <span className="text-danger">*</span>
+            </label>
+            <select className="form-control" {...register('status')}>
+              <option value="">Select</option>
+              {visaStatusData?.map((o) => (
+                <option key={o.status_id} value={String(o.status_id)}>
+                  {o.status}
+                </option>
+              ))}
+            </select>
+            {errors.status && <span className="error">{errors.status.message}</span>}
+          </div>
+        </div>
       </div>
 
       <div className="row">
@@ -582,7 +641,13 @@ export function AddEditModal({ showModal, closeModal, onRefreshVisaApplications 
             <label className="form-label">
               Web file number <span className="text-danger">*</span>
             </label>
-            <input type="text" className="form-control" autoComplete="off" maxLength={50} {...register('webFileNo')} />
+            <input
+              type="text"
+              className="form-control"
+              autoComplete="off"
+              maxLength={50}
+              {...register('webFileNo')}
+            />
             {errors.webFileNo && <span className="error">{errors.webFileNo.message}</span>}
           </div>
         </div>
@@ -592,7 +657,13 @@ export function AddEditModal({ showModal, closeModal, onRefreshVisaApplications 
             <label className="form-label">
               Consprom file number <span className="text-danger">*</span>
             </label>
-            <input type="text" className="form-control" autoComplete="off" maxLength={50} {...register('consproMFileNo')} />
+            <input
+              type="text"
+              className="form-control"
+              autoComplete="off"
+              maxLength={50}
+              {...register('consproMFileNo')}
+            />
             {errors.consproMFileNo && <span className="error">{errors.consproMFileNo.message}</span>}
           </div>
         </div>
@@ -718,9 +789,9 @@ export function AddEditModal({ showModal, closeModal, onRefreshVisaApplications 
             </label>
             <select className="form-control" {...register('nationality')}>
               <option value="">Select</option>
-              {nationalityOptions.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
+              {nationalityData?.map((o) => (
+                <option key={o.nationality_id} value={String(o.nationality_id)}>
+                  {o.nationality}
                 </option>
               ))}
             </select>
@@ -763,9 +834,9 @@ export function AddEditModal({ showModal, closeModal, onRefreshVisaApplications 
             </label>
             <select className="form-control" {...register('visaDuration')}>
               <option value="">Select</option>
-              {visaDurationOptions.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
+              {visaDurationData?.map((o) => (
+                <option key={o.visa_duration_id} value={String(o.visa_duration_id)}>
+                  {o.visa_duration}
                 </option>
               ))}
             </select>
@@ -780,9 +851,9 @@ export function AddEditModal({ showModal, closeModal, onRefreshVisaApplications 
             </label>
             <select className="form-control" {...register('visaEntry')}>
               <option value="">Select</option>
-              {visaEntryOptions.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
+              {visaEntryData?.map((o) => (
+                <option key={o.visa_entry_id} value={String(o.visa_entry_id)}>
+                  {o.visa_entry}
                 </option>
               ))}
             </select>
@@ -817,7 +888,13 @@ export function AddEditModal({ showModal, closeModal, onRefreshVisaApplications 
             <label className="form-label">
               Father / husband name <span className="text-danger">*</span>
             </label>
-            <input type="text" className="form-control" autoComplete="off" maxLength={80} {...register('fatherHusbandName')} />
+            <input
+              type="text"
+              className="form-control"
+              autoComplete="off"
+              maxLength={80}
+              {...register('fatherHusbandName')}
+            />
             {errors.fatherHusbandName && <span className="error">{errors.fatherHusbandName.message}</span>}
           </div>
         </div>
@@ -855,7 +932,13 @@ export function AddEditModal({ showModal, closeModal, onRefreshVisaApplications 
                 <label className="form-label">
                   Father/mother/spouse name (for courier delivery) <span className="text-danger">*</span>
                 </label>
-                <input type="text" className="form-control" autoComplete="off" maxLength={80} {...register('courierParentName')} />
+                <input
+                  type="text"
+                  className="form-control"
+                  autoComplete="off"
+                  maxLength={80}
+                  {...register('courierParentName')}
+                />
                 {errors.courierParentName && <span className="error">{errors.courierParentName.message}</span>}
               </div>
             </div>

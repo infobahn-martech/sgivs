@@ -12,11 +12,17 @@ const updateVisaApplication = (payload) => Gateway.patch('visa/update', payload)
 // Delete
 const deleteVisaApplication = (id) => Gateway.delete(`visa-application/${id}`);
 
-// Receipt – POST visa/receipt { visa_application_id }
+// Receipt
 const getReceipt = (visa_application_id) => Gateway.post('visa/receipt', { visa_application_id });
 
-// Barcode – POST visa/barcode { reference_no }
+// Barcode
 const getBarcode = (reference_no) => Gateway.post('visa/barcode', { reference_no });
+
+// Dynamic dropdown APIs
+const getVisaDurations = () => Gateway.post('visa/duration');
+const getVisaEntries = () => Gateway.post('visa/entry');
+const getVisaNationalities = () => Gateway.post('visa/nationality');
+const getVisaStatuses = () => Gateway.post('visa/status');
 
 export default {
   getVisaApplications,
@@ -25,4 +31,8 @@ export default {
   deleteVisaApplication,
   getReceipt,
   getBarcode,
+  getVisaDurations,
+  getVisaEntries,
+  getVisaNationalities,
+  getVisaStatuses,
 };
