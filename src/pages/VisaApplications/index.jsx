@@ -23,6 +23,8 @@ const VisaApplications = () => {
   const { getVisaApplications, visaApplicationsData, isLoadingGet, deleteData, isLoadingDelete } =
     useVisaApplicationReducer((state) => state);
 
+  console.log("visaApplicationsData", visaApplicationsData);
+
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [modal, setModal] = useState(false);
   const [viewModal, setViewModal] = useState(false);
@@ -105,25 +107,27 @@ const VisaApplications = () => {
   };
 
   const columns = [
-    { name: 'Reference No', selector: 'referenceNo' },
-    { name: 'Name', selector: 'name' },
-    { name: 'Center', selector: 'center' },
-    { name: 'ConsproM File No', selector: 'consproMFileNo' },
+    { name: 'Reference No', selector: 'appointment_reference_no' },
+    { name: 'Name', selector: 'first_name' },
+    { name: 'Center', selector: 'center_name' },
+    { name: 'ConsproM File No', selector: 'consprom_file_number' },
     { name: 'Nationality', selector: 'nationality' },
-    { name: 'Passport No', selector: 'passportNo' },
-    { name: 'Application Type', selector: 'applicationType' },
-    { name: 'Service Name', selector: 'serviceName' },
-    { name: 'Delivery Type', selector: 'deliveryType' },
+    { name: 'Passport No', selector: 'passport_no' },
+    { name: 'Application Type', selector: 'appointment_type' },
+    { name: 'Service Name', selector: 'service_name' },
+    { name: 'Delivery Type', selector: 'delivery_type' },
     {
       name: 'Status / By, On',
       selector: 'status',
-      cell: (row) => (
-        <span>
-          {row?.status?.value || '-'}
-          {row?.status?.by ? ` / ${row.status.by}` : ''}
-          {row?.status?.on ? `, ${formatDate(row.status.on)}` : ''}
-        </span>
-      ),
+      cell: (row) => {
+        return (
+          <span>
+            {row?.status || '-'}
+            {row?.status?.by ? ` / ${row.status.by}` : ''}
+            {row?.status?.on ? `, ${formatDate(row.status.on)}` : ''}
+          </span>
+        );
+      },
     },
     {
       name: 'Action',
@@ -201,7 +205,7 @@ const VisaApplications = () => {
         pagination={{ currentPage: params.page, limit: params.limit }}
         count={visaApplicationsData?.total || 0}
         columns={columns}
-        data={visaApplicationsData?.data || []}
+        data={visaApplicationsData || []}
         isLoading={isLoadingGet}
         onPageChange={(page) =>
           setParams((prev) => ({
