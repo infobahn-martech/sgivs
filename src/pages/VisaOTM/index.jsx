@@ -12,70 +12,25 @@ import { formatDate } from '../../config/config';
 import AddEditModal from './AddEditModal';
 
 const VisaOTM = () => {
-  const USE_MOCK = true;
-
   const { getData, visaOTMData, isLoadingGet } = useVisaOTMReducer((state) => state);
 
   const initialParams = {
-    search: '',
+    fromDate: moment().startOf('month').format('YYYY-MM-DD'),
+    toDate: moment().endOf('month').format('YYYY-MM-DD'),
+    employeeId: null,
     page: 1,
     limit: 10,
-    fromDate: null,
-    toDate: null,
     sortBy: 'date',
     sortOrder: 'DESC',
-    isExcelExport: 'false',
   };
 
   const [params, setParams] = useState(initialParams);
   const [addEditModal, setAddEditModal] = useState(false);
   const [selectedOTM, setSelectedOTM] = useState(null);
 
-  // ✅ Dummy Data (Required fields)
-  const mockVisaOTMData = {
-    total: 5,
-    data: [
-      {
-        id: 1,
-        date: '2025-01-10T09:30:00Z',
-        by: 'Admin',
-        totalApplication: 12,
-        manifestId: 'MAN-0001',
-      },
-      {
-        id: 2,
-        date: '2025-02-14T12:15:00Z',
-        by: 'Operator',
-        totalApplication: 7,
-        manifestId: 'MAN-0002',
-      },
-      {
-        id: 3,
-        date: '2025-03-05T08:45:00Z',
-        by: 'Admin',
-        totalApplication: 19,
-        manifestId: 'MAN-0003',
-      },
-      {
-        id: 4,
-        date: '2025-03-20T10:00:00Z',
-        by: 'Supervisor',
-        totalApplication: 5,
-        manifestId: 'MAN-0004',
-      },
-      {
-        id: 5,
-        date: '2025-04-02T11:20:00Z',
-        by: 'Admin',
-        totalApplication: 9,
-        manifestId: 'MAN-0005',
-      },
-    ],
-  };
-
   useEffect(() => {
-    if (!USE_MOCK) getData(params);
-  }, [params, USE_MOCK, getData]);
+    getData(params);
+  }, [params.fromDate, params.toDate, params.employeeId, getData]);
 
   const handleSortChange = (selector) => {
     setParams((prev) => ({
@@ -85,11 +40,8 @@ const VisaOTM = () => {
     }));
   };
 
-  // ✅ Download handlers (replace with your real API/file urls)
   const downloadDataFiles = (row) => {
     console.log('Download Data Files:', row);
-    // Example:
-    // window.open(row?.dataFilesUrl, '_blank');
   };
 
   const downloadImageFile = (row) => {
@@ -188,6 +140,7 @@ const VisaOTM = () => {
       selector: 'by',
       sortable: true,
       sortField: 'by',
+      cell: (row) => <span>{row?.by || '-'}</span>,
     },
     {
       name: 'Total Application',
@@ -214,12 +167,9 @@ const VisaOTM = () => {
 
   const debouncedSearch = useMemo(
     () =>
-      debounce((searchValue) => {
-        setParams((prev) => ({
-          ...prev,
-          search: searchValue,
-          page: 1,
-        }));
+      debounce(() => {
+        // Search is not supported in this API currently.
+        // Keep this to avoid breaking CommonHeader if it passes onSearch.
       }, 500),
     []
   );
@@ -228,8 +178,36 @@ const VisaOTM = () => {
     return () => debouncedSearch.cancel();
   }, [debouncedSearch]);
 
-  const tableData = USE_MOCK ? mockVisaOTMData : visaOTMData;
-  const loading = USE_MOCK ? false : isLoadingVisaOTMGet;
+  const sortedData = useMemo(() => {
+    const list = [...(visaOTMData?.data || [])];
+
+    if (!params.sortBy) return list;
+
+    return list.sort((a, b) => {
+      const aValue = a?.[params.sortBy];
+      const bValue = b?.[params.sortBy];
+
+      if (params.sortBy === 'date') {
+        const aDate = aValue ? new Date(aValue).getTime() : 0;
+        const bDate = bValue ? new Date(bValue).getTime() : 0;
+        return params.sortOrder === 'ASC' ? aDate - bDate : bDate - aDate;
+      }
+
+      if (typeof aValue === 'number' && typeof bValue === 'number') {
+        return params.sortOrder === 'ASC' ? aValue - bValue : bValue - aValue;
+      }
+
+      return params.sortOrder === 'ASC'
+        ? String(aValue ?? '').localeCompare(String(bValue ?? ''))
+        : String(bValue ?? '').localeCompare(String(aValue ?? ''));
+    });
+  }, [visaOTMData, params.sortBy, params.sortOrder]);
+
+  const paginatedData = useMemo(() => {
+    const startIndex = (params.page - 1) * params.limit;
+    const endIndex = startIndex + params.limit;
+    return sortedData.slice(startIndex, endIndex);
+  }, [sortedData, params.page, params.limit]);
 
   return (
     <>
@@ -245,27 +223,28 @@ const VisaOTM = () => {
         hideFilter
         onSearch={debouncedSearch}
         submitFilter={(filters) => {
-          const { fromDate, toDate, ...rest } = filters;
+          const { fromDate, toDate, employeeId, ...rest } = filters;
 
-          setParams({
-            ...params,
+          setParams((prev) => ({
+            ...prev,
             ...rest,
             fromDate: fromDate ? moment(fromDate).format('YYYY-MM-DD') : null,
             toDate: toDate ? moment(toDate).format('YYYY-MM-DD') : null,
+            employeeId: employeeId || null,
             page: 1,
-          });
+          }));
         }}
         clearOptions={() => setParams(initialParams)}
       />
 
       <CustomTable
         pagination={{ currentPage: params.page, limit: params.limit }}
-        count={tableData?.total || 0}
+        count={sortedData?.length || 0}
         columns={columns}
-        data={tableData?.data || []}
-        isLoading={loading}
-        onPageChange={(page) => setParams({ ...params, page })}
-        setLimit={(limit) => setParams({ ...params, limit })}
+        data={paginatedData || []}
+        isLoading={isLoadingGet}
+        onPageChange={(page) => setParams((prev) => ({ ...prev, page }))}
+        setLimit={(limit) => setParams((prev) => ({ ...prev, limit, page: 1 }))}
         onSortChange={handleSortChange}
         wrapClasses="inventory-table-wrap"
       />
