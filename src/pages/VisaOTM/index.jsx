@@ -11,13 +11,27 @@ import useVisaOTMReducer from '../../stores/VisaOTMReducer';
 import { formatDate } from '../../config/config';
 import AddEditModal from './AddEditModal';
 
+
+function getEmployeeIdFromStorage() {
+  try {
+    const val = localStorage.getItem('employee_id');
+    if (val == null) return null;
+    const n = parseInt(val, 10);
+    return Number.isNaN(n) ? null : n;
+  } catch {
+    return null;
+  }
+}
+
 const VisaOTM = () => {
+
+
   const { getData, visaOTMData, isLoadingGet } = useVisaOTMReducer((state) => state);
 
   const initialParams = {
     fromDate: moment().startOf('month').format('YYYY-MM-DD'),
     toDate: moment().endOf('month').format('YYYY-MM-DD'),
-    employeeId: null,
+    employeeId: getEmployeeIdFromStorage(),
     page: 1,
     limit: 10,
     sortBy: 'date',
@@ -55,6 +69,8 @@ const VisaOTM = () => {
   const downloadDocumentFile = (row) => {
     console.log('Download Document File:', row);
   };
+
+
 
   const renderAction = (row) => {
     return (
