@@ -3,11 +3,17 @@ import authService from '../services/authService';
 import { getAuthData, removeItem, setItem, AUTH_KEYS } from '../helpers/localStorage';
 import useAlertReducer from './AlertReducer';
 
-const { isAuthenticated, employee_id, center_id, role_id } = getAuthData();
+// TODO: localStorage `isAuthenticated` persistence is temporary. Replace with a backend
+// session-check on app init (e.g. GET /auth/check or GET /me) that validates the cookie/session
+// and then sets Zustand state; clear client flag on 401.
+
+const { employee_id, center_id, role_id } = getAuthData();
 const initialAuthData =
   employee_id && center_id && role_id
     ? { employee_id, center_id, role_id }
     : null;
+
+const initialIsAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
 
 const useAuthReducer = create((set) => ({
   authData: initialAuthData,
@@ -15,7 +21,7 @@ const useAuthReducer = create((set) => ({
 
   isLoginLoading: false,
   isForgotLoading: false,
-  isAuthenticated,
+  isAuthenticated: initialIsAuthenticated,
 
   errorMessage: '',
   successMessage: '',
@@ -56,6 +62,8 @@ const useAuthReducer = create((set) => ({
       if (resEmployeeId != null) setItem('employee_id', String(resEmployeeId));
       if (resCenterId != null) setItem('center_id', String(resCenterId));
       if (resRoleId != null) setItem('role_id', String(resRoleId));
+
+      setItem('isAuthenticated', 'true');
 
       set({
         isAuthenticated: true,
@@ -167,6 +175,7 @@ const useAuthReducer = create((set) => ({
     });
 
     AUTH_KEYS.forEach((key) => removeItem(key));
+    removeItem('isAuthenticated');
     removeItem('accessToken');
     removeItem('refreshToken');
   },
@@ -186,6 +195,7 @@ const useAuthReducer = create((set) => ({
         isProfileFetchLoading: false,
         isAuthenticated: true,
       });
+      setItem('isAuthenticated', 'true');
     } catch (err) {
       const { error } = useAlertReducer.getState();
       set({
@@ -196,6 +206,7 @@ const useAuthReducer = create((set) => ({
       });
       error(err?.response?.data?.message ?? err.message);
       AUTH_KEYS.forEach((key) => removeItem(key));
+      removeItem('isAuthenticated');
     }
   },
 
