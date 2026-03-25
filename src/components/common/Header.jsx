@@ -17,9 +17,11 @@ import CustomActionModal from './CustomActionModal';
 import InitialsAvatar from './InitialsAvatar';
 import { getFirstLetters } from '../../config/config';
 import Notifications from '../../pages/Notification';
+import useAuthReducer from '../../stores/AuthReducer';
 
 const Header = () => {
   const navigate = useNavigate();
+  const { doLogout } = useAuthReducer((state) => state);
 
   // ✅ Static profile data (edit as you like)
   const profileData = useMemo(
@@ -70,10 +72,10 @@ const Header = () => {
   const [showNotificationModal, setShowNotificationModal] = useState(false);
   const [isLogOut, setIsLogOut] = useState(false);
 
-  // ✅ Fake logout (you can change)
-  const doLogout = () => {
-    // localStorage.clear();
-    navigate('/login');
+  const handleLogout = async () => {
+    await doLogout();
+    setIsLogOut(false);
+    window.location.replace('/sgivs#/login');
   };
 
   return (
@@ -232,7 +234,7 @@ const Header = () => {
           showModal={isLogOut}
           closeModal={() => setIsLogOut(false)}
           message="Are you sure you want to logout?"
-          onSubmit={doLogout}
+          onSubmit={handleLogout}
         />
       )}
 
