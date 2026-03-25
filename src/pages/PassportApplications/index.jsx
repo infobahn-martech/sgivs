@@ -43,6 +43,7 @@ const PassportApplications = () => {
     sortBy: 'createdAt',
     sortOrder: 'DESC',
     isExcelExport: 'false',
+    // status: 1,
   };
 
   const [params, setParams] = useState(initialParams);
