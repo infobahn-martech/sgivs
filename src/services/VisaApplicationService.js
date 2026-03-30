@@ -16,7 +16,7 @@ const deleteVisaApplication = (id) => Gateway.delete(`visa-application/${id}`);
 const getReceipt = (visa_application_id) => Gateway.post('visa/receipt', { visa_application_id });
 
 // Barcode
-const getBarcode = (reference_no) => Gateway.post('visa/barcode', { reference_no });
+const getBarcode = (visa_application_id) => Gateway.post('visa/barcode', { visa_application_id });
 
 // Dynamic dropdown APIs
 const getVisaDurations = () => Gateway.post('visa/duration');

@@ -161,30 +161,24 @@ function BarcodeContent({ data }) {
 }
 
 export function PrintBarcodeModal({ showModal, closeModal }) {
-    debugger;
     const [barcodeData, setBarcodeData] = useState(null);
 
     useEffect(() => {
-        debugger;
         if (!showModal) {
             setBarcodeData(null);
             return;
         }
-        const reference_no =
-            showModal?.reference_no ??
-            showModal?.referenceNo ??
-            showModal?.appointment_reference_no ??
-            showModal?.appointment_ref_no ??
-            showModal?.appointment_ref ??
-            showModal?.arn_number;
-        if (!reference_no) {
+        const visa_application_id =
+            showModal?.id ??
+            showModal?.visa_application_id;
+        if (!visa_application_id) {
             closeModal();
             return;
         }
 
         const fetchBarcode = async () => {
             try {
-                const { data } = await visaApplicationService.getBarcode(reference_no);
+                const { data } = await visaApplicationService.getBarcode(visa_application_id);
                 setBarcodeData(data?.data ?? data);
             } catch (err) {
                 const { error } = useAlertReducer.getState();
