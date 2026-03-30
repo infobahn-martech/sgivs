@@ -28,13 +28,33 @@ function BarcodeSvg({ value, options = {} }) {
 function BarcodeContent({ data }) {
     if (!data || typeof data !== 'object') return null;
 
-    const barcodeValue = data.barcode_value || data.reference_no || data.referenceNo || data.appointment_ref || data.arn_number || '—';
-    const arn = data.arn_number || data.reference_no || data.referenceNo || data.appointment_ref || data.barcode_value || '—';
+    const barcodeValue =
+        data.barcode_text ||
+        data.barcode_value ||
+        data.reference_no ||
+        data.referenceNo ||
+        data.appointment_ref ||
+        data.arn_number ||
+        '—';
+    const arn =
+        data.reference_no ||
+        data.referenceNo ||
+        data.appointment_reference_no ||
+        data.appointment_ref ||
+        data.arn_number ||
+        data.barcode_text ||
+        data.barcode_value ||
+        '—';
     const applicantName = data.applicant_name || data.name || '—';
+    const formatApplicationDate = (dateValue) => {
+        if (!dateValue) return '—';
+        const m = moment(dateValue, ['DD/MM/YYYY', 'YYYY-MM-DD', moment.ISO_8601], true);
+        return m.isValid() ? m.format('DD/MM/YYYY') : String(dateValue);
+    };
     const applicationDate = data.application_date
-        ? moment(data.application_date).format('DD/MM/YYYY')
+        ? formatApplicationDate(data.application_date)
         : data.created_on
-            ? moment(data.created_on).format('DD/MM/YYYY')
+            ? formatApplicationDate(data.created_on)
             : '—';
     const deliveryMode = data.delivery_mode || data.delivery_type || data.deliveryType || '—';
     const icacCenter = data.icac_center || data.center_name || data.center || data.mission_name || '—';
@@ -141,14 +161,22 @@ function BarcodeContent({ data }) {
 }
 
 export function PrintBarcodeModal({ showModal, closeModal }) {
+    debugger;
     const [barcodeData, setBarcodeData] = useState(null);
 
     useEffect(() => {
+        debugger;
         if (!showModal) {
             setBarcodeData(null);
             return;
         }
-        const reference_no = showModal?.referenceNo ?? showModal?.reference_no;
+        const reference_no =
+            showModal?.reference_no ??
+            showModal?.referenceNo ??
+            showModal?.appointment_reference_no ??
+            showModal?.appointment_ref_no ??
+            showModal?.appointment_ref ??
+            showModal?.arn_number;
         if (!reference_no) {
             closeModal();
             return;
