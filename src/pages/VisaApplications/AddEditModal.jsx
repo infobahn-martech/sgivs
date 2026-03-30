@@ -80,22 +80,29 @@ const getLabelById = (list, idKey, labelKey, value) => {
   return matched?.[labelKey] ?? '';
 };
 
-function formatCurrentDateTime() {
-  const d = new Date();
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
-  const hh = String(d.getHours()).padStart(2, '0');
-  const mi = String(d.getMinutes()).padStart(2, '0');
-  const ss = String(d.getSeconds()).padStart(2, '0');
-  return `${yyyy}-${mm}-${dd} ${hh}:${mi}:${ss}`;
+function getCourierAddressParts(address = '') {
+  const parts = String(address)
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
+  return {
+    address_1: parts[0] ?? '',
+    address_2: parts[1] ?? '',
+    state: parts[2] ?? '',
+    city: parts[3] ?? parts[2] ?? '',
+    postal_code: parts[4] ?? '',
+  };
 }
 
 function buildCreateVisaPayload(data) {
   const employeeId = getEmployeeIdFromStorage();
+  const centerIdFromStorage = getCenterIdFromStorage();
+  const centerId = centerIdFromStorage ?? 1;
 
   const visaServiceId = getOptionId(serviceRequestedOptions, data.serviceRequested) ?? 1;
   const paymentModeId = getOptionId(paymentModeOptions, data.paymentMode) ?? 1;
+  const courierTypeId = data.courierRequired ? 1 : 0;
+  const courierAddress = getCourierAddressParts(data.returnCourierAddress);
 
   const mobileNumber = `${data.mobileCode || ''}${data.mobileNumber || ''}`.replace(/\s+/g, '');
 
@@ -112,45 +119,57 @@ function buildCreateVisaPayload(data) {
 
   return {
     visa_application: {
+      center_id: centerId,
       visa_service_id: parseIntSafe(visaServiceId, 1),
-      first_name: data.firstName ?? '',
-      last_name: data.surname ?? '',
-      passport_number: data.passportNo ?? '',
-      passport_expiry: data.passportExpiryDate ?? '',
-      nationality: data.nationalityLabel ?? '',
-      date_of_birth: data.dob ?? '',
-      email: data.email ?? '',
-      phone: mobileNumber,
-      father_husband_name: data.fatherHusbandName ?? '',
-      fms_name: '',
+      appointment_mode_id: parseIntSafe(data.applicationBy, 1),
+      appointment_type_id: parseIntSafe(data.applicationType, 1),
       appointment_reference_no: data.appointmentPostalRefNo ?? '',
       web_file_number: data.webFileNo ?? '',
-      consprom_file_number: data.consproMFileNo ?? '',
-      return_courier_address: data.returnCourierAddress ?? '',
-      visa_fee_without_icwf: 0,
-      emergency_visa: !!data.emergencyVisa,
+      emergency_visa: data.emergencyVisa ? 1 : 0,
       ev_reason: data.priorityReason ?? '',
+      consprom_file_number: data.consproMFileNo ?? '',
+      token: data.token ?? '',
+      first_name: data.firstName ?? '',
+      surname: data.surname ?? '',
+      dob: data.dob ?? '',
+      gender: data.gender ?? '',
+      mobile_number: mobileNumber,
+      email: data.email ?? '',
+      visa_duration_id: parseIntSafe(data.visaDuration, 1),
+      visa_entry_id: parseIntSafe(data.visaEntry, 1),
+      nationality_id: parseIntSafe(data.nationality, 1),
+      passport_no: data.passportNo ?? '',
+      father_husband_name: data.fatherHusbandName ?? '',
+      combino: data.combinoNotFound ? 1 : 0,
+      visa_fee_without_icwf: '0.000',
+      passport_expiry: data.passportExpiryDate ?? '',
+      fms_name: '',
+      return_courier_address: data.returnCourierAddress ?? '',
       urgent_fee: data.urgentFee ? 1 : 0,
+      courier: courierTypeId,
+      status: parseIntSafe(data.status, 1),
       created_by: employeeId ?? 4,
     },
     vas_services,
     payment: {
       payment_mode_id: parseIntSafe(paymentModeId, 1),
+      card_type: String(paymentModeId) === String(CARD_PAYMENT_MODE_ID) ? data.cardType ?? '' : '',
       transaction_id: data.transactionId ?? '',
-      paid_by: `${data.firstName ?? ''} ${data.surname ?? ''}`.trim(),
-      paid_at: formatCurrentDateTime(),
     },
     courier: {
-      courier_type_id: data.courierRequired ? 1 : 0,
-      tracking_number: '',
-      courier_name: '',
+      ...courierAddress,
+      courier_type_id: courierTypeId,
     },
   };
 }
 
 function buildUpdateVisaPayload(data, visaAppId) {
+  const centerIdFromStorage = getCenterIdFromStorage();
+  const centerId = centerIdFromStorage ?? 1;
   const visaServiceId = getOptionId(serviceRequestedOptions, data.serviceRequested) ?? 1;
   const paymentModeId = getOptionId(paymentModeOptions, data.paymentMode) ?? 1;
+  const courierTypeId = data.courierRequired ? 1 : 0;
+  const courierAddress = getCourierAddressParts(data.returnCourierAddress);
 
   const mobileNumber = `${data.mobileCode || ''}${data.mobileNumber || ''}`.replace(/\s+/g, '');
 
@@ -168,37 +187,46 @@ function buildUpdateVisaPayload(data, visaAppId) {
   return {
     visa_application_id: parseIntSafe(visaAppId, 0),
     visa_application: {
+      center_id: centerId,
       visa_service_id: parseIntSafe(visaServiceId, 1),
-      first_name: data.firstName ?? '',
-      last_name: data.surname ?? '',
-      passport_number: data.passportNo ?? '',
-      passport_expiry: data.passportExpiryDate ?? '',
-      nationality: data.nationalityLabel ?? '',
-      date_of_birth: data.dob ?? '',
-      email: data.email ?? '',
-      phone: mobileNumber,
-      father_husband_name: data.fatherHusbandName ?? '',
-      fms_name: '',
+      appointment_mode_id: parseIntSafe(data.applicationBy, 1),
+      appointment_type_id: parseIntSafe(data.applicationType, 1),
       appointment_reference_no: data.appointmentPostalRefNo ?? '',
       web_file_number: data.webFileNo ?? '',
-      consprom_file_number: data.consproMFileNo ?? '',
-      return_courier_address: data.returnCourierAddress ?? '',
-      visa_fee_without_icwf: 0,
-      emergency_visa: !!data.emergencyVisa,
+      emergency_visa: data.emergencyVisa ? 1 : 0,
       ev_reason: data.priorityReason ?? '',
+      consprom_file_number: data.consproMFileNo ?? '',
+      token: data.token ?? '',
+      first_name: data.firstName ?? '',
+      surname: data.surname ?? '',
+      dob: data.dob ?? '',
+      gender: data.gender ?? '',
+      mobile_number: mobileNumber,
+      email: data.email ?? '',
+      visa_duration_id: parseIntSafe(data.visaDuration, 1),
+      visa_entry_id: parseIntSafe(data.visaEntry, 1),
+      nationality_id: parseIntSafe(data.nationality, 1),
+      passport_no: data.passportNo ?? '',
+      father_husband_name: data.fatherHusbandName ?? '',
+      combino: data.combinoNotFound ? 1 : 0,
+      visa_fee_without_icwf: '0.000',
+      passport_expiry: data.passportExpiryDate ?? '',
+      fms_name: '',
+      return_courier_address: data.returnCourierAddress ?? '',
       urgent_fee: data.urgentFee ? 1 : 0,
+      courier: courierTypeId,
+      status: parseIntSafe(data.status, 1),
+      created_by: getEmployeeIdFromStorage() ?? 4,
     },
     vas_services,
     payment: {
       payment_mode_id: parseIntSafe(paymentModeId, 1),
+      card_type: String(paymentModeId) === String(CARD_PAYMENT_MODE_ID) ? data.cardType ?? '' : '',
       transaction_id: data.transactionId ?? '',
-      paid_by: `${data.firstName ?? ''} ${data.surname ?? ''}`.trim(),
-      paid_at: formatCurrentDateTime(),
     },
     courier: {
-      courier_type_id: data.courierRequired ? 1 : 0,
-      tracking_number: '',
-      courier_name: '',
+      ...courierAddress,
+      courier_type_id: courierTypeId,
     },
   };
 }
