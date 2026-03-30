@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import useAlertReducer from './AlertReducer';
-import visaOTMService from '../services/VisaOTMService';
+import visaOTMService from '../services/visaOTMService';
+import { getItem } from '../helpers/localStorage';
+import { OTM_STATUS_ID } from '../utils/helpers';
 
 const mapVisaOTMRow = (item) => ({
     id: item?.manifest_id,
@@ -56,6 +58,33 @@ const useVisaOTMReducer = create((set) => ({
             });
 
             error(message);
+        }
+    },
+
+    postData: async ({ application_numbers }, cb) => {
+        try {
+            set({ isLoading: true });
+            const employee_id_raw = getItem('employee_id');
+            const employee_id = employee_id_raw ? Number(employee_id_raw) : null;
+            if (!employee_id) {
+                const { error } = useAlertReducer.getState();
+                error('Employee ID not found in local storage');
+                set({ isLoading: false });
+                return;
+            }
+            await visaOTMService.bulkStatusChange({
+                status_id: OTM_STATUS_ID,
+                employee_id,
+                application_numbers,
+            });
+            const { success } = useAlertReducer.getState();
+            success('Visa Out Scan to Mission updated successfully');
+            set({ isLoading: false });
+            cb?.();
+        } catch (err) {
+            const { error } = useAlertReducer.getState();
+            error(err?.response?.data?.message ?? err.message);
+            set({ isLoading: false });
         }
     },
 }));
