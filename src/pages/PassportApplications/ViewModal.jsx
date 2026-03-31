@@ -1,7 +1,14 @@
 import moment from 'moment';
 import CustomModal from '../../components/common/CustomModal';
 
-const emptyVal = (v) => (v != null && v !== '' ? String(v) : '—');
+const hasValue = (v) => {
+    if (v == null) return false;
+    if (typeof v === 'string') return v.trim() !== '';
+    return true;
+};
+
+/** Display string for a field, or null when empty (field hidden). */
+const displayStr = (v) => (hasValue(v) ? String(v).trim() : null);
 
 function splitApplicantName(full) {
     if (!full || typeof full !== 'string') return { first: '', last: '' };
@@ -19,38 +26,60 @@ export function ViewModal({ showModal, closeModal }) {
         row.applicant_name ?? row.name ?? [row.firstName, row.lastName].filter(Boolean).join(' ').trim();
     const { first: splitFirst, last: splitLast } = splitApplicantName(fullName);
 
-    const referenceNo = emptyVal(row.appointment_ref_no ?? row.referenceNo);
+    const refRaw = row.appointment_ref_no ?? row.referenceNo;
+    const referenceNo = displayStr(refRaw);
     const appliedAt = row.comment_at ?? row.createdAt;
-    const appliedOn = appliedAt ? moment(appliedAt).format('YYYY-MM-DD HH:mm:ss') : '—';
-    const firstName = emptyVal(row.firstName ?? splitFirst);
-    const lastName = emptyVal(row.lastName ?? splitLast);
-    const dob = emptyVal(row.date_of_birth ?? row.dob);
-    const passportNumber = emptyVal(row.old_passport_no ?? row.oldPassportNo ?? row.ppNo);
-    const email = emptyVal(row.email);
-    const contact = emptyVal(
+    const appliedOn = appliedAt ? moment(appliedAt).format('YYYY-MM-DD HH:mm:ss') : null;
+    const firstName = displayStr(row.firstName ?? splitFirst);
+    const lastName = displayStr(row.lastName ?? splitLast);
+    const dob = displayStr(row.date_of_birth ?? row.dob);
+    const passportNumber = displayStr(row.old_passport_no ?? row.oldPassportNo ?? row.ppNo);
+    const email = displayStr(row.email);
+    const contact = displayStr(
         row.mobileNumber
             ? [row.mobileCode, row.mobileNumber].filter(Boolean).join(' ')
             : row.contact ?? row.phone
     );
-    const passportType = emptyVal(
+    const passportType = displayStr(
         row.service_name ?? row.passportType ?? [row.applicationType, row.serviceName].filter(Boolean).join(' ')
     );
 
-    const homeAddressLine1 = emptyVal(row.address_line1 ?? row.addressLine1);
-    const homeAddressLine2 = emptyVal(row.address_line2 ?? row.addressLine2);
-    const state = emptyVal(row.state);
-    const city = emptyVal(row.city);
-    const country = emptyVal(row.country ?? row.residenceCountry);
-    const postalCode = emptyVal(row.postal_code ?? row.postalCode);
+    const homeAddressLine1 = displayStr(row.address_line1 ?? row.addressLine1);
+    const homeAddressLine2 = displayStr(row.address_line2 ?? row.addressLine2);
+    const state = displayStr(row.state);
+    const city = displayStr(row.city);
+    const country = displayStr(row.country ?? row.residenceCountry);
+    const postalCode = displayStr(row.postal_code ?? row.postalCode);
 
     const arn = row.arn_number ?? row.arn;
     const smsTimestamp = row.comment_at ?? row.smsTimestamp ?? row.createdAt;
     const smsMessage =
         row.smsMessage ??
         row.status_comment ??
-        (referenceNo !== '—' && arn
-            ? `Your passport application (Ref #: ${row.appointment_ref_no ?? row.referenceNo}) / (ARN #: ${arn}) is received at SGIVS ICAC, Salalah on ${appliedAt ? moment(appliedAt).format('DD-MM-YYYY') : '—'}`
-            : '—');
+        (hasValue(refRaw) && hasValue(arn)
+            ? `Your passport application (Ref #: ${refRaw}) / (ARN #: ${arn}) is received at SGIVS ICAC, Salalah on ${appliedAt ? moment(appliedAt).format('DD-MM-YYYY') : '—'}`
+            : null);
+
+    const hasAddressContent =
+        hasValue(homeAddressLine1) ||
+        hasValue(homeAddressLine2) ||
+        hasValue(state) ||
+        hasValue(city) ||
+        hasValue(country) ||
+        hasValue(postalCode);
+
+    const showSmsSection = !!smsTimestamp || hasValue(smsMessage);
+
+    const hasPersonalContent =
+        hasValue(referenceNo) ||
+        hasValue(appliedOn) ||
+        hasValue(firstName) ||
+        hasValue(lastName) ||
+        hasValue(dob) ||
+        hasValue(email) ||
+        hasValue(passportNumber) ||
+        hasValue(contact) ||
+        hasValue(passportType);
 
     const renderHeader = () => (
         <>
@@ -65,12 +94,15 @@ export function ViewModal({ showModal, closeModal }) {
         </>
     );
 
-    const Field = ({ label, value }) => (
-        <div className="view-modal-field">
-            <span className="view-modal-label">{label}</span>
-            <span className="view-modal-value">{value}</span>
-        </div>
-    );
+    const Field = ({ label, value }) => {
+        if (!hasValue(value)) return null;
+        return (
+            <div className="view-modal-field">
+                <span className="view-modal-label">{label}</span>
+                <span className="view-modal-value">{value}</span>
+            </div>
+        );
+    };
 
     const Section = ({ title, icon, children }) => (
         <div className="view-modal-section">
@@ -88,6 +120,7 @@ export function ViewModal({ showModal, closeModal }) {
 
     const renderBody = () => (
         <div className="modal-body custom-scroll view-modal-body">
+            {hasPersonalContent && (
             <Section
                 title="Personal Details"
                 icon={
@@ -107,11 +140,15 @@ export function ViewModal({ showModal, closeModal }) {
                     <Field label="Passport Number:" value={passportNumber} />
                     <Field label="Contact:" value={contact} />
                 </div>
-                <div className="view-modal-grid view-modal-grid--full">
-                    <Field label="Passport Type:" value={passportType} />
-                </div>
+                {passportType && (
+                    <div className="view-modal-grid view-modal-grid--full">
+                        <Field label="Passport Type:" value={passportType} />
+                    </div>
+                )}
             </Section>
+            )}
 
+            {hasAddressContent && (
             <Section
                 title="Parents / Address Details"
                 icon={
@@ -130,7 +167,9 @@ export function ViewModal({ showModal, closeModal }) {
                     <Field label="Postal Code:" value={postalCode} />
                 </div>
             </Section>
+            )}
 
+            {showSmsSection && (
             <Section
                 title="SMS Details"
                 icon={
@@ -143,13 +182,18 @@ export function ViewModal({ showModal, closeModal }) {
                 <div className="view-modal-sms">
                     <div className="view-modal-sms-meta">
                         <span className="view-modal-sms-brand">SGIVS</span>
-                        <span className="view-modal-sms-time">
-                            {smsTimestamp ? moment(smsTimestamp).format('DD MMM, YYYY h:mm A') : '—'}
-                        </span>
+                        {smsTimestamp && (
+                            <span className="view-modal-sms-time">
+                                {moment(smsTimestamp).format('DD MMM, YYYY h:mm A')}
+                            </span>
+                        )}
                     </div>
-                    <p className="view-modal-sms-message">{smsMessage}</p>
+                    {hasValue(smsMessage) && (
+                        <p className="view-modal-sms-message">{smsMessage}</p>
+                    )}
                 </div>
             </Section>
+            )}
         </div>
     );
 
