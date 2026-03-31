@@ -3,40 +3,53 @@ import CustomModal from '../../components/common/CustomModal';
 
 const emptyVal = (v) => (v != null && v !== '' ? String(v) : '—');
 
+function splitApplicantName(full) {
+    if (!full || typeof full !== 'string') return { first: '', last: '' };
+    const parts = full.trim().split(/\s+/);
+    if (parts.length === 0) return { first: '', last: '' };
+    if (parts.length === 1) return { first: parts[0], last: '' };
+    return { first: parts[0], last: parts.slice(1).join(' ') };
+}
+
 export function ViewModal({ showModal, closeModal }) {
     const row = showModal || {};
 
-    // Support both API/mock shape and form shape
-    const referenceNo = emptyVal(row.referenceNo);
-    const appliedOn = row.createdAt
-        ? moment(row.createdAt).format('YYYY-MM-DD HH:mm:ss')
-        : '—';
-    const firstName = emptyVal(row.firstName ?? (row.name ? row.name.split(' ')[0] : ''));
-    const lastName = emptyVal(row.lastName ?? (row.name ? row.name.split(' ').slice(1).join(' ') : ''));
-    const dob = emptyVal(row.dob);
-    const passportNumber = emptyVal(row.oldPassportNo ?? row.ppNo);
+    // List API shape (snake_case) + form / mock (camelCase)
+    const fullName =
+        row.applicant_name ?? row.name ?? [row.firstName, row.lastName].filter(Boolean).join(' ').trim();
+    const { first: splitFirst, last: splitLast } = splitApplicantName(fullName);
+
+    const referenceNo = emptyVal(row.appointment_ref_no ?? row.referenceNo);
+    const appliedAt = row.comment_at ?? row.createdAt;
+    const appliedOn = appliedAt ? moment(appliedAt).format('YYYY-MM-DD HH:mm:ss') : '—';
+    const firstName = emptyVal(row.firstName ?? splitFirst);
+    const lastName = emptyVal(row.lastName ?? splitLast);
+    const dob = emptyVal(row.date_of_birth ?? row.dob);
+    const passportNumber = emptyVal(row.old_passport_no ?? row.oldPassportNo ?? row.ppNo);
     const email = emptyVal(row.email);
     const contact = emptyVal(
         row.mobileNumber
             ? [row.mobileCode, row.mobileNumber].filter(Boolean).join(' ')
-            : row.contact
+            : row.contact ?? row.phone
     );
     const passportType = emptyVal(
-        row.passportType ?? [row.applicationType, row.serviceName].filter(Boolean).join(' ')
+        row.service_name ?? row.passportType ?? [row.applicationType, row.serviceName].filter(Boolean).join(' ')
     );
 
-    const homeAddressLine1 = emptyVal(row.addressLine1);
-    const homeAddressLine2 = emptyVal(row.addressLine2);
+    const homeAddressLine1 = emptyVal(row.address_line1 ?? row.addressLine1);
+    const homeAddressLine2 = emptyVal(row.address_line2 ?? row.addressLine2);
     const state = emptyVal(row.state);
     const city = emptyVal(row.city);
-    const country = emptyVal(row.residenceCountry);
-    const postalCode = emptyVal(row.postalCode);
+    const country = emptyVal(row.country ?? row.residenceCountry);
+    const postalCode = emptyVal(row.postal_code ?? row.postalCode);
 
-    const smsTimestamp = row.smsTimestamp ?? row.createdAt;
+    const arn = row.arn_number ?? row.arn;
+    const smsTimestamp = row.comment_at ?? row.smsTimestamp ?? row.createdAt;
     const smsMessage =
         row.smsMessage ??
-        (referenceNo !== '—' && row.arn
-            ? `Your passport application (Ref #: ${row.referenceNo}) / (ARN #: ${row.arn}) is received at SGIVS ICAC, Salalah on ${row.createdAt ? moment(row.createdAt).format('DD-MM-YYYY') : '—'}`
+        row.status_comment ??
+        (referenceNo !== '—' && arn
+            ? `Your passport application (Ref #: ${row.appointment_ref_no ?? row.referenceNo}) / (ARN #: ${arn}) is received at SGIVS ICAC, Salalah on ${appliedAt ? moment(appliedAt).format('DD-MM-YYYY') : '—'}`
             : '—');
 
     const renderHeader = () => (
