@@ -320,7 +320,7 @@ export function AddEditModal({ showModal, closeModal, onRefreshVisaApplications 
 
   const renderHeader = () => (
     <>
-      <h4 className="modal-title">{showModal?.id ? 'Edit Visa Application' : 'Add Visa Application'}</h4>
+      <h4 className="modal-title">{showModal?.id ? 'Edit Attestation Application' : 'Add Attestation Application'}</h4>
       <button
         type="button"
         className="btn-close"
