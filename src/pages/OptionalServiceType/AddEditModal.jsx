@@ -162,7 +162,6 @@ export function AddEditModal({ showModal, closeModal, onRefreshOptionalService }
               id="name"
               className="form-control"
               autoComplete="off"
-              maxLength={20}
               placeholder="Enter optional service name"
               {...register('name')}
             />

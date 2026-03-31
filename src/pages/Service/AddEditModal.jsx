@@ -328,7 +328,6 @@ export function AddEditModal({ showModal, closeModal, onRefreshService }) {
             <input
               type="text"
               className="form-control"
-              maxLength={20}
               placeholder="Enter service name"
               disabled={isLoading}
               {...register('service_name')}
