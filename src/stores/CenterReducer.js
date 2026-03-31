@@ -63,9 +63,25 @@ const useCenterReducer = create((set) => ({
       set({ isLoadingGet: true });
       const { data } = await centerService.getData(params);
       const list = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [];
-      const total = data?.total ?? list?.length ?? 0;
+      const pag = data?.pagination;
+      const limit = params?.limit ?? 10;
+      const pagination = pag
+        ? {
+          total: pag.total ?? 0,
+          page: pag.page ?? params?.page ?? 1,
+          limit: pag.limit ?? limit,
+          total_pages:
+            pag.total_pages ??
+            Math.ceil((pag.total ?? 0) / ((pag.limit ?? limit) || 1)),
+        }
+        : {
+          total: data?.total ?? list?.length ?? 0,
+          page: params?.page ?? 1,
+          limit,
+          total_pages: Math.ceil((data?.total ?? list?.length ?? 0) / (limit || 1)),
+        };
       set({
-        centerData: { data: list, total },
+        centerData: { data: list, pagination },
         isLoadingGet: false,
       });
     } catch (err) {

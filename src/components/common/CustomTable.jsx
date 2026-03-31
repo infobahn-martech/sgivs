@@ -66,8 +66,6 @@ export default function CustomTable({
       return pageNumbers;
     };
 
-    if (!data?.length && !isLoading) return null;
-
     return (
       <div className="table-footer-wrap">
         <div className="left-wrap">

@@ -38,7 +38,7 @@ const Center = () => {
 
   // Mock data matching API shape: center_id, center_name, country_id, country_name, mission_id, mission_name
   const mockCenterData = {
-    total: 5,
+    pagination: { total: 5, page: 1, limit: 10, total_pages: 1 },
     data: [
       { center_id: 1, center_name: 'Center 1', country_id: 1, country_name: 'Country A', mission_id: 1, mission_name: 'Mission 1' },
       { center_id: 2, center_name: 'Monitors', country_id: 1, country_name: 'Country A', mission_id: 2, mission_name: 'Mission 2' },
@@ -62,6 +62,20 @@ const Center = () => {
       getData(params);
     }
   }, [params]);
+
+  const tableData = USE_MOCK ? mockCenterData : centerData;
+
+  useEffect(() => {
+    if (USE_MOCK) return;
+    const totalPages = tableData?.pagination?.total_pages;
+    const currentPage = params.page;
+    if (typeof totalPages !== 'number') return;
+    const outOfRange =
+      totalPages === 0 ? currentPage > 1 : currentPage > totalPages;
+    if (outOfRange) {
+      setParams((prev) => ({ ...prev, page: 1 }));
+    }
+  }, [USE_MOCK, tableData?.pagination?.total_pages, params.page]);
 
   const handleSortChange = (selector) => {
     setParams((prevParams) => ({
@@ -146,8 +160,6 @@ const Center = () => {
     }
   };
 
-  // ✅ Decide dataset
-  const tableData = USE_MOCK ? mockCenterData : centerData;
   const loading = USE_MOCK ? false : isLoadingGet;
 
   return (
@@ -163,13 +175,13 @@ const Center = () => {
         submitFilter={(filters) => {
           const { fromDate, toDate, ...rest } = filters;
 
-          setParams({
-            ...params,
+          setParams((prev) => ({
+            ...prev,
             ...rest,
             fromDate: fromDate ? moment(fromDate).format('YYYY-MM-DD') : null,
             toDate: toDate ? moment(toDate).format('YYYY-MM-DD') : null,
             page: 1,
-          });
+          }));
         }}
         clearOptions={() => {
           setParams(initialParams);
@@ -178,12 +190,23 @@ const Center = () => {
 
       <CustomTable
         pagination={{ currentPage: params.page, limit: params.limit }}
-        count={tableData?.total || 0}
+        count={tableData?.pagination?.total || 0}
         columns={columns}
         data={tableData?.data || []}
         isLoading={loading}
-        onPageChange={(page) => setParams({ ...params, page })}
-        setLimit={(limit) => setParams({ ...params, limit })}
+        onPageChange={(page) =>
+          setParams((prev) => ({
+            ...prev,
+            page,
+          }))
+        }
+        setLimit={(limit) =>
+          setParams((prev) => ({
+            ...prev,
+            limit: Number(limit) || prev.limit,
+            page: 1,
+          }))
+        }
         onSortChange={handleSortChange}
         wrapClasses="inventory-table-wrap"
       />
