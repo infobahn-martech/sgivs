@@ -101,7 +101,7 @@ const ForgotPassword = () => {
             </div>
           </div>
           <footer class="ftr">
-            <p class="copy">© 2025 ALL RIGHTS RESERVED</p>
+            <p class="copy">© 2026ALL RIGHTS RESERVED</p>
           </footer>
         </div>
       </div>
