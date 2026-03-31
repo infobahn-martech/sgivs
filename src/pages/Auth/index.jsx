@@ -313,7 +313,7 @@ const Login = () => {
           </div>
 
           <footer className="ftr login-v2__footer">
-            <p className="copy">© 2026ALL RIGHTS RESERVED</p>
+            <p className="copy">© 2026 ALL RIGHTS RESERVED</p>
           </footer>
         </div>
       </div>
