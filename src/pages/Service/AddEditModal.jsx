@@ -6,48 +6,105 @@ import CustomModal from '../../components/common/CustomModal';
 import useServiceReducer from '../../stores/ServiceReducer';
 import CustomSelect from './Select';
 
-// ✅ Updated Schema with snake_case keys
-const nameSchema = z.object({
-  service_name: z
-    .string()
-    .nonempty('Name is required'),
+/** @returns {'passport'|'visa'|'oci'|'attestation'|string} normalized key; unknown strings pass through lowercased */
+function normalizeServiceTypeName(raw) {
+  const s = String(raw ?? '')
+    .trim()
+    .toLowerCase();
+  if (!s) return '';
+  if (s === 'passport') return 'passport';
+  if (s === 'visa') return 'visa';
+  if (s === 'oci') return 'oci';
+  if (s === 'attestation') return 'attestation';
+  // Graceful typo / prefix variants for attestation
+  if (s.startsWith('attest')) return 'attestation';
+  return s;
+}
 
-  service_type_id: z.string().nonempty('Service Type is required'),
-
-  govt_fee: z.preprocess(
+function feeRequired(fieldLabel) {
+  return z.preprocess(
     (v) => (v === '' || v === null || v === undefined ? undefined : Number(v)),
     z
-      .number({ invalid_type_error: 'Govt Fee is required' })
-      .min(0, 'Govt Fee must be 0 or more')
-  ),
+      .number({ invalid_type_error: `${fieldLabel} is required` })
+      .min(0, `${fieldLabel} must be 0 or more`)
+  );
+}
 
-  icwf_fee: z.preprocess(
-    (v) => (v === '' || v === null || v === undefined ? undefined : Number(v)),
-    z
-      .number({ invalid_type_error: 'ICWF Fee is required' })
-      .min(0, 'ICWF Fee must be 0 or more')
-  ),
+function optionalFeeField(fieldLabel) {
+  return z.preprocess((v) => {
+    if (v === '' || v === null || v === undefined) return undefined;
+    const n = Number(v);
+    return Number.isNaN(n) ? undefined : n;
+  }, z.union([z.number().min(0, `${fieldLabel} must be 0 or more`), z.undefined()]));
+}
 
-  service_fee: z.preprocess(
-    (v) => (v === '' || v === null || v === undefined ? undefined : Number(v)),
-    z
-      .number({ invalid_type_error: 'Service Fee is required' })
-      .min(0, 'Service Fee must be 0 or more')
-  ),
+function getSelectedServiceType(serviceTypes, serviceTypeId) {
+  if (!serviceTypeId || !serviceTypes?.length) return null;
+  return (
+    serviceTypes.find((st) => String(st?.service_type_id) === String(serviceTypeId)) ??
+    null
+  );
+}
 
-  urgent_fee: z.preprocess(
-    (v) => (v === '' || v === null || v === undefined ? undefined : Number(v)),
-    z
-      .number({ invalid_type_error: 'Urgent Fee is required' })
-      .min(0, 'Urgent Fee must be 0 or more')
-  ),
-  tatkal_fee: z.preprocess(
-    (v) => (v === '' || v === null || v === undefined ? undefined : Number(v)),
-    z
-      .number({ invalid_type_error: 'Tatkal Fee is required' })
-      .min(0, 'Tatkal Fee must be 0 or more')
-  ),
-});
+function buildServicePayload(data, serviceTypes) {
+  const st = getSelectedServiceType(serviceTypes, data.service_type_id);
+  const n = normalizeServiceTypeName(st?.service_type);
+
+  const base = {
+    service_name: data.service_name,
+    service_type_id: data.service_type_id,
+    govt_fee: data.govt_fee,
+    icwf_fee: data.icwf_fee,
+    service_fee: data.service_fee,
+  };
+
+  if (n === 'passport') {
+    return { ...base, tatkal_fee: data.tatkal_fee };
+  }
+  if (n === 'visa') {
+    return { ...base, urgent_fee: data.urgent_fee };
+  }
+  return base;
+}
+
+const serviceTypesRef = { current: [] };
+
+const serviceFormSchema = z
+  .object({
+    service_name: z.string().nonempty('Name is required'),
+    service_type_id: z.string().nonempty('Service Type is required'),
+    govt_fee: feeRequired('Govt Fee'),
+    icwf_fee: feeRequired('ICWF Fee'),
+    service_fee: feeRequired('Service Fee'),
+    urgent_fee: optionalFeeField('Urgent Fee').optional(),
+    tatkal_fee: optionalFeeField('Tatkal Fee').optional(),
+  })
+  .superRefine((data, ctx) => {
+    const types = serviceTypesRef.current || [];
+    const st = getSelectedServiceType(types, data.service_type_id);
+    const n = normalizeServiceTypeName(st?.service_type);
+
+    if (n === 'visa') {
+      const v = data.urgent_fee;
+      if (v === undefined || v === null || (typeof v === 'number' && Number.isNaN(v))) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Urgent Fee is required',
+          path: ['urgent_fee'],
+        });
+      }
+    }
+    if (n === 'passport') {
+      const v = data.tatkal_fee;
+      if (v === undefined || v === null || (typeof v === 'number' && Number.isNaN(v))) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Tatkal Fee is required',
+          path: ['tatkal_fee'],
+        });
+      }
+    }
+  });
 
 export function AddEditModal({ showModal, closeModal, onRefreshService }) {
   const {
@@ -57,8 +114,12 @@ export function AddEditModal({ showModal, closeModal, onRefreshService }) {
     setValue,
     reset,
     watch,
+    unregister,
+    resetField,
+    clearErrors,
   } = useForm({
-    resolver: zodResolver(nameSchema),
+    resolver: zodResolver(serviceFormSchema),
+    shouldUnregister: true,
     defaultValues: {
       service_name: '',
       service_type_id: '',
@@ -66,8 +127,8 @@ export function AddEditModal({ showModal, closeModal, onRefreshService }) {
       icwf_fee: '',
       service_fee: '',
       urgent_fee: '',
+      tatkal_fee: '',
     },
-    tatkal_fee: '',
   });
 
   const { postData, patchData, isLoading, getAllServiceType, serviceTypes } =
@@ -75,12 +136,65 @@ export function AddEditModal({ showModal, closeModal, onRefreshService }) {
 
   const selectedServiceTypeId = watch('service_type_id');
 
-  // ✅ Load service types
+  const selectedServiceType = useMemo(
+    () => getSelectedServiceType(serviceTypes, selectedServiceTypeId),
+    [serviceTypes, selectedServiceTypeId]
+  );
+
+  const normalizedTypeName = useMemo(
+    () => normalizeServiceTypeName(selectedServiceType?.service_type),
+    [selectedServiceType]
+  );
+
+  /** When serviceTypes is still loading, resolve label from the row being edited so fee rows match before the list arrives. */
+  const effectiveNormalizedTypeName = useMemo(() => {
+    if (normalizedTypeName) return normalizedTypeName;
+    if (!showModal?.service_id) return '';
+    const fallback =
+      showModal?.serviceType?.service_type ?? showModal?.service_type ?? '';
+    return normalizeServiceTypeName(fallback);
+  }, [normalizedTypeName, showModal?.service_id, showModal?.serviceType?.service_type, showModal?.service_type]);
+
+  const isPassport = effectiveNormalizedTypeName === 'passport';
+  const isVisa = effectiveNormalizedTypeName === 'visa';
+  const isOCI = effectiveNormalizedTypeName === 'oci';
+  const isAttestation = effectiveNormalizedTypeName === 'attestation';
+
+  const showUrgentFee = isVisa;
+  const showTatkalFee = isPassport;
+
+  serviceTypesRef.current = serviceTypes ?? [];
+
   useEffect(() => {
     getAllServiceType();
   }, []);
 
-  // ✅ Edit mode handling
+  useEffect(() => {
+    const typesReady =
+      !selectedServiceTypeId ||
+      (Array.isArray(serviceTypes) && serviceTypes.length > 0);
+    if (!typesReady) return;
+
+    if (!showUrgentFee) {
+      clearErrors('urgent_fee');
+      unregister('urgent_fee');
+      setValue('urgent_fee', '', { shouldValidate: false, shouldDirty: false });
+    }
+    if (!showTatkalFee) {
+      clearErrors('tatkal_fee');
+      unregister('tatkal_fee');
+      setValue('tatkal_fee', '', { shouldValidate: false, shouldDirty: false });
+    }
+  }, [
+    serviceTypes,
+    selectedServiceTypeId,
+    showUrgentFee,
+    showTatkalFee,
+    clearErrors,
+    unregister,
+    setValue,
+  ]);
+
   useEffect(() => {
     if (showModal?.service_id) {
       setValue('service_name', showModal?.service_name || '');
@@ -96,8 +210,33 @@ export function AddEditModal({ showModal, closeModal, onRefreshService }) {
       setValue('govt_fee', showModal?.govt_fee ?? '');
       setValue('icwf_fee', showModal?.icwf_fee ?? '');
       setValue('service_fee', showModal?.service_fee ?? '');
-      setValue('urgent_fee', showModal?.urgent_fee ?? '');
-      setValue('tatkal_fee', showModal?.tatkal_fee ?? '');
+
+      const st = getSelectedServiceType(serviceTypes, stId);
+      const rawName =
+        st?.service_type ??
+        showModal?.serviceType?.service_type ??
+        showModal?.service_type ??
+        '';
+      const n = normalizeServiceTypeName(rawName);
+      const typesLoaded = Array.isArray(serviceTypes) && serviceTypes.length > 0;
+
+      if (!typesLoaded && !n) {
+        setValue('urgent_fee', showModal?.urgent_fee ?? '');
+        setValue('tatkal_fee', showModal?.tatkal_fee ?? '');
+      } else if (n === 'visa') {
+        setValue('urgent_fee', showModal?.urgent_fee ?? '');
+        resetField('tatkal_fee', { defaultValue: '' });
+        unregister('tatkal_fee');
+      } else if (n === 'passport') {
+        setValue('tatkal_fee', showModal?.tatkal_fee ?? '');
+        resetField('urgent_fee', { defaultValue: '' });
+        unregister('urgent_fee');
+      } else {
+        resetField('urgent_fee', { defaultValue: '' });
+        unregister('urgent_fee');
+        resetField('tatkal_fee', { defaultValue: '' });
+        unregister('tatkal_fee');
+      }
     } else {
       reset({
         service_name: '',
@@ -109,7 +248,7 @@ export function AddEditModal({ showModal, closeModal, onRefreshService }) {
         tatkal_fee: '',
       });
     }
-  }, [showModal, reset, setValue]);
+  }, [showModal, reset, setValue, resetField, unregister, serviceTypes]);
 
   const serviceTypeOptions = useMemo(() => {
     return (serviceTypes || []).map((item) => ({
@@ -119,15 +258,7 @@ export function AddEditModal({ showModal, closeModal, onRefreshService }) {
   }, [serviceTypes]);
 
   const onSubmit = (data) => {
-    const payload = {
-      service_name: data.service_name,
-      service_type_id: data.service_type_id,
-      govt_fee: data.govt_fee,
-      icwf_fee: data.icwf_fee,
-      service_fee: data.service_fee,
-      urgent_fee: data.urgent_fee,
-      tatkal_fee: data.tatkal_fee,
-    };
+    const payload = buildServicePayload(data, serviceTypes);
 
     if (showModal?.service_id) {
       patchData({ service_id: showModal.service_id, ...payload }, () => {
@@ -160,8 +291,6 @@ export function AddEditModal({ showModal, closeModal, onRefreshService }) {
   const renderBody = () => (
     <div className="modal-body">
       <div className="row">
-
-        {/* Service Type */}
         <div className="col-sm-6">
           <div className="form-group forms-custom">
             <label className="label">
@@ -191,7 +320,6 @@ export function AddEditModal({ showModal, closeModal, onRefreshService }) {
           </div>
         </div>
 
-        {/* Service Name */}
         <div className="col-sm-6">
           <div className="form-group forms-custom">
             <label className="label">
@@ -211,7 +339,6 @@ export function AddEditModal({ showModal, closeModal, onRefreshService }) {
           </div>
         </div>
 
-        {/* Govt Fee */}
         <div className="col-sm-6">
           <div className="form-group forms-custom">
             <label className="label">
@@ -232,7 +359,6 @@ export function AddEditModal({ showModal, closeModal, onRefreshService }) {
           </div>
         </div>
 
-        {/* ICWF Fee */}
         <div className="col-sm-6">
           <div className="form-group forms-custom">
             <label className="label">
@@ -253,7 +379,6 @@ export function AddEditModal({ showModal, closeModal, onRefreshService }) {
           </div>
         </div>
 
-        {/* Service Fee */}
         <div className="col-sm-6">
           <div className="form-group forms-custom">
             <label className="label">
@@ -274,49 +399,49 @@ export function AddEditModal({ showModal, closeModal, onRefreshService }) {
           </div>
         </div>
 
-        {/* Urgent Fee */}
-        <div className="col-sm-6">
-          <div className="form-group forms-custom">
-            <label className="label">
-              Urgent Fee<span className="text-danger">*</span>
-            </label>
-            <input
-              type="number"
-              className="form-control"
-              min={0}
-              step="0.01"
-              placeholder="Enter urgent fee"
-              disabled={isLoading}
-              {...register('urgent_fee')}
-            />
-            {errors.urgent_fee && (
-              <span className="error">{errors.urgent_fee.message}</span>
-            )}
+        {showUrgentFee && (
+          <div className="col-sm-6">
+            <div className="form-group forms-custom">
+              <label className="label">
+                Urgent Fee<span className="text-danger">*</span>
+              </label>
+              <input
+                type="number"
+                className="form-control"
+                min={0}
+                step="0.01"
+                placeholder="Enter urgent fee"
+                disabled={isLoading}
+                {...register('urgent_fee')}
+              />
+              {errors.urgent_fee && (
+                <span className="error">{errors.urgent_fee.message}</span>
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
-
-        {/* Tatkal Fee */}
-        <div className="col-sm-6">
-          <div className="form-group forms-custom">
-            <label className="label">
-              Tatkal Fee<span className="text-danger">*</span>
-            </label>
-            <input
-              type="number"
-              className="form-control"
-              min={0}
-              step="0.01"
-              placeholder="Enter tatkal fee"
-              disabled={isLoading}
-              {...register('tatkal_fee')}
-            />
-            {errors.tatkal_fee && (
-              <span className="error">{errors.tatkal_fee.message}</span>
-            )}
+        {showTatkalFee && (
+          <div className="col-sm-6">
+            <div className="form-group forms-custom">
+              <label className="label">
+                Tatkal Fee<span className="text-danger">*</span>
+              </label>
+              <input
+                type="number"
+                className="form-control"
+                min={0}
+                step="0.01"
+                placeholder="Enter tatkal fee"
+                disabled={isLoading}
+                {...register('tatkal_fee')}
+              />
+              {errors.tatkal_fee && (
+                <span className="error">{errors.tatkal_fee.message}</span>
+              )}
+            </div>
           </div>
-        </div>
-
+        )}
       </div>
     </div>
   );
