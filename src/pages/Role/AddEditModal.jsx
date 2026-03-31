@@ -81,7 +81,6 @@ export function AddEditModal({ showModal, closeModal, onRefreshRole }) {
                 id="employee_role"
                 className="form-control"
                 autoComplete="off"
-                maxLength={20}
                 {...register('employee_role')}
               />
               {errors.employee_role && (

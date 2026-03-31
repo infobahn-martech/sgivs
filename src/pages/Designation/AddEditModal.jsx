@@ -159,7 +159,6 @@ export function AddEditModal({ showModal, closeModal, onRefreshDesignation }) {
               id="employee_designation"
               className="form-control"
               autoComplete="off"
-              maxLength={20}
               placeholder="Enter designation name"
               {...register('employee_designation')}
             />
