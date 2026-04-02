@@ -754,7 +754,8 @@
             table-layout: auto;
 
             th {
-                height: 78px;
+                //height: 78px;
+                height: 54px;
                 // background: #d7eaf3;
                 font-size: 16px;
                 // color: #051a53;
@@ -866,7 +867,7 @@
                     font-weight: 400;
                     padding: 12px 0;
                     border-bottom: 1px solid rgba(75, 22, 76, 0.1);
-                    line-height: 1.4;
+                    line-height: 1;
                     padding: 10px 20px;
                     vertical-align: middle;
 
@@ -958,13 +959,13 @@
 
                             &.alphabet {
                                 background-color: #c4c4c440;
-                                width: 54px;
-                                height: 54px;
-                                flex: 0 0 54px;
+                                width: 40px;
+                                height: 40px;
+                                flex: 0 0 40px;
                                 display: flex;
                                 align-items: center;
                                 justify-content: center;
-                                border-radius: 54px;
+                                border-radius: 40px;
                                 flex-shrink: 0;
 
                                 @media ($sm-1679) {
