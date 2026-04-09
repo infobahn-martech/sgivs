@@ -1,5 +1,6 @@
-@@ -1,82 +1,207 @@
- @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
+@@ -1, 82+1, 207 @@
+ @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+
 /*** all Mobile Screen (iphone 6,7,8) ***/
 /*** mobile Landscape Size ***/
 /*** medium devices (tablets, less than 992px) ***/
@@ -17,7 +18,7 @@
 /*** laptop with HiDPI (High Dots Per Inch) resolution ***/
 /*** WSXGA (Wide Super Extended Graphics Array) resolution ***/
 body {
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-size: 16px;
   font-weight: 400;
 }
@@ -25,50 +26,61 @@ body {
 a {
   text-decoration: none;
 }
+
 .title {
   font-size: 36px;
   font-weight: 600;
   color: #1e1e1e;
 }
+
 @media (max-width: 1679px) {
   .title {
     font-size: 34px;
   }
 }
+
 @media (max-width: 1441px) {
   .title {
     font-size: 32px;
   }
 }
+
 @media (max-width: 1199px) {
   .title {
     font-size: 30px;
   }
 }
+
 a {
   text-decoration: none;
 }
+
 /* custom dropdown */
 .css-13cymwt-control {
   background-color: transparent !important;
   border: none !important;
 }
+
 .css-t3ipsp-control {
   box-shadow: none !important;
   border-color: transparent !important;
   background-color: transparent !important;
-  border: none !important; 
+  border: none !important;
 }
+
 .css-t3ipsp-control:hover {
   border-color: none !important;
 }
+
 .css-1wy0on6 {
   padding-right: 15px !important;
   margin-bottom: -3px !important;
 }
+
 .react-datepicker-wrapper {
-width: 100%;
+  width: 100%;
 }
-.cursor-not{
+
+.cursor-not {
   cursor: not-allowed;
 }

@@ -231,6 +231,8 @@ export default function EmployeeAddEditModal({
 
     // ✅ submit
     const onSubmit = (data) => {
+        console.log("data",data)
+        debugger
         const payload = {
             ...data,
             // you may need to send as FormData if imageFile is required to upload

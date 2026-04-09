@@ -1,13 +1,13 @@
 import React, { useMemo, useState } from 'react';
 import CustomTable from '../../components/common/CustomTable';
 import '../../assets/scss/usermanagement.scss';
-import CommonHeader from '../../components/common/CommonHeader';
 import useAuthReducer from '../../stores/AuthReducer';
 import CustomActionModal from '../../components/common/CustomActionModal';
 import { debounce } from 'lodash';
 import moment from 'moment';
 import getUserTableColumns from './getUserTableColumns';
 import AddEditModal from './AddEditModal';
+import CommonHeader from '../../components/common/CommonHeader';
 
 const UserManagement = () => {
   // ✅ Toggle this to switch between static data and API data
