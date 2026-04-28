@@ -55,7 +55,7 @@ import VisaTracking from '../pages/VisaTracking';
 import VisaDigitization from '../pages/VisaDigitization';
 import ReferenceNumber from '../pages/ReferenceNumber';
 import OCIApplications from '../pages/OCIApplications';
-import OCIDeleteApplication from '../pages/OCIDeleteApplication';
+import OCIDeletedApplication from '../pages/OCIDeletedApplication';
 import OCIInScan from '../pages/OCInScan';
 import OCIOTM from '../pages/OCIOTM';
 import OCIIFM from '../pages/OCIIFM';
@@ -168,7 +168,7 @@ const router = createHashRouter([
               { path: '/visa-digitization', element: <VisaDigitization /> },
               { path: '/get-reference-numbers', element: <ReferenceNumber /> },
               { path: '/oci-applications', element: <OCIApplications /> },
-              { path: '/oci-delete-application', element: <OCIDeleteApplication /> },
+              { path: '/oci-deleted-application', element: <OCIDeletedApplication /> },
               { path: '/oci-inscan', element: <OCIInScan /> },
               { path: '/oci-outscan-to-mission', element: <OCIOTM /> },
               { path: '/oci-inscan-from-mission', element: <OCIIFM /> },

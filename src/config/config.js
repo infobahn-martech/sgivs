@@ -60,7 +60,7 @@ export const headerConfig = [
 
   // OCI Manager
   { title: 'OCI Applications', icon: transactionICo, path: '/oci-applications' },
-  { title: 'Deleted Application', icon: transactionICo, path: '/oci-delete-application' },
+  { title: 'Deleted OCI Applications', icon: transactionICo, path: '/oci-deleted-application' },
   { title: 'InScan At Hub', icon: transactionICo, path: '/oci-inscan' },
   { title: 'OutScan To Mission', icon: transactionICo, path: '/oci-outscan-to-mission' },
   { title: 'InScan From Mission', icon: transactionICo, path: '/oci-inscan-from-mission' },

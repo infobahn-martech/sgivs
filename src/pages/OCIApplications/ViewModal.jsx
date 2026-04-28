@@ -6,24 +6,18 @@ const emptyVal = (v) => (v != null && v !== '' ? String(v) : '—');
 export function ViewModal({ showModal, closeModal }) {
     const row = showModal || {};
 
-    // Support both API/mock shape and form shape
-    const referenceNo = emptyVal(row.referenceNo);
-    const appliedOn = row.createdAt
-        ? moment(row.createdAt).format('YYYY-MM-DD HH:mm:ss')
+    const referenceNo = emptyVal(row.appointment_reference_no);
+    const appliedOn = row.created_at
+        ? moment(row.created_at).format('YYYY-MM-DD HH:mm:ss')
         : '—';
-    const firstName = emptyVal(row.firstName ?? (row.name ? row.name.split(' ')[0] : ''));
-    const lastName = emptyVal(row.lastName ?? (row.name ? row.name.split(' ').slice(1).join(' ') : ''));
+    const firstName = emptyVal(row.first_name);
+    const surName = emptyVal(row.surname);
     const dob = emptyVal(row.dob);
-    const passportNumber = emptyVal(row.oldPassportNo ?? row.ppNo);
+    const passportNumber = emptyVal(row.passport_no);
     const email = emptyVal(row.email);
-    const contact = emptyVal(
-        row.mobileNumber
-            ? [row.mobileCode, row.mobileNumber].filter(Boolean).join(' ')
-            : row.contact
-    );
-    const passportType = emptyVal(
-        row.passportType ?? [row.applicationType, row.serviceName].filter(Boolean).join(' ')
-    );
+    const mobileNumber = emptyVal(row.mobile_number);
+    const applicationType = emptyVal(row.appointment_type);
+    const applicationBy = emptyVal(row.application_mode_id);
 
     const homeAddressLine1 = emptyVal(row.addressLine1);
     const homeAddressLine2 = emptyVal(row.addressLine2);
@@ -32,16 +26,16 @@ export function ViewModal({ showModal, closeModal }) {
     const country = emptyVal(row.residenceCountry);
     const postalCode = emptyVal(row.postalCode);
 
-    const smsTimestamp = row.smsTimestamp ?? row.createdAt;
+    const smsTimestamp = row.smsTimestamp;
     const smsMessage =
         row.smsMessage ??
         (referenceNo !== '—' && row.arn
-            ? `Your passport application (Ref #: ${row.referenceNo}) / (ARN #: ${row.arn}) is received at SGIVS ICAC, Salalah on ${row.createdAt ? moment(row.createdAt).format('DD-MM-YYYY') : '—'}`
+            ? `Your passport application (Ref #: ${row.appointment_reference_no}) / (ARN #: ${row.arn}) is received at SGIVS ICAC, Salalah on ${row.created_at ? moment(row.created_at).format('DD-MM-YYYY') : '—'}`
             : '—');
 
     const renderHeader = () => (
         <>
-            <h4 className="modal-title">View Passport Application</h4>
+            <h4 className="modal-title">View OCI Application</h4>
             <button
                 type="button"
                 className="btn-close"
@@ -88,14 +82,13 @@ export function ViewModal({ showModal, closeModal }) {
                     <Field label="Reference No:" value={referenceNo} />
                     <Field label="Applied On:" value={appliedOn} />
                     <Field label="First Name:" value={firstName} />
-                    <Field label="Last Name:" value={lastName} />
+                    <Field label="Surname:" value={surName} />
                     <Field label="Date Of Birth:" value={dob} />
                     <Field label="Email:" value={email} />
                     <Field label="Passport Number:" value={passportNumber} />
-                    <Field label="Contact:" value={contact} />
-                </div>
-                <div className="view-modal-grid view-modal-grid--full">
-                    <Field label="Passport Type:" value={passportType} />
+                    <Field label="Mobile Number:" value={mobileNumber} />
+                    <Field label="Application Type:" value={applicationType} />
+                    <Field label="Application By:" value={applicationBy} />
                 </div>
             </Section>
 

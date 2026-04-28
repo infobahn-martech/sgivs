@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Spinner } from 'react-bootstrap';
 
 import '../../assets/scss/modal.scss';
@@ -18,8 +18,16 @@ const CustomActionModal = ({
   isDelete,
   isLogout,
   isWarning = false,
+  showCommentBox = false,
   button = { primary: 'Submit', secondary: 'Cancel' },
 }) => {
+  const [comment, setComment] = useState('');
+  useEffect(() => {
+    if (!showModal) {
+      setComment('');
+    }
+  }, [showModal]);
+
   const renderHeader = () => (
     <>
       <button
@@ -42,26 +50,52 @@ const CustomActionModal = ({
                 isDelete
                   ? deleteIcon
                   : isLogout
-                  ? logoutIcon
-                  : isWarning
-                  ? warningIcon
-                  : warningIcon
+                    ? logoutIcon
+                    : isWarning
+                      ? warningIcon
+                      : warningIcon
               }
               alt=""
             />
           </div>
         </div>
         <div className="prompt-title">{message}</div>
+        {/* ✅ NEW: conditional comment box */}
+        {showCommentBox && (
+          <div className="form-group mt-3">
+            <label className="form-label">Remark</label>
+            <textarea
+              className="form-control"
+              placeholder="Type your comment here..."
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              style={{ minHeight: '120px' }}
+            />
+          </div>
+        )}
       </div>
       <div className="modal-footer">
         <button type="button" className="btn btn-cancel" onClick={closeModal}>
           {button.secondary}
         </button>
-        <button
+        {/* <button
           type="submit"
           className="btn btn-primary"
           onClick={onSubmit}
           disabled={isLoading}
+        > */}
+        <button
+          type="submit"
+          className="btn btn-primary"
+          onClick={() =>
+            onSubmit(
+              showCommentBox ? { comment } : {}
+            )
+          }
+          disabled={
+            isLoading ||
+            (showCommentBox && !comment.trim())
+          }
         >
           {isLoading ? (
             <Spinner

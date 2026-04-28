@@ -46,10 +46,10 @@ const ActionsMenu = ({
                     <button type="button" onClick={(e) => handleItem(e, onPrintReceipt)}>Print Receipt</button>
                     <button type="button" onClick={(e) => handleItem(e, onPrintBarcode)}>Print Barcode</button>
                     <button type="button" onClick={(e) => handleItem(e, onViewApplication)}>View Application</button>
-                    <button type="button" onClick={(e) => handleItem(e, onComment)}>Comment</button>
+                    <button type="button" onClick={(e) => handleItem(e, onComment)}>Export Comment</button>
                     <button type="button" onClick={(e) => handleItem(e, onActivityLog)}>Activity Log</button>
-                    <button type="button" onClick={(e) => handleItem(e, onEditApplication)}>Edit application</button>
-                    <button type="button" onClick={(e) => handleItem(e, onChangeServiceFee)}>Change service/fee</button>
+                    <button type="button" onClick={(e) => handleItem(e, onEditApplication)}>Edit Application</button>
+                    <button type="button" onClick={(e) => handleItem(e, onChangeServiceFee)}>Change Services/Fees</button>
                     <button type="button" onClick={(e) => handleItem(e, onAddRemoveBiometric)}>Add/Remove Biometric</button>
                     <div className="action-menu__divider" />
 

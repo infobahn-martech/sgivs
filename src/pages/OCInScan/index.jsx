@@ -11,9 +11,8 @@ import { formatDate } from '../../config/config';
 import AddEditModal from './AddEditModal';
 
 const OCIInScan = () => {
-  const USE_MOCK = true;
 
-  const { getData, ociInScanDataData, isLoadingGetData } = useOCIInScanReducer((state) => state);
+  const { getData, ociInScanDataData, isLoadingGet } = useOCIInScanReducer((state) => state);
   const initialParams = {
     search: '',
     page: 1,
@@ -23,27 +22,16 @@ const OCIInScan = () => {
     sortBy: 'date',
     sortOrder: 'DESC',
     isExcelExport: 'false',
+    status_id: 15,
   };
 
   const [params, setParams] = useState(initialParams);
   const [addEditModal, setAddEditModal] = useState(false);
   const [selectedInScan, setSelectedInScan] = useState(null);
 
-  // ✅ Dummy Data (Required fields)
-  const mockInScanData = {
-    total: 5,
-    data: [
-      { id: 1, date: '2025-01-10T09:30:00Z', by: 'Admin', totalApplication: 12 },
-      { id: 2, date: '2025-02-14T12:15:00Z', by: 'Operator', totalApplication: 7 },
-      { id: 3, date: '2025-03-05T08:45:00Z', by: 'Admin', totalApplication: 19 },
-      { id: 4, date: '2025-03-20T10:00:00Z', by: 'Supervisor', totalApplication: 5 },
-      { id: 5, date: '2025-04-02T11:20:00Z', by: 'Admin', totalApplication: 9 },
-    ],
-  };
-
   useEffect(() => {
-    if (!USE_MOCK) getData(params);
-  }, [params, USE_MOCK, getData]);
+    getData(params);
+  }, [params, getData]);
 
   const handleSortChange = (selector) => {
     setParams((prev) => ({
@@ -63,16 +51,16 @@ const OCIInScan = () => {
     },
     {
       name: 'By',
-      selector: 'by',
+      selector: 'employee_name',
       sortable: true,
-      sortField: 'by',
+      sortField: 'employee_name',
     },
     {
       name: 'Total Application',
-      selector: 'totalApplication',
+      selector: 'total_application',
       sortable: true,
-      sortField: 'totalApplication',
-      cell: (row) => <span>{row?.totalApplication ?? 0}</span>,
+      sortField: 'total_application',
+      cell: (row) => <span>{row?.total_application ?? 0}</span>,
     },
   ];
 
@@ -92,8 +80,8 @@ const OCIInScan = () => {
     return () => debouncedSearch.cancel();
   }, [debouncedSearch]);
 
-  const tableData = USE_MOCK ? mockInScanData : ociInScanDataData;
-  const loading = USE_MOCK ? false : isLoadingGet;
+  const tableData = ociInScanDataData;
+  const loading = isLoadingGet;
 
   return (
     <>

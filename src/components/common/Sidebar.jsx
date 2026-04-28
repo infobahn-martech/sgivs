@@ -153,10 +153,10 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
       name: 'OCI Manager',
       icon: EZIcon, // change icon if needed
       path: '/oci-applications',
-      activeRoutes: ['/oci-applications', '/oci-delete-application', '/oci-inscan', '/oci-outscan-to-mission', '/oci-inscan-from-mission', '/oci-outscan-to-spoke', '/oci-counter-delivery', '/oci-outscan-to-courier', '/oci-tracking'],
+      activeRoutes: ['/oci-applications', '/oci-deleted-application', '/oci-inscan', '/oci-outscan-to-mission', '/oci-inscan-from-mission', '/oci-outscan-to-spoke', '/oci-counter-delivery', '/oci-outscan-to-courier', '/oci-tracking'],
       subMenu: [
         { name: 'OCI Applications', path: '/oci-applications', icon: MessagesIcon },
-        { name: 'Deleted Application', path: '/oci-delete-application', icon: MessagesIcon },
+        { name: 'Deleted Application', path: '/oci-deleted-application', icon: MessagesIcon },
         { name: 'Inscan At Hub', path: '/oci-inscan', icon: MessagesIcon },
         { name: 'OutScan To Mission', path: '/oci-outscan-to-mission', icon: MessagesIcon },
         { name: 'Inscan From Mission', path: '/oci-inscan-from-mission', icon: MessagesIcon },

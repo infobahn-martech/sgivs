@@ -16,11 +16,11 @@ import { debounce } from 'lodash';
 import CustomActionModal from '../../components/common/CustomActionModal';
 
 const Role = () => {
-  const { getData, roleData, isLoadingRole, deleteData, isLoadingDelete } =
-    useRoleRudcer((state) => state);
+  const { getData, roleData, isLoadingRole, deleteData, isLoadingDelete } = useRoleRudcer((state) => state);
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [modal, setModal] = useState(false);
+
 
   const initialParams = useMemo(
     () => ({

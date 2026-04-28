@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import moment from 'moment';
 import { debounce } from 'lodash';
 
@@ -8,9 +9,12 @@ import CommonHeader from '../../components/common/CommonHeader';
 import CustomTable from '../../components/common/CustomTable';
 import useOCIApplicationReducer from '../../stores/OCIApplicationReducer';
 import { formatDate } from '../../config/config';
-import { AddEditModal } from './AddEditModal';
+import AddEditModal from './AddEditModal';
+import FeeCalculator from '../../components/common/FeeCalculator';
 import CustomActionModal from '../../components/common/CustomActionModal';
 import ActionsMenu from './ActionsMenu';
+import PrintReceiptModal from './PrintReceipt';
+import PrintBarcodeModal from './PrintBarcode';
 import ViewModal from './ViewModal';
 import CommentModal from './CommentModal';
 import ChangeServicesModal from './ChangeServices';
@@ -18,18 +22,27 @@ import ActivityLog from './ActivityLog';
 import AddRemoveBiometric from './AddRemoveBiometric';
 
 const OCIApplications = () => {
-  const USE_MOCK = true;
 
-  const { getData, ociApplicationsData, isLoadingGet, deleteData, isLoadingDelete } =
-    useOCIApplicationReducer((state) => state);
+  const { getOCIApplications,
+    ociApplicationsData,
+    isLoadingGet,
+    deleteOCIApplication,
+    isDeleteOCIApplicationLoading,
+    getOCIApplicationById,
+    editORviewOCIApplicationData,
+    isLoadingEditOrViewOCIApplication
+  } = useOCIApplicationReducer((state) => state);
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [modal, setModal] = useState(false);
   const [viewModal, setViewModal] = useState(false);
+  const [printReceiptModal, setPrintReceiptModal] = useState(false);
+  const [printBarcodeModal, setPrintBarcodeModal] = useState(false);
   const [commentModal, setCommentModal] = useState(false);
   const [changeServicesModal, setChangeServicesModal] = useState(false);
   const [addRemoveBiometricModal, setAddRemoveBiometricModal] = useState(false);
   const [activityLogModal, setActivityLogModal] = useState(false);
+  const [feeValues, setFeeValues] = useState(null);
   const initialParams = {
     search: '',
     page: 1,
@@ -43,95 +56,18 @@ const OCIApplications = () => {
 
   const [params, setParams] = useState(initialParams);
 
-  const mockOCIApplicationsData = {
-    total: 5,
-    data: [
-      {
-        id: 1,
-        referenceNo: 'REF-0001',
-        name: 'Abdul Rahman',
-        center: 'Dubai Center',
-        consproMFileNo: 'CPM-10001',
-        nationality: 'UAE',
-        passportNo: 'P1234567',
-        applicationType: 'New',
-        serviceName: 'Normal Service',
-        deliveryType: 'Courier',
-        status: { value: 'Submitted', by: 'Dennis', on: '2025-01-10T09:30:00Z' },
-        createdAt: '2025-01-10T09:30:00Z',
-      },
-      {
-        id: 2,
-        referenceNo: 'REF-0002',
-        name: 'Haseeb',
-        center: 'Abu Dhabi Center',
-        consproMFileNo: 'CPM-10002',
-        nationality: 'Pakistan',
-        passportNo: 'P9988776',
-        applicationType: 'Renewal',
-        serviceName: 'Premium',
-        deliveryType: 'Counter',
-        status: { value: 'In Process', by: 'Joel', on: '2025-02-14T12:15:00Z' },
-        createdAt: '2025-02-14T12:15:00Z',
-      },
-      {
-        id: 3,
-        referenceNo: 'REF-0003',
-        name: 'Fathima',
-        center: 'Sharjah Center',
-        consproMFileNo: 'CPM-10003',
-        nationality: 'India',
-        passportNo: 'P2233445',
-        applicationType: 'New',
-        serviceName: 'Express',
-        deliveryType: 'Courier',
-        status: { value: 'Approved', by: 'Admin', on: '2025-03-05T08:45:00Z' },
-        createdAt: '2025-03-05T08:45:00Z',
-      },
-      {
-        id: 4,
-        referenceNo: 'REF-0004',
-        name: 'Joseph',
-        center: 'Ajman Center',
-        consproMFileNo: 'CPM-10004',
-        nationality: 'Philippines',
-        passportNo: 'P6655443',
-        applicationType: 'Renewal',
-        serviceName: 'Normal Service',
-        deliveryType: 'Counter',
-        status: { value: 'Rejected', by: 'Supervisor', on: '2025-03-20T10:00:00Z' },
-        createdAt: '2025-03-20T10:00:00Z',
-      },
-      {
-        id: 5,
-        referenceNo: 'REF-0005',
-        name: 'Amina',
-        center: 'Dubai Center',
-        consproMFileNo: 'CPM-10005',
-        nationality: 'Egypt',
-        passportNo: 'P4455667',
-        applicationType: 'New',
-        serviceName: 'Premium',
-        deliveryType: 'Courier',
-        status: { value: 'Delivered', by: 'Courier', on: '2025-04-02T11:20:00Z' },
-        createdAt: '2025-04-02T11:20:00Z',
-      },
-    ],
-  };
-
 
   const onRefreshOCIApplications = () => {
-    if (!USE_MOCK) {
-      getData(params);
-    }
+    getOCIApplications(params);
+
     setModal(false);
+    setViewModal(false);
+    setPrintReceiptModal(false);
     setDeleteModalOpen(false);
   };
 
   useEffect(() => {
-    if (!USE_MOCK) {
-      getData(params);
-    }
+    getOCIApplications(params);
   }, [params]);
 
   const handleSortChange = (selector) => {
@@ -143,20 +79,29 @@ const OCIApplications = () => {
   };
 
   const openDeleteModal = (row) => {
-    setDeleteModalOpen({ id: row?.id, name: row?.name });
+    const fullName = `${row?.first_name || ''} ${row?.surname || ''}`.trim(); // ✅ combine
+    setDeleteModalOpen({ id: row?.oci_application_id, name: fullName, reference_no: row?.appointment_reference_no, });
   };
 
   // ✅ action handlers (replace with your actual flows)
   const handlePrintReceipt = (row) => {
-    console.log('Print Receipt:', row);
+    setPrintReceiptModal(row);
   };
 
   const handlePrintBarcode = (row) => {
-    console.log('Print Barcode:', row);
+    setPrintBarcodeModal(row);
   };
 
-  const handleViewApplication = (row) => {
-    setViewModal(row);
+  const handleViewApplication = async (row) => {
+    const id = row?.oci_application_id;
+
+    if (!id) {
+      console.error("Missing OCI Application ID", row);
+      return;
+    }
+
+    await getOCIApplicationById(id);
+    setViewModal(true);
   };
 
   const handleComment = (row) => {
@@ -173,7 +118,7 @@ const OCIApplications = () => {
   };
 
   const handleChangeServiceFee = (row) => {
-    console.log('Change service/fee:', row);
+    console.log('Change Services / FeeS:', row);
     setChangeServicesModal(row);
   };
 
@@ -184,23 +129,49 @@ const OCIApplications = () => {
 
 
   const columns = [
-    { name: 'Reference No', selector: 'referenceNo' },
-    { name: 'Name', selector: 'name' },
-    { name: 'Center', selector: 'center' },
-    { name: 'ConsproM File No', selector: 'consproMFileNo' },
-    { name: 'Nationality', selector: 'nationality' },
-    { name: 'Passport No', selector: 'passportNo' },
-    { name: 'Application Type', selector: 'applicationType' },
-    { name: 'Service Name', selector: 'serviceName' },
-    { name: 'Delivery Type', selector: 'deliveryType' },
+    {
+      name: 'Reference No',
+      selector: 'appointment_reference_no',
+    },
+    {
+      name: 'Name',
+      selector: 'applicant_name',
+      cell: (row) => `${row.first_name || ''} ${row.surname || ''}`,
+    },
+    {
+      name: 'Center',
+      selector: 'center_name',
+    },
+    {
+      name: 'OCI File Number',
+      selector: 'oci_file_number',
+    },
+    {
+      name: 'Passport No',
+      selector: 'passport_no',
+    },
+    {
+      name: 'Application Type',
+      selector: 'appointment_type',
+    },
+    {
+      name: 'Service Name',
+      selector: 'service_name',
+      cell: (row) => row.service_name || row.service_id,
+    },
+    {
+      name: 'Delivery Type',
+      selector: 'courier',
+      cell: (row) => (row.courier === "1" ? 'Courier' : 'Walk-in'),
+    },
     {
       name: 'Status / By, On',
       selector: 'status',
       cell: (row) => (
         <span>
-          {row?.status?.value || '-'}
-          {row?.status?.by ? ` / ${row.status.by}` : ''}
-          {row?.status?.on ? `, ${formatDate(row.status.on)}` : ''}
+          {row?.status || '-'}
+          {row?.created_by ? ` / ${row.created_by}` : ''}
+          {row?.created_at ? `, ${formatDate(row.created_at)}` : ''}
         </span>
       ),
     },
@@ -226,7 +197,6 @@ const OCIApplications = () => {
     },
   ];
 
-
   // ✅ Stable debounce
   const debouncedSearch = useMemo(
     () =>
@@ -240,30 +210,30 @@ const OCIApplications = () => {
     []
   );
 
-  const handleDelete = () => {
-    if (USE_MOCK) {
-      setDeleteModalOpen(false);
-      return;
-    }
+  const handleDelete = (comment) => {
+    if (!deleteModalOpen?.id) return;
 
-    if (deleteModalOpen?.id) {
-      deleteData(deleteModalOpen?.id, () => {
-        onRefreshOCIApplications();
-      });
-    }
+    const payload = {
+      oci_application_id: deleteModalOpen.id,
+      comment: comment,
+    };
+
+    deleteOCIApplication(payload, () => {
+      onRefreshOCIApplications();
+    });
   };
 
-  const tableData = USE_MOCK ? mockOCIApplicationsData : ociApplicationsData;
-  const loading = USE_MOCK ? false : isLoadingGet;
+  const tableData = ociApplicationsData;
+  const loading = isLoadingGet;
 
   return (
     <>
       <CommonHeader
-        // addButton={{
-        //   name: 'Add Item',
-        //   type: 'button',
-        //   action: () => setModal(true),
-        // }}
+        addButton={{
+          name: 'Add Item',
+          type: 'button',
+          action: () => setModal(true),
+        }}
         hideFilter
         onSearch={debouncedSearch}
         submitFilter={(filters) => {
@@ -297,24 +267,67 @@ const OCIApplications = () => {
           showModal={modal}
           closeModal={() => setModal(false)}
           onRefreshOCIApplications={onRefreshOCIApplications}
+          onFeeValuesChange={setFeeValues}
         />
       )}
+      {/* FeeCalculator outside modal – shows when Service Requested is selected (portaled so it stays above modal) */}
+      {modal &&
+        feeValues &&
+        createPortal(
+          <div
+            className="passport-fee-calculator-outside"
+            style={{
+              position: 'fixed',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              right: '24px',
+              zIndex: 10000,
+            }}
+          >
+            <FeeCalculator
+              govtFees={feeValues.govtFees}
+              icwfFees={feeValues.icwfFees}
+              serviceFees={feeValues.serviceFees}
+              totalFees={feeValues.totalFees}
+              onlinePaid={feeValues.onlinePaid}
+            />
+          </div>,
+          document.body
+        )}
 
       {deleteModalOpen && (
         <CustomActionModal
           isDelete
-          isLoading={USE_MOCK ? false : isLoadingDelete}
+          showCommentBox
+          isLoading={isDeleteOCIApplicationLoading}
           showModal={deleteModalOpen}
           closeModal={() => setDeleteModalOpen(false)}
-          message={`Are you sure you want to delete this ${deleteModalOpen?.name}?`}
+          message={
+            <>
+              Are you sure you want to delete <b>{deleteModalOpen?.name}</b>?
+              <br />
+              <span>[ Ref: {deleteModalOpen?.reference_no || '-'} ]</span>
+            </>
+          }
           onCancel={() => setDeleteModalOpen(false)}
-          onSubmit={handleDelete}
+          onSubmit={({ comment }) => handleDelete(comment)}
         />
       )}
+
+      {printReceiptModal && (
+        <PrintReceiptModal
+          showModal={printReceiptModal}
+          closeModal={() => setPrintReceiptModal(false)}
+        />
+      )}
+
+      {printBarcodeModal && <PrintBarcodeModal showModal={printBarcodeModal} closeModal={() => setPrintBarcodeModal(false)} />}
 
       {viewModal && (
         <ViewModal
           showModal={viewModal}
+          data={editORviewOCIApplicationData}
+          loading={isLoadingEditOrViewOCIApplication}
           closeModal={() => setViewModal(false)}
         />
       )}
