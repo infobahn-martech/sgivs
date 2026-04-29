@@ -24,8 +24,7 @@ const genderOptions = [
 
 const paymentModeOptions = [
   { value: '1', label: 'Cash' },
-  { value: '2', label: 'Credit card / Debit card' },
-  { value: '3', label: 'Other POS Transaction' },
+  { value: '2', label: 'Credit Card / Debit Card / Other POS Transaction' },
 ];
 
 // Application Facilitation Services (multiple checkbox)
@@ -48,7 +47,7 @@ function buildOCIApplicationPayload(data, feeValues) {
       dob: data.dob,
       gender: data.gender,
 
-      mobile_number: data.mobileNumber, // ✅ ONLY THIS GOES TO DB
+      mobile_number: data.mobileNumber, 
       email: data.email,
 
       passport_no: data.passportNo,
@@ -89,7 +88,7 @@ const schema = z
     token: z.string().optional(),
 
     firstName: z.string().nonempty('First Name is required').max(50),
-    surname: z.string().nonempty('Surname is required').max(50),
+    surname: z.string().optional(),
     dob: z.string().nonempty('Date of Birth is required'),
     gender: z.string().nonempty('Gender is required'),
     mobileNumber: z
@@ -114,31 +113,69 @@ const schema = z
     paymentMode: z.string().nonempty('Payment mode is required'),
   })
   .superRefine((val, ctx) => {
-
-    // Courier required => courier fields required
     if (val.courierRequired) {
-      const requiredFields = [
-        'residenceCountry',
-        'addressLine1',
-        'city',
-        'postalCode',
-        'courierType',
-      ];
 
-      requiredFields.forEach((field) => {
-        if (!val[field] || !val[field].trim()) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            path: [field],
-            message: 'This field is required',
-          });
-        }
-      });
+      if (!val.residenceCountry) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['residenceCountry'],
+          message: 'Residence country is required',
+        });
+      }
+
+      if (!val.addressLine1?.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['addressLine1'],
+          message: 'Address Line 1 is required',
+        });
+      }
+
+      if (!val.addressLine2?.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['addressLine2'],
+          message: 'Address Line 2 is required',
+        });
+      }
+
+      if (!val.state?.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['state'],
+          message: 'State is required',
+        });
+      }
+
+      if (!val.city?.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['city'],
+          message: 'City is required',
+        });
+      }
+
+      if (!val.postalCode?.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['postalCode'],
+          message: 'Postal code is required',
+        });
+      }
+
+      if (!val.courierType) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['courierType'],
+          message: 'Courier type is required',
+        });
+      }
     }
   });
 
 // ===================== COMPONENT =====================
 export function AddEditModal({ showModal, closeModal, onRefreshOCIApplications, onFeeValuesChange, serviceTypeId = 3, }) {
+  
   // Start Dropdown
   const { appointmentTypeData, getData: fetchAppointmentTypes, } = useAppointmentTypeReducer((state) => state);
   useEffect(() => {
@@ -638,6 +675,7 @@ useEffect(() => {
                     </option>
                   ))}
                 </select>
+                {errors.residenceCountry && (<span className="error">{errors.residenceCountry.message}</span>)}
               </div>
             </div>
 
@@ -645,6 +683,7 @@ useEffect(() => {
               <div className="form-group">
                 <label>Address Line 1</label>
                 <input className="form-control" {...register('addressLine1')} />
+                {errors.addressLine1 && (<span className="error">{errors.addressLine1.message}</span>)}
               </div>
             </div>
 
@@ -652,6 +691,7 @@ useEffect(() => {
               <div className="form-group">
                 <label>Address Line 2</label>
                 <input className="form-control" {...register('addressLine2')} />
+                {errors.addressLine2 && (<span className="error">{errors.addressLine2.message}</span>)}
               </div>
             </div>
           </div>
@@ -662,18 +702,21 @@ useEffect(() => {
               <div className="form-group">
                 <label>State</label>
                 <input className="form-control" {...register('state')} />
+                {errors.state && (<span className="error">{errors.state.message}</span>)}
               </div>
             </div>
             <div className="col-md-4">
               <div className="form-group">
                 <label>City</label>
                 <input className="form-control" {...register('city')} />
+                {errors.city && (<span className="error">{errors.city.message}</span>)}
               </div>
             </div>
             <div className="col-md-4">
               <div className="form-group">
                 <label>Postal Code</label>
                 <input className="form-control" {...register('postalCode')} />
+                {errors.postalCode && (<span className="error">{errors.postalCode.message}</span>)}
               </div>
             </div>
           </div>
@@ -691,6 +734,7 @@ useEffect(() => {
                     </option>
                   ))}
                 </select>
+                {errors.courierType && (<span className="error">{errors.courierType.message}</span>)}
               </div>
             </div>
           </div>

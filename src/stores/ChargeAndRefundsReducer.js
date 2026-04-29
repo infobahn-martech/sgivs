@@ -5,11 +5,9 @@ import chargeAndRefundsService from '../services/chargeAndRefundsService';
 const useChargeAndRefundsReducer = create((set) => ({
     isLoading: false,
     isLoadingGet: false,
-    isLoadingDelete: false,
     errorMessage: '',
     successMessage: '',
     chargeAndRefundsData: null,
-
 
     getData: async (params) => {
         try {
@@ -17,7 +15,7 @@ const useChargeAndRefundsReducer = create((set) => ({
             const { data } = await chargeAndRefundsService.getData(params);
             const datas = data;
             set({
-                chargeAndRefundsData: datas?.data,
+               chargeAndRefundsData: datas?.data,
                 // successMessage: data?.response?.data?.message ?? data?.message,
                 isLoadingGet: false,
             });
@@ -30,7 +28,6 @@ const useChargeAndRefundsReducer = create((set) => ({
             error(err?.response?.data?.message ?? err.message);
         }
     },
-
 }));
 
 export default useChargeAndRefundsReducer;

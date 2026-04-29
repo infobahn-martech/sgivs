@@ -15,8 +15,6 @@ import { debounce } from 'lodash';
 import CustomActionModal from '../../components/common/CustomActionModal';
 
 const ChargeAndRefunds = () => {
-  // ✅ Toggle this (VERY useful for large admin projects)
-  const USE_MOCK = true;
 
   const { getData, chargeAndRefundsData, isLoadingGet, deleteData, isLoadingDelete } =
     useChargeAndRefundsReducer((state) => state);
@@ -25,109 +23,29 @@ const ChargeAndRefunds = () => {
 
   const initialParams = {
     search: '',
+    application_type: '',
+    payment_mode: '',
+    transaction_type: '',
+    start_date: null,
+    end_date: null,
     page: 1,
     limit: 10,
-    fromDate: null,
-    toDate: null,
-    sortBy: 'createdAt',
+    
+    sortBy: 'transaction_date',
     sortOrder: 'DESC',
-    isExcelExport: 'false',
+    
+    
   };
 
   const [params, setParams] = useState(initialParams);
 
-  // ✅ Dummy Data (UPDATED as per required fields)
-  const mockChargeAndRefundsData = {
-    total: 6,
-    data: [
-      {
-        id: 1,
-        referenceNo: 'REF-20001',
-        applicationType: 'New',
-        name: 'Akhil Thomas',
-        service: 'Courier',
-        amount: 120,
-        paymentMode: 'Cash',
-        transactionType: 'Charge',
-        onBy: '2025-01-10T09:30:00Z',
-        createdAt: '2025-01-10T09:30:00Z',
-      },
-      {
-        id: 2,
-        referenceNo: 'REF-20002',
-        applicationType: 'Renewal',
-        name: 'Fathima Ali',
-        service: 'Typing',
-        amount: 85,
-        paymentMode: 'Card',
-        transactionType: 'Refund',
-        onBy: '2025-02-14T12:15:00Z',
-        createdAt: '2025-02-14T12:15:00Z',
-      },
-      {
-        id: 3,
-        referenceNo: 'REF-20003',
-        applicationType: 'Urgent',
-        name: 'Sajith Kumar',
-        service: 'SMS',
-        amount: 25,
-        paymentMode: 'Online',
-        transactionType: 'Charge',
-        onBy: '2025-03-05T08:45:00Z',
-        createdAt: '2025-03-05T08:45:00Z',
-      },
-      {
-        id: 4,
-        referenceNo: 'REF-20004',
-        applicationType: 'New',
-        name: 'Noor Hassan',
-        service: 'Photograph',
-        amount: 35,
-        paymentMode: 'Card',
-        transactionType: 'Charge',
-        onBy: '2025-03-20T10:00:00Z',
-        createdAt: '2025-03-20T10:00:00Z',
-      },
-      {
-        id: 5,
-        referenceNo: 'REF-20005',
-        applicationType: 'Renewal',
-        name: 'Vishnu Menon',
-        service: 'Photocopy',
-        amount: 15,
-        paymentMode: 'Cash',
-        transactionType: 'Refund',
-        onBy: '2025-04-02T11:20:00Z',
-        createdAt: '2025-04-02T11:20:00Z',
-      },
-      {
-        id: 6,
-        referenceNo: 'REF-20006',
-        applicationType: 'Urgent',
-        name: 'Mary Joseph',
-        service: 'Form Filling',
-        amount: 60,
-        paymentMode: 'Online',
-        transactionType: 'Charge',
-        onBy: '2025-04-10T15:10:00Z',
-        createdAt: '2025-04-10T15:10:00Z',
-      },
-    ],
-  };
-
   const onRefreshChargeAndRefunds = () => {
-    if (!USE_MOCK) {
-      getData(params);
-    }
+    getData(params);
     setDeleteModalOpen(false);
   };
 
-  // ✅ Call API only if not mock
   useEffect(() => {
-    if (!USE_MOCK) {
-      getData(params);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    getData(params);
   }, [params]);
 
   const handleSortChange = (selector) => {
@@ -220,11 +138,6 @@ const ChargeAndRefunds = () => {
   );
 
   const handleDelete = () => {
-    if (USE_MOCK) {
-      setDeleteModalOpen(false);
-      return;
-    }
-
     if (deleteModalOpen?.id) {
       deleteData(deleteModalOpen?.id, () => {
         onRefreshChargeAndRefunds();
@@ -233,8 +146,8 @@ const ChargeAndRefunds = () => {
   };
 
   // ✅ Decide dataset
-  const tableData = USE_MOCK ? mockChargeAndRefundsData : chargeAndRefundsData;
-  const loading = USE_MOCK ? false : isLoadingGet;
+  const tableData = chargeAndRefundsData;
+  const loading = isLoadingGet;
 
   return (
     <>
@@ -272,7 +185,7 @@ const ChargeAndRefunds = () => {
       {deleteModalOpen && (
         <CustomActionModal
           isDelete
-          isLoading={USE_MOCK ? false : isLoadingDelete}
+          isLoading={isLoadingDelete}
           showModal={deleteModalOpen}
           closeModal={() => setDeleteModalOpen(false)}
           message={`Are you sure you want to delete this ${deleteModalOpen?.referenceNo || deleteModalOpen?.name || ''

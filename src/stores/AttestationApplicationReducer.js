@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import attestationApplicationService from '../services/AttestationApplicationService';
+import attestationApplicationService from '../services/attestationApplicationService';
 import useAlertReducer from './AlertReducer';
 
 
@@ -13,22 +13,40 @@ const useAttestationApplicationReducer = create((set) => ({
   isLoadingGet: false,
   pagination: {},
 
-  createAttestationApplication: async (data) => {
+  createAttestationApplication: async (payload, callback) => {
     try {
       set({ isCreateAttestationApplicationLoading: true });
-      const { data } = await attestationApplicationService.createAttestationApplication(data);
+
+      const response = await attestationApplicationService.createAttestationApplication(payload);
+
+      const resData = response?.data;
+
       set({ isCreateAttestationApplicationLoading: false });
-      const { success } = useAlertReducer.getState();
-      success(data?.response?.data?.message ?? data?.message);
+
+      if (resData?.status === 'error') {
+        useAlertReducer.getState().error(resData?.message);
+        return;
+      }
+
+      useAlertReducer.getState().success(resData?.message);
+
+      callback?.(resData);
+
     } catch (err) {
-      const { error } = useAlertReducer.getState();
+      const msg =
+        err?.response?.data?.message ||
+        err?.message ||
+        'Something went wrong';
+
       set({
-        errorMessage: err?.response?.data?.message ?? err?.message,
+        errorMessage: msg,
         isCreateAttestationApplicationLoading: false,
       });
-      error(err?.response?.data?.message ?? err.message);
+
+      useAlertReducer.getState().error(msg);
     }
   },
+
   updateAttestationApplication: async (id, data) => {
     try {
       set({ isUpdateAttestationApplicationLoading: true });

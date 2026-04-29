@@ -1,6 +1,6 @@
 import Gateway from '../config/gateway';
 
-const createAttestationApplication = (data) => Gateway.post('attestation-application', data);
+const createAttestationApplication = (data) => Gateway.post('attestation/save', data);
 const getAttestationApplications = (params) => Gateway.get('attestation-application', { params });
 
 const updateAttestationApplication = (id, data) => Gateway.patch(`attestation-application/${id}`, data);

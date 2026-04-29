@@ -3,31 +3,17 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import CustomModal from '../../components/common/CustomModal';
-import useVisaApplicationReducer from '../../stores/VisaApplicationReducer';
+import Phonenumber from '../../components/common/Phonenumber';
+import useAttestationApplicationReducer from '../../stores/AttestationApplicationReducer';
+import useAppointmentTypeReducer from '../../stores/AppointmentTypeReducer';
+import useApplicationModeReducer from '../../stores/ApplicationModeReducer';
+import useUserReducer from '../../stores/UserReducer';
+import useServiceOptions from '../../hooks/useServiceOptions';
+import useCourierTypeReducer from '../../stores/CourierTypeReducer';
 
 // ===================== OPTIONS (Replace with API options if needed) =====================
-const applicationTypeOptions = [
-  { value: 'New', label: 'New' },
-  { value: 'Renewal', label: 'Renewal' },
-  { value: 'Reissue', label: 'Reissue' },
-];
-
-const applicationByOptions = [
-  { value: 'Applicant', label: 'Applicant' },
-  { value: 'Agent', label: 'Agent' },
-  { value: 'Representative', label: 'Representative' },
-];
-
-const serviceRequestedOptions = [
-  { value: 'Normal', label: 'Normal' },
-  { value: 'Tatkal', label: 'Tatkal' },
-  { value: 'Premium', label: 'Premium' },
-];
 
 const tokenOptions = [
-  { value: 'A', label: 'A' },
-  { value: 'B', label: 'B' },
-  { value: 'C', label: 'C' },
 ];
 
 const genderOptions = [
@@ -36,52 +22,17 @@ const genderOptions = [
   { value: 'Other', label: 'Other' },
 ];
 
-const centerOptions = [
-  { value: 'Dubai Center', label: 'Dubai Center' },
-  { value: 'Abu Dhabi Center', label: 'Abu Dhabi Center' },
-  { value: 'Sharjah Center', label: 'Sharjah Center' },
-  { value: 'Ajman Center', label: 'Ajman Center' },
-];
-
-const countryCodeOptions = [
-  { value: '+971', label: '+971 (UAE)' },
-  { value: '+91', label: '+91 (India)' },
-  { value: '+44', label: '+44 (UK)' },
-  { value: '+1', label: '+1 (USA)' },
-];
-
-const visaDurationOptions = [
-  { value: '14 Days', label: '14 Days' },
-  { value: '30 Days', label: '30 Days' },
-  { value: '60 Days', label: '60 Days' },
-  { value: '90 Days', label: '90 Days' },
-];
-
-const visaEntryOptions = [
-  { value: 'Single', label: 'Single Entry' },
-  { value: 'Multiple', label: 'Multiple Entry' },
-];
-
-const nationalityOptions = [
-  { value: 'UAE', label: 'UAE' },
-  { value: 'India', label: 'India' },
-  { value: 'Pakistan', label: 'Pakistan' },
-  { value: 'Philippines', label: 'Philippines' },
-  { value: 'Egypt', label: 'Egypt' },
-];
-
 const paymentModeOptions = [
-  { value: 'Cash', label: 'Cash' },
-  { value: 'Card', label: 'Credit card / Debit card' },
-  { value: 'POS', label: 'Other POS Transaction' },
+  { value: '1', label: 'Cash' },
+  { value: '2', label: 'Credit Card / Debit Card / Other POS Transaction' },
 ];
 
 // Application Facilitation Services (multiple checkbox)
 const afsOptions = [
-  { value: 'Photocopy', label: 'Photocopy' },
-  { value: 'Photograph', label: 'Photograph' },
-  { value: 'FormFilling', label: 'Form filling' },
-  { value: 'SMS', label: 'SMS' },
+  { value: '1', label: 'Photocopy' },
+  { value: '2', label: 'Photograph' },
+  { value: '3', label: 'Form Filling' },
+  { value: '4', label: 'SMS' },
 ];
 
 // ===================== VALIDATION =====================
@@ -94,100 +45,173 @@ const schema = z
 
     applicationType: z.string().nonempty('Application type is required'),
     applicationBy: z.string().nonempty('Application by is required'),
-    center: z.string().nonempty('Center is required'),
-
-    webFileNo: z.string().nonempty('Web file number is required').max(50),
-    consproMFileNo: z.string().nonempty('Consprom file number is required').max(50),
-
-    emergencyVisa: z.boolean().optional(),
-    priorityReason: z.string().optional(),
 
     serviceRequested: z.string().nonempty('Service requested is required'),
-    token: z.string().nonempty('Token is required'),
+    token: z.string().optional(),
 
     firstName: z.string().nonempty('First Name is required').max(50),
-    surname: z.string().nonempty('Surname is required').max(50),
+    surname: z.string().optional(),
 
     dob: z.string().nonempty('Date of Birth is required'),
     gender: z.string().nonempty('Gender is required'),
 
-    mobileCode: z.string().nonempty('Code is required'),
     mobileNumber: z
       .string()
       .nonempty('Mobile number is required')
-      .max(20)
-      .regex(/^[0-9]+$/, 'Mobile number must be digits only'),
+      .min(8, 'Invalid mobile number'),
 
     email: z.string().nonempty('Email is required').email('Invalid email format'),
-
-    visaDuration: z.string().nonempty('Visa Duration is required'),
-    visaEntry: z.string().nonempty('Visa entry is required'),
 
     nationality: z.string().nonempty('Nationality is required'),
 
     passportNo: z.string().nonempty('Passport number is required').max(30),
-    passportExpiryDate: z.string().nonempty('Passport expiry date is required'),
+    passportPlaceOfIssue: z.string().nonempty('Place of issue is required').max(100),
+    passportDateOfIssue: z.string().nonempty('Date of issue is required'),
+    passportExpiryDate: z.string().nonempty('Expiry date is required'),
 
     fatherHusbandName: z.string().nonempty('Father / husband name is required').max(80),
-    combinoNotFound: z.boolean().optional(),
 
     courierRequired: z.boolean().optional(),
-    courierParentName: z.string().optional(),
     returnCourierAddress: z.string().optional(),
 
-    urgentFee: z.boolean().optional(),
+    residenceCountry: z.string().optional(),
+    addressLine1: z.string().optional(),
+    addressLine2: z.string().optional(),
+    state: z.string().optional(),
+    city: z.string().optional(),
+    postalCode: z.string().optional(),
+    courierType: z.string().optional(),
 
     afs: z.array(z.string()).optional(),
 
     paymentMode: z.string().nonempty('Payment mode is required'),
   })
   .superRefine((val, ctx) => {
-    // Emergency visa => priority reason required
-    if (val.emergencyVisa) {
-      if (!val.priorityReason || !val.priorityReason.trim()) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ['priorityReason'],
-          message: 'Priority Reason is required for Emergency Visa',
-        });
-      }
-    }
-
-    // Courier required => courier fields required
     if (val.courierRequired) {
-      if (!val.courierParentName || !val.courierParentName.trim()) {
+
+      if (!val.residenceCountry) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          path: ['courierParentName'],
-          message: 'Father/mother/spouse name (for courier delivery) is required',
+          path: ['residenceCountry'],
+          message: 'Residence country is required',
         });
       }
-      if (!val.returnCourierAddress || !val.returnCourierAddress.trim()) {
+
+      if (!val.addressLine1?.trim()) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          path: ['returnCourierAddress'],
-          message: 'Return courier address filled by applicant is required',
+          path: ['addressLine1'],
+          message: 'Address Line 1 is required',
+        });
+      }
+
+      if (!val.addressLine2?.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['addressLine2'],
+          message: 'Address Line 2 is required',
+        });
+      }
+
+      if (!val.state?.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['state'],
+          message: 'State is required',
+        });
+      }
+
+      if (!val.city?.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['city'],
+          message: 'City is required',
+        });
+      }
+
+      if (!val.postalCode?.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['postalCode'],
+          message: 'Postal code is required',
+        });
+      }
+
+      if (!val.courierType) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['courierType'],
+          message: 'Courier type is required',
         });
       }
     }
   });
 
 // ===================== COMPONENT =====================
-export function AddEditModal({ showModal, closeModal, onRefreshVisaApplications }) {
-  const { postData, patchData, isLoading } = useVisaApplicationReducer((state) => state);
+export function AddEditModal({ showModal, closeModal, onRefreshAttestationApplications, onFeeValuesChange, serviceTypeId = 4, }) {
 
+  // Start Dropdown
+  const { appointmentTypeData, getData: fetchAppointmentTypes, } = useAppointmentTypeReducer((state) => state);
+  useEffect(() => {
+    fetchAppointmentTypes();
+  }, [fetchAppointmentTypes]);
+  const appointmentTypeOptions = useMemo(
+    () =>
+      (appointmentTypeData || []).map((item) => ({
+        value: item.appointment_type_id,
+        label: item.appointment_type,
+      })),
+    [appointmentTypeData]
+  );
+  // End Dropdown
+
+  // Start Dropdown
+  const { applicationModeData, getData: fetchApplicationModes, } = useApplicationModeReducer((state) => state);
+  useEffect(() => {
+    fetchApplicationModes();
+  }, [fetchApplicationModes]);
+  const applicationByOptions = useMemo(() => {
+    return (applicationModeData || []).map((item) => ({
+      value: item.application_mode_id,
+      label: item.application_mode,
+    }));
+  }, [applicationModeData]);
+  // End Dropdown
+
+
+  // Start Country Dropdown
+  const { countryList, getCountries, isLoadingCountries } = useUserReducer((state) => state);
+  useEffect(() => {
+    getCountries();
+  }, [getCountries]);
+  const countryOptions = useMemo(() => {
+    return (countryList || []).map((item) => ({
+      value: item.country_id,
+      label: item.country_name,
+    }));
+  }, [countryList]);
+  // End Country Dropdown
+
+  // Start Country Dropdown
+  const { courierTypeList, getData: fetchCourierTypes } = useCourierTypeReducer((state) => state);
+  useEffect(() => {
+    fetchCourierTypes();
+  }, [fetchCourierTypes]);
+  const courierTypeOptions = useMemo(() => {
+    return (courierTypeList || []).map((item) => ({
+      value: item.courier_type_id,
+      label: item.courier_type,
+    }));
+  }, [courierTypeList]);
+  // End Country Dropdown
+
+  const { createAttestationApplication, patchData, isLoading } = useAttestationApplicationReducer((state) => state);
+  const { options: serviceRequestedOptions, loading: serviceLoading } = useServiceOptions(serviceTypeId);
   const defaultValues = useMemo(
     () => ({
       appointmentPostalRefNo: '',
       applicationType: '',
       applicationBy: '',
-      center: '',
-
-      webFileNo: '',
-      consproMFileNo: '',
-
-      emergencyVisa: false,
-      priorityReason: '',
 
       serviceRequested: '',
       token: '',
@@ -198,26 +222,20 @@ export function AddEditModal({ showModal, closeModal, onRefreshVisaApplications 
       dob: '',
       gender: '',
 
-      mobileCode: '+971',
       mobileNumber: '',
       email: '',
-
-      visaDuration: '',
-      visaEntry: '',
 
       nationality: '',
 
       passportNo: '',
+      passportPlaceOfIssue:'',
+      passportDateOfIssue:'',
       passportExpiryDate: '',
 
       fatherHusbandName: '',
-      combinoNotFound: false,
 
       courierRequired: false,
-      courierParentName: '',
       returnCourierAddress: '',
-
-      urgentFee: false,
 
       afs: [],
 
@@ -239,28 +257,90 @@ export function AddEditModal({ showModal, closeModal, onRefreshVisaApplications 
     mode: 'onSubmit',
   });
 
-  const emergencyVisa = watch('emergencyVisa');
   const courierRequired = watch('courierRequired');
   const selectedAfs = watch('afs') || [];
+  const serviceRequested = watch('serviceRequested');
+
+  // Prefill form when editing
+  function getServiceFees(serviceId) {
+    const feeMap = {
+      8: { serviceFees: 100, govtFees: 50, icwfFees: 20, onlinePaid: 10 },
+      9: { serviceFees: 200, govtFees: 80, icwfFees: 30, onlinePaid: 20 },
+    };
+
+    const data = feeMap[serviceId] || {
+      serviceFees: 0,
+      govtFees: 0,
+      icwfFees: 0,
+      onlinePaid: 0,
+    };
+
+    return {
+      ...data,
+      totalFees:
+        data.serviceFees +
+        data.govtFees +
+        data.icwfFees +
+        data.onlinePaid,
+    };
+  }
+
+  const feeValues = useMemo(() => {
+    if (!serviceRequested) return null;
+    return getServiceFees(serviceRequested);
+  }, [serviceRequested]);
+
+  // const [feeValues, setFeeValues] = React.useState(null);
+
+  // useEffect(() => {
+  //   if (!serviceRequested) {
+  //     setFeeValues(null);
+  //     return;
+  //   }
+
+  //   const data = getServiceFees(serviceRequested); // static for now
+  //   setFeeValues(data);
+  // }, [serviceRequested]);
+
+  useEffect(() => {
+    if (!onFeeValuesChange) return;
+
+    onFeeValuesChange(feeValues);
+  }, [feeValues, onFeeValuesChange]);
 
   // Prefill form when editing
   useEffect(() => {
-    if (showModal?.id) {
+    if (showModal?.oci_application_id) {
       reset({
-        ...defaultValues,
-        ...showModal,
-        emergencyVisa: !!showModal?.emergencyVisa,
-        courierRequired: !!showModal?.courierRequired,
-        urgentFee: !!showModal?.urgentFee,
-        combinoNotFound: !!showModal?.combinoNotFound,
-        afs: Array.isArray(showModal?.afs) ? showModal?.afs : [],
-        mobileCode: showModal?.mobileCode || '+971',
+        appointmentPostalRefNo: showModal.appointment_reference_no || '',
+        applicationType: showModal.appointment_type_id || '',
+        applicationBy: showModal.application_mode_id || '',
+        ociFileNo: showModal.oci_file_number || '',
+        serviceRequested: showModal.service_id || '',
+
+        firstName: showModal.first_name || '',
+        surname: showModal.surname || '',
+        dob: showModal.dob ? showModal.dob.split(' ')[0] : '',
+        gender: showModal.gender || '',
+
+        mobileNumber: showModal.mobile_number || '',
+
+        email: showModal.email || '',
+        passportNo: showModal.passport_no || '',
+        fatherMotherSpouseName: showModal.father_husband_name || '',
+
+        courierRequired: showModal.courier === "1",
+        paymentMode: '', // ⚠️ API not returning → handle separately
       });
     } else {
       reset(defaultValues);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showModal?.id]);
+  }, [
+    showModal,
+    appointmentTypeOptions,
+    applicationByOptions,
+    serviceRequestedOptions
+  ]);
 
   const toggleAfsItem = (value) => {
     const current = new Set(selectedAfs);
@@ -269,53 +349,70 @@ export function AddEditModal({ showModal, closeModal, onRefreshVisaApplications 
     setValue('afs', Array.from(current), { shouldValidate: true });
   };
 
-  const onToggleEmergency = (e) => {
-    const checked = e.target.checked;
-    setValue('emergencyVisa', checked, { shouldValidate: true });
-    if (!checked) {
-      setValue('priorityReason', '', { shouldValidate: true });
-    }
-  };
 
   const onToggleCourier = (e) => {
     const checked = e.target.checked;
-
     if (checked) {
-      const ok = window.confirm('Courier is required. Do you want to enter courier delivery details now?');
-      if (!ok) {
-        setValue('courierRequired', false, { shouldValidate: true });
-        return;
-      }
       setValue('courierRequired', true, { shouldValidate: true });
       return;
     }
 
     setValue('courierRequired', false, { shouldValidate: true });
-    setValue('courierParentName', '', { shouldValidate: true });
     setValue('returnCourierAddress', '', { shouldValidate: true });
   };
 
   const onSubmit = (data) => {
-    // If not emergency => clear priority fields
-    // If no courier => clear courier fields
     const payload = {
-      ...data,
-      ...(data.emergencyVisa ? {} : { priorityReason: '' }),
-      ...(data.courierRequired ? {} : { courierParentName: '', returnCourierAddress: '' }),
+      first_name: data.firstName,
+      surname: data.surname,
+      dob: data.dob,
+      gender: data.gender,
+      mobile_number: data.mobileNumber,
+      email: data.email,
+
+      passport_no: data.passportNo,
+      passport_place_of_issue: data.passportPlaceOfIssue,
+      passport_date_of_issue: data.passportDateOfIssue,
+      passport_date_of_expiry: data.passportExpiryDate,
+
+      service_id: Number(data.serviceRequested),
+
+      father_name: data.fatherHusbandName,
+      nationality: data.nationality,
+
+      courier_required: data.courierRequired ? 1 : 0,
+      return_courier_address: data.courierRequired
+        ? `${data.addressLine1}, ${data.addressLine2 || ''}, ${data.city}, ${data.state}, ${data.postalCode}`
+        : "",
+
+      // Fees (you already calculated)
+      govt_fee: feeValues?.govtFees || 0,
+      icwf_fee: feeValues?.icwfFees || 0,
+      sgv_service_fee: feeValues?.serviceFees || 0,
+      urgent_fee: 0,
+      vat_percent: 5,
+      vat_amount: feeValues?.onlinePaid || 0,
+      grand_total: feeValues?.totalFees || 0,
+
+      payment_mode_id: Number(data.paymentMode),
+
+      // AFS mapping
+      vas: (data.afs || []).reduce((acc, item) => {
+        acc[item] = 1;
+        return acc;
+      }, {}),
     };
 
-    if (showModal?.id) {
-      patchData({ id: showModal.id, ...payload }, () => {
-        onRefreshVisaApplications?.();
+    if (showModal?.attestation_application_id) {
+      patchData({ id: showModal.attestation_application_id, ...payload }, callback);
+    }
+    else {
+      createAttestationApplication(payload, () => {
+        onRefreshAttestationApplications?.();
         closeModal?.();
       });
-      return;
     }
 
-    postData(payload, () => {
-      onRefreshVisaApplications?.();
-      closeModal?.();
-    });
   };
 
   const renderHeader = () => (
@@ -333,7 +430,6 @@ export function AddEditModal({ showModal, closeModal, onRefreshVisaApplications 
 
   const renderBody = () => (
     <div className="modal-body custom-scroll">
-      {/* ========== Row 1 ========== */}
       <div className="row">
         <div className="col-md-6">
           <div className="form-group">
@@ -344,15 +440,14 @@ export function AddEditModal({ showModal, closeModal, onRefreshVisaApplications 
             {errors.appointmentPostalRefNo && <span className="error">{errors.appointmentPostalRefNo.message}</span>}
           </div>
         </div>
-
-        <div className="col-md-6">
+        <div className="col-md-3">
           <div className="form-group">
             <label className="form-label">
-              Application type <span className="text-danger">*</span>
+              Application Type <span className="text-danger">*</span>
             </label>
             <select className="form-control" {...register('applicationType')}>
               <option value="">Select</option>
-              {applicationTypeOptions.map((o) => (
+              {appointmentTypeOptions.map((o) => (
                 <option key={o.value} value={o.value}>
                   {o.label}
                 </option>
@@ -361,14 +456,10 @@ export function AddEditModal({ showModal, closeModal, onRefreshVisaApplications 
             {errors.applicationType && <span className="error">{errors.applicationType.message}</span>}
           </div>
         </div>
-      </div>
-
-      {/* ========== Row 2 ========== */}
-      <div className="row">
-        <div className="col-md-6">
+        <div className="col-md-3">
           <div className="form-group">
             <label className="form-label">
-              Application by (Agent / Applicant / Representative) <span className="text-danger">*</span>
+              Application By <span className="text-danger">*</span>
             </label>
             <select className="form-control" {...register('applicationBy')}>
               <option value="">Select</option>
@@ -381,83 +472,18 @@ export function AddEditModal({ showModal, closeModal, onRefreshVisaApplications 
             {errors.applicationBy && <span className="error">{errors.applicationBy.message}</span>}
           </div>
         </div>
-
-        <div className="col-md-6">
-          <div className="form-group">
-            <label className="form-label">
-              Center <span className="text-danger">*</span>
-            </label>
-            <select className="form-control" {...register('center')}>
-              <option value="">Select</option>
-              {centerOptions.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-            {errors.center && <span className="error">{errors.center.message}</span>}
-          </div>
-        </div>
       </div>
 
-      {/* ========== Row 3 ========== */}
-      <div className="row">
+      <div className="row">        
         <div className="col-md-6">
           <div className="form-group">
             <label className="form-label">
-              Web file number <span className="text-danger">*</span>
-            </label>
-            <input type="text" className="form-control" autoComplete="off" maxLength={50} {...register('webFileNo')} />
-            {errors.webFileNo && <span className="error">{errors.webFileNo.message}</span>}
-          </div>
-        </div>
-
-        <div className="col-md-6">
-          <div className="form-group">
-            <label className="form-label">
-              Consprom file number <span className="text-danger">*</span>
-            </label>
-            <input type="text" className="form-control" autoComplete="off" maxLength={50} {...register('consproMFileNo')} />
-            {errors.consproMFileNo && <span className="error">{errors.consproMFileNo.message}</span>}
-          </div>
-        </div>
-      </div>
-
-      {/* ========== Emergency Visa ========== */}
-      <div className="row">
-        <div className="col-12">
-          <div className="form-group d-flex align-items-center gap-2">
-            <input type="checkbox" id="emergencyVisa" checked={!!emergencyVisa} onChange={onToggleEmergency} />
-            <label htmlFor="emergencyVisa" className="form-label mb-0">
-              Emergency visa
-            </label>
-          </div>
-        </div>
-      </div>
-
-      {emergencyVisa && (
-        <div className="row">
-          <div className="col-12">
-            <div className="form-group">
-              <label className="form-label">
-                Priority Reason <span className="text-danger">*</span>
-              </label>
-              <textarea className="form-control" rows={3} {...register('priorityReason')} />
-              {errors.priorityReason && <span className="error">{errors.priorityReason.message}</span>}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ========== Row 4 ========== */}
-      <div className="row">
-        <div className="col-md-6">
-          <div className="form-group">
-            <label className="form-label">
-              Service requested <span className="text-danger">*</span>
+              Service Requested <span className="text-danger">*</span>
             </label>
             <select className="form-control" {...register('serviceRequested')}>
-              <option value="">Select</option>
+              <option value="">
+                {serviceLoading ? 'Loading services...' : 'Select'}
+              </option>
               {serviceRequestedOptions.map((o) => (
                 <option key={o.value} value={o.value}>
                   {o.label}
@@ -467,12 +493,9 @@ export function AddEditModal({ showModal, closeModal, onRefreshVisaApplications 
             {errors.serviceRequested && <span className="error">{errors.serviceRequested.message}</span>}
           </div>
         </div>
-
-        <div className="col-md-6">
+        <div className="col-md-3">
           <div className="form-group">
-            <label className="form-label">
-              Token <span className="text-danger">*</span>
-            </label>
+            <label className="form-label">Token </label>
             <select className="form-control" {...register('token')}>
               <option value="">Select</option>
               {tokenOptions.map((o) => (
@@ -499,7 +522,6 @@ export function AddEditModal({ showModal, closeModal, onRefreshVisaApplications 
             {errors.firstName && <span className="error">{errors.firstName.message}</span>}
           </div>
         </div>
-
         <div className="col-md-6">
           <div className="form-group">
             <label className="form-label">
@@ -512,7 +534,7 @@ export function AddEditModal({ showModal, closeModal, onRefreshVisaApplications 
       </div>
 
       <div className="row">
-        <div className="col-md-4">
+        <div className="col-md-6">
           <div className="form-group">
             <label className="form-label">
               Date of Birth <span className="text-danger">*</span>
@@ -522,7 +544,7 @@ export function AddEditModal({ showModal, closeModal, onRefreshVisaApplications 
           </div>
         </div>
 
-        <div className="col-md-4">
+        <div className="col-md-6">
           <div className="form-group">
             <label className="form-label">
               Gender <span className="text-danger">*</span>
@@ -538,46 +560,21 @@ export function AddEditModal({ showModal, closeModal, onRefreshVisaApplications 
             {errors.gender && <span className="error">{errors.gender.message}</span>}
           </div>
         </div>
-
-        <div className="col-md-4">
-          <div className="form-group">
-            <label className="form-label">
-              Nationality <span className="text-danger">*</span>
-            </label>
-            <select className="form-control" {...register('nationality')}>
-              <option value="">Select</option>
-              {nationalityOptions.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-            {errors.nationality && <span className="error">{errors.nationality.message}</span>}
-          </div>
-        </div>
       </div>
 
       {/* ========== Contact ========== */}
       <div className="row">
         <div className="col-md-6">
-          <div className="form-group">
-            <label className="form-label">
-              Mobile number <span className="text-danger">*</span>
-            </label>
-            <div className="d-flex gap-2">
-              <select className="form-control" style={{ maxWidth: 160 }} {...register('mobileCode')}>
-                {countryCodeOptions.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
-              <input type="text" className="form-control" autoComplete="off" maxLength={20} {...register('mobileNumber')} />
-            </div>
-            {(errors.mobileCode || errors.mobileNumber) && (
-              <span className="error">{errors.mobileCode?.message || errors.mobileNumber?.message}</span>
-            )}
-          </div>
+          <Phonenumber
+            value={watch('mobileNumber') || ''}
+            onChange={(value) => {
+              setValue('mobileNumber', value || '', { shouldValidate: true });
+            }}
+            error={errors.mobileNumber?.message}
+            label="Mobile Number"
+            required
+            defaultCountry="AE"
+          />
         </div>
 
         <div className="col-md-6">
@@ -591,69 +588,26 @@ export function AddEditModal({ showModal, closeModal, onRefreshVisaApplications 
         </div>
       </div>
 
-      {/* ========== Visa Details ========== */}
       <div className="row">
         <div className="col-md-6">
           <div className="form-group">
-            <label className="form-label">
-              Visa Duration <span className="text-danger">*</span>
-            </label>
-            <select className="form-control" {...register('visaDuration')}>
+            <label className="form-label">Nationality</label>
+            <select className="form-control" {...register('nationality')}>
               <option value="">Select</option>
-              {visaDurationOptions.map((o) => (
+              {countryOptions.map((o) => (
                 <option key={o.value} value={o.value}>
                   {o.label}
                 </option>
               ))}
             </select>
-            {errors.visaDuration && <span className="error">{errors.visaDuration.message}</span>}
+            {errors.nationality && <span className="error">{errors.nationality.message}</span>}
           </div>
         </div>
 
         <div className="col-md-6">
           <div className="form-group">
             <label className="form-label">
-              Visa entry <span className="text-danger">*</span>
-            </label>
-            <select className="form-control" {...register('visaEntry')}>
-              <option value="">Select</option>
-              {visaEntryOptions.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-            {errors.visaEntry && <span className="error">{errors.visaEntry.message}</span>}
-          </div>
-        </div>
-      </div>
-
-      {/* ========== Passport Details ========== */}
-      <div className="row">
-        <div className="col-md-4">
-          <div className="form-group">
-            <label className="form-label">
-              Passport number <span className="text-danger">*</span>
-            </label>
-            <input type="text" className="form-control" autoComplete="off" maxLength={30} {...register('passportNo')} />
-            {errors.passportNo && <span className="error">{errors.passportNo.message}</span>}
-          </div>
-        </div>
-
-        <div className="col-md-4">
-          <div className="form-group">
-            <label className="form-label">
-              Passport expiry date <span className="text-danger">*</span>
-            </label>
-            <input type="date" className="form-control" {...register('passportExpiryDate')} />
-            {errors.passportExpiryDate && <span className="error">{errors.passportExpiryDate.message}</span>}
-          </div>
-        </div>
-
-        <div className="col-md-4">
-          <div className="form-group">
-            <label className="form-label">
-              Father / husband name <span className="text-danger">*</span>
+              Father/Mother/Spouse Name <span className="text-danger">*</span>
             </label>
             <input type="text" className="form-control" autoComplete="off" maxLength={80} {...register('fatherHusbandName')} />
             {errors.fatherHusbandName && <span className="error">{errors.fatherHusbandName.message}</span>}
@@ -661,14 +615,72 @@ export function AddEditModal({ showModal, closeModal, onRefreshVisaApplications 
         </div>
       </div>
 
-      {/* Combino Not Found */}
+      <hr />
+
+      {/* ========== Passport Details ========== */}
       <div className="row">
-        <div className="col-12">
-          <div className="form-group d-flex align-items-center gap-2">
-            <input type="checkbox" id="combinoNotFound" {...register('combinoNotFound')} />
-            <label htmlFor="combinoNotFound" className="form-label mb-0">
-              Combino not found
+        <div className="col-md-4">
+          <div className="form-group">
+            <label className="form-label">
+              Passport Number <span className="text-danger">*</span>
             </label>
+            <input
+              type="text"
+              className="form-control"
+              autoComplete="off"
+              maxLength={30}
+              {...register('passportNo')}
+            />
+            {errors.passportNo && <span className="error">{errors.passportNo.message}</span>}
+          </div>
+        </div>
+
+        <div className="col-md-4">
+          <div className="form-group">
+            <label className="form-label">
+              Place of Issue <span className="text-danger">*</span>
+            </label>
+            <input
+              type="text"
+              className="form-control"
+              autoComplete="off"
+              {...register('passportPlaceOfIssue')}
+            />
+            {errors.passportPlaceOfIssue && (
+              <span className="error">{errors.passportPlaceOfIssue.message}</span>
+            )}
+          </div>
+        </div>
+
+        <div className="col-md-4">
+          <div className="form-group">
+            <label className="form-label">
+              Date of Issue <span className="text-danger">*</span>
+            </label>
+            <input
+              type="date"
+              className="form-control"
+              {...register('passportDateOfIssue')}
+            />
+            {errors.passportDateOfIssue && (
+              <span className="error">{errors.passportDateOfIssue.message}</span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="row">
+        <div className="col-md-4">
+          <div className="form-group">
+            <label className="form-label">
+              Date of Expiry <span className="text-danger">*</span>
+            </label>
+            <input
+              type="date"
+              className="form-control"
+              {...register('passportExpiryDate')}
+            />
+            {errors.passportExpiryDate && <span className="error">{errors.passportExpiryDate.message}</span>}
           </div>
         </div>
       </div>
@@ -689,59 +701,91 @@ export function AddEditModal({ showModal, closeModal, onRefreshVisaApplications 
 
       {courierRequired && (
         <>
+          {/* ROW 1 */}
           <div className="row">
-            <div className="col-md-6">
+            <div className="col-md-4">
               <div className="form-group">
-                <label className="form-label">
-                  Father/mother/spouse name (for courier delivery) <span className="text-danger">*</span>
-                </label>
-                <input type="text" className="form-control" autoComplete="off" maxLength={80} {...register('courierParentName')} />
-                {errors.courierParentName && <span className="error">{errors.courierParentName.message}</span>}
+                <label>Residence Country</label>
+                <select className="form-control" {...register('residenceCountry')}>
+                  <option value="">Select</option>
+                  {countryOptions.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+                {errors.residenceCountry && (<span className="error">{errors.residenceCountry.message}</span>)}
               </div>
             </div>
 
-            <div className="col-md-6">
-              <div className="form-group d-flex align-items-center gap-2" style={{ marginTop: 30 }}>
-                <input type="checkbox" id="urgentFee" {...register('urgentFee')} />
-                <label htmlFor="urgentFee" className="form-label mb-0">
-                  Urgent fee
-                </label>
+            <div className="col-md-4">
+              <div className="form-group">
+                <label>Address Line 1</label>
+                <input className="form-control" {...register('addressLine1')} />
+                {errors.addressLine1 && (<span className="error">{errors.addressLine1.message}</span>)}
+              </div>
+            </div>
+
+            <div className="col-md-4">
+              <div className="form-group">
+                <label>Address Line 2</label>
+                <input className="form-control" {...register('addressLine2')} />
+                {errors.addressLine2 && (<span className="error">{errors.addressLine2.message}</span>)}
               </div>
             </div>
           </div>
 
+          {/* ROW 2 */}
           <div className="row">
-            <div className="col-12">
+            <div className="col-md-4">
               <div className="form-group">
-                <label className="form-label">
-                  Return courier address filled by applicant <span className="text-danger">*</span>
-                </label>
-                <textarea className="form-control" rows={3} {...register('returnCourierAddress')} />
-                {errors.returnCourierAddress && <span className="error">{errors.returnCourierAddress.message}</span>}
+                <label>State</label>
+                <input className="form-control" {...register('state')} />
+                {errors.state && (<span className="error">{errors.state.message}</span>)}
+              </div>
+            </div>
+            <div className="col-md-4">
+              <div className="form-group">
+                <label>City</label>
+                <input className="form-control" {...register('city')} />
+                {errors.city && (<span className="error">{errors.city.message}</span>)}
+              </div>
+            </div>
+            <div className="col-md-4">
+              <div className="form-group">
+                <label>Postal Code</label>
+                <input className="form-control" {...register('postalCode')} />
+                {errors.postalCode && (<span className="error">{errors.postalCode.message}</span>)}
+              </div>
+            </div>
+          </div>
+
+          {/* ROW 3 */}
+          <div className="row">
+            <div className="col-md-4">
+              <div className="form-group">
+                <label>Courier Type</label>
+                <select className="form-control" {...register('courierType')}>
+                  <option value="">Select</option>
+                  {courierTypeOptions.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+                {errors.courierType && (<span className="error">{errors.courierType.message}</span>)}
               </div>
             </div>
           </div>
         </>
       )}
 
-      {!courierRequired && (
-        <div className="row">
-          <div className="col-12">
-            <div className="form-group d-flex align-items-center gap-2">
-              <input type="checkbox" id="urgentFeeNoCourier" {...register('urgentFee')} />
-              <label htmlFor="urgentFeeNoCourier" className="form-label mb-0">
-                Urgent fee
-              </label>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* ========== AFS (Multiple Checkbox) ========== */}
       <div className="row">
         <div className="col-12">
           <div className="form-group">
-            <label className="form-label">Application facilitation services - multiple selection</label>
+            <label className="form-label">Application Facilitation Services (AFS)</label>
 
             <div className="d-flex flex-wrap gap-3">
               {afsOptions.map((opt) => (
@@ -758,7 +802,6 @@ export function AddEditModal({ showModal, closeModal, onRefreshVisaApplications 
                 </div>
               ))}
             </div>
-
             {errors.afs && <span className="error">{errors.afs.message}</span>}
           </div>
         </div>
