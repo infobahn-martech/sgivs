@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import moment from 'moment';
 import JsBarcode from 'jsbarcode';
-import ociApplicationService from '../../services/OCIApplicationService';
+import attestationApplicationService from '../../services/attestationApplicationService';
 import useAlertReducer from '../../stores/AlertReducer';
 
 function Barcode({ value, options = {} }) {
@@ -30,7 +30,7 @@ function formatOMR(val) {
     return isNaN(n) ? String(val) : `OMR ${n.toFixed(3)}`;
 }
 
-function ReceiptContentOCI({ data }) {
+function ReceiptContentAttestation({ data }) {
     if (!data || typeof data !== 'object') return null;
 
     const centerName = data.center_name || '-';
@@ -288,7 +288,7 @@ export function PrintReceiptModal({ showModal, closeModal }) {
         }
 
         const id =
-            showModal?.oci_application_id ?? showModal?.id ?? showModal?._id;
+            showModal?.attestation_application_id ?? showModal?.id ?? showModal?._id;
 
         if (!id) {
             closeModal();
@@ -297,7 +297,7 @@ export function PrintReceiptModal({ showModal, closeModal }) {
 
         const fetchReceipt = async () => {
             try {
-                const { data } = await ociApplicationService.getReceipt(id);
+                const { data } = await attestationApplicationService.getReceipt(id);
                 const payload = data?.data ?? data;
                 setReceiptData(payload);
             } catch (err) {
@@ -338,7 +338,7 @@ export function PrintReceiptModal({ showModal, closeModal }) {
 
     return (
         <div style={{ position: 'fixed', left: -9999 }}>
-            {receiptData && <ReceiptContentOCI data={receiptData} />}
+            {receiptData && <ReceiptContentAttestation data={receiptData} />}
         </div>
     );
 }

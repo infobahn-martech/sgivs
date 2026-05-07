@@ -32,9 +32,7 @@ const OCIDeletedApplication = () => {
 
   const [params, setParams] = useState(initialParams);
 
-  
-
-  const onRefreshDeletesOCIApplications = () => {
+  const onRefreshDeletedOCIApplications = () => {
     getData(params);
     setRetrieveModalOpen(false);
   };
@@ -109,7 +107,7 @@ const OCIDeletedApplication = () => {
             <b>{row?.status || '-'}</b>
           </span>
           <small className="text-muted">
-            {row?.created_by ? `${row.created_by}` : 'By: -'}{' '}
+            {row?.created_by_name || '-'}
             {row?.created_at ? `, ${formatDate(row.created_at)}` : ''}
           </small>
         </div>
@@ -148,7 +146,7 @@ const OCIDeletedApplication = () => {
           comment: comment
         },
         () => {
-          onRefreshDeletesOCIApplications();
+          onRefreshDeletedOCIApplications();
         }
       );
     }

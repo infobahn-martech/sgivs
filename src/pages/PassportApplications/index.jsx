@@ -164,6 +164,24 @@ const PassportApplications = () => {
     });
   };
 
+  const filterOptions = [
+    {
+      fieldName: 'Status',
+      BE_keyName: 'status',
+      fieldType: 'select',
+      Options: [
+        { label: 'Active', value: 1 },
+        { label: 'Blocked', value: 2 },
+      ],
+    },
+    {
+      fieldName: 'Joined Date',
+      fieldType: 'dateRangeCombined',
+      fromKey: 'fromDate',
+      toKey: 'toDate',
+    },
+  ];
+
   const loading = isLoadingGet;
 
   return (
@@ -174,7 +192,8 @@ const PassportApplications = () => {
           type: 'button',
           action: () => setModal(true),
         }}
-        hideFilter
+        // hideFilter
+        filterOptions={filterOptions}
         onSearch={debouncedSearch}
         submitFilter={(filters) => {
           const { fromDate, toDate, ...rest } = filters;

@@ -20,18 +20,29 @@ import CommentModal from './CommentModal';
 import ChangeServicesModal from './ChangeServices';
 import ActivityLog from './ActivityLog';
 import AddRemoveBiometric from './AddRemoveBiometric';
+import useUserReducer from '../../stores/UserReducer';
 
 const OCIApplications = () => {
 
-  const { getOCIApplications,
-    ociApplicationsData,
-    isLoadingGet,
+  const { getOCIApplications, ociApplicationsData, isLoadingGet, pagination,
     deleteOCIApplication,
     isDeleteOCIApplicationLoading,
     getOCIApplicationById,
     editORviewOCIApplicationData,
     isLoadingEditOrViewOCIApplication
   } = useOCIApplicationReducer((state) => state);
+
+  const {
+    countryList,
+    missionList,
+    centerList,
+    isLoadingCountries,
+    isLoadingMissions,
+    isLoadingCenters,
+    getCountries,
+    getMissionsByCountry,
+    getCentersByMission
+  } = useUserReducer();
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [modal, setModal] = useState(false);
@@ -44,18 +55,57 @@ const OCIApplications = () => {
   const [activityLogModal, setActivityLogModal] = useState(false);
   const [feeValues, setFeeValues] = useState(null);
   const initialParams = {
-    search: '',
     page: 1,
     limit: 10,
-    fromDate: null,
-    toDate: null,
-    sortBy: 'createdAt',
+    sortBy: 'created_at', 
     sortOrder: 'DESC',
-    isExcelExport: 'false',
   };
 
   const [params, setParams] = useState(initialParams);
 
+  useEffect(() => {
+    getCountries();
+  }, []);
+
+  const countryOptions = useMemo(
+    () =>
+      (countryList || []).map((item) => ({
+        value: item.country_id,
+        label: item.country_name,
+      })),
+    [countryList]
+  );
+  const missionOptions = useMemo(
+    () =>
+      (missionList || []).map((item) => ({
+        value: item.mission_id,
+        label: item.mission_name,
+      })),
+    [missionList]
+  );
+
+  const centerOptions = useMemo(
+    () =>
+      (centerList || []).map((item) => ({
+        value: item.center_id,
+        label: item.center_name,
+      })),
+    [centerList]
+  );
+
+  const onCountryChange = (countryId) => {
+    debugger
+    if (countryId) {
+      debugger
+      getMissionsByCountry(countryId);
+    }
+  };
+
+  const onMissionChange = (missionId) => {
+    if (missionId) {
+      getCentersByMission(missionId);
+    }
+  };
 
   const onRefreshOCIApplications = () => {
     getOCIApplications(params);
@@ -71,10 +121,10 @@ const OCIApplications = () => {
   }, [params]);
 
   const handleSortChange = (selector) => {
-    setParams((prevParams) => ({
-      ...prevParams,
+    setParams((prev) => ({
+      ...prev,
       sortBy: selector,
-      sortOrder: prevParams.sortOrder === 'ASC' ? 'DESC' : 'ASC',
+      sortOrder: prev.sortOrder === 'ASC' ? 'DESC' : 'ASC',
     }));
   };
 
@@ -83,7 +133,6 @@ const OCIApplications = () => {
     setDeleteModalOpen({ id: row?.oci_application_id, name: fullName, reference_no: row?.appointment_reference_no, });
   };
 
-  // ✅ action handlers (replace with your actual flows)
   const handlePrintReceipt = (row) => {
     setPrintReceiptModal(row);
   };
@@ -132,47 +181,59 @@ const OCIApplications = () => {
     {
       name: 'Reference No',
       selector: 'appointment_reference_no',
+      sort: true,
     },
     {
       name: 'Name',
       selector: 'applicant_name',
       cell: (row) => `${row.first_name || ''} ${row.surname || ''}`,
+      sort: true,
     },
     {
       name: 'Center',
       selector: 'center_name',
+      sort: true,
     },
     {
       name: 'OCI File Number',
       selector: 'oci_file_number',
+      sort: true,
     },
     {
       name: 'Passport No',
       selector: 'passport_no',
+      sort: true,
     },
     {
       name: 'Application Type',
       selector: 'appointment_type',
+      sort: true,
     },
     {
       name: 'Service Name',
       selector: 'service_name',
-      cell: (row) => row.service_name || row.service_id,
+      cell: (row) => row.service_name,
+      sort: true,
     },
     {
       name: 'Delivery Type',
       selector: 'courier',
       cell: (row) => (row.courier === "1" ? 'Courier' : 'Walk-in'),
+      sort: true,
     },
     {
       name: 'Status / By, On',
       selector: 'status',
       cell: (row) => (
-        <span>
-          {row?.status || '-'}
-          {row?.created_by ? ` / ${row.created_by}` : ''}
-          {row?.created_at ? `, ${formatDate(row.created_at)}` : ''}
-        </span>
+        <div className="d-flex flex-column">
+          <span>
+            <b>{row?.status || '-'}</b>
+          </span>
+          <small className="text-muted">
+            {row?.created_by_name || '-'}
+            {row?.created_at ? `, ${formatDate(row.created_at)}` : ''}
+          </small>
+        </div>
       ),
     },
     {
@@ -197,7 +258,7 @@ const OCIApplications = () => {
     },
   ];
 
-  // ✅ Stable debounce
+  // Stable debounce
   const debouncedSearch = useMemo(
     () =>
       debounce((searchValue) => {
@@ -223,6 +284,48 @@ const OCIApplications = () => {
     });
   };
 
+  const filterOptions = [
+    {
+      fieldName: 'Country',
+      BE_keyName: 'country_id',
+      fieldType: 'select',
+      Options: countryOptions,
+      callBack: onCountryChange,
+      isLoading: isLoadingCountries,
+    },
+    {
+      fieldName: 'Mission',
+      BE_keyName: 'mission_id',
+      fieldType: 'select',
+      Options: missionOptions,
+      callBack: onMissionChange,
+      isLoading: isLoadingMissions,
+    },
+    {
+      fieldName: 'Center',
+      BE_keyName: 'center_id',
+      fieldType: 'select',
+      Options: centerOptions,
+      isLoading: isLoadingCenters,
+    },
+    {
+      fieldName: 'Status',
+      BE_keyName: 'status',
+      fieldType: 'select',
+      Options: [
+        { label: 'Active', value: 1 },
+        { label: 'Blocked', value: 2 },
+      ],
+    },
+    {
+      fieldName: 'Joined Date',
+      fieldType: 'dateRangeCombined',
+      fromKey: 'from_date',
+      toKey: 'to_date',
+    },
+  ];
+
+
   const tableData = ociApplicationsData;
   const loading = isLoadingGet;
 
@@ -234,17 +337,14 @@ const OCIApplications = () => {
           type: 'button',
           action: () => setModal(true),
         }}
-        hideFilter
+        // hideFilter
+        filterOptions={filterOptions}
         onSearch={debouncedSearch}
         submitFilter={(filters) => {
-          const { fromDate, toDate, ...rest } = filters;
-
           setParams({
             ...params,
-            ...rest,
-            fromDate: fromDate ? moment(fromDate).format('YYYY-MM-DD') : null,
-            toDate: toDate ? moment(toDate).format('YYYY-MM-DD') : null,
-            page: 1,
+            ...filters,
+            page: 1
           });
         }}
         clearOptions={() => setParams(initialParams)}
@@ -252,12 +352,23 @@ const OCIApplications = () => {
 
       <CustomTable
         pagination={{ currentPage: params.page, limit: params.limit }}
-        count={tableData?.total || 0}
+        count={pagination?.total_count || 0}
         columns={columns}
-        data={tableData?.data || []}
+        data={tableData || []}
         isLoading={loading}
-        onPageChange={(page) => setParams({ ...params, page })}
-        setLimit={(limit) => setParams({ ...params, limit })}
+        onPageChange={(page) =>
+          setParams((prev) => ({
+            ...prev,
+            page,
+          }))
+        }
+        setLimit={(limit) =>
+          setParams((prev) => ({
+            ...prev,
+            limit: Number(limit) || prev.limit,
+            page: 1,
+          }))
+        }
         onSortChange={handleSortChange}
         wrapClasses="inventory-table-wrap"
       />

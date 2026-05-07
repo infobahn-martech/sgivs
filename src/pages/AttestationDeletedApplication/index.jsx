@@ -7,16 +7,15 @@ import '../../assets/scss/usermanagement.scss';
 
 import CommonHeader from '../../components/common/CommonHeader';
 import CustomTable from '../../components/common/CustomTable';
-import useAttestationDeleteApplicationReducer from '../../stores/AttestationDeleteApplicationReducer';
+import useAttestationDeleteApplicationReducer from '../../stores/AttestationDeletedApplicationReducer';
 import { formatDate } from '../../config/config';
 import CustomActionModal from '../../components/common/CustomActionModal';
 
-const AttestationDeleteApplication = () => {
-  // ✅ Toggle this
-  const USE_MOCK = true;
+const AttestationDeletedApplication = () => {
 
-  const { getData, attestationDeleteApplicationData, isLoadingGet, deleteData, isLoadingDelete } =
-    useAttestationDeleteApplicationReducer((state) => state);
+  const { getData, deletedAttestationApplicationData, isLoadingGet,
+    deleteData, isLoadingDelete
+  } = useAttestationDeleteApplicationReducer((state) => state);
 
   const [retrieveModalOpen, setRetrieveModalOpen] = useState(false);
 
@@ -33,76 +32,14 @@ const AttestationDeleteApplication = () => {
 
   const [params, setParams] = useState(initialParams);
 
-  // ✅ Dummy Data (as per required fields)
-  const mockAttestationDeleteApplicationData = {
-    total: 5,
-    data: [
-      {
-        id: 1,
-        referenceNo: 'REF-0001',
-        name: 'Arun Kumar',
-        gender: 'Male',
-        dob: '1996-08-12',
-        passportNo: 'N1234567',
-        status: 'Deleted',
-        actionBy: 'Admin',
-        actionOn: '2025-01-10T09:30:00Z',
-      },
-      {
-        id: 2,
-        referenceNo: 'REF-0002',
-        name: 'Nisha Thomas',
-        gender: 'Female',
-        dob: '1998-03-22',
-        passportNo: 'P7654321',
-        status: 'Deleted',
-        actionBy: 'Operator',
-        actionOn: '2025-02-14T12:15:00Z',
-      },
-      {
-        id: 3,
-        referenceNo: 'REF-0003',
-        name: 'Sameer Ali',
-        gender: 'Male',
-        dob: '1994-11-05',
-        passportNo: 'M9081726',
-        status: 'Deleted',
-        actionBy: 'Admin',
-        actionOn: '2025-03-05T08:45:00Z',
-      },
-      {
-        id: 4,
-        referenceNo: 'REF-0004',
-        name: 'Maria Joseph',
-        gender: 'Female',
-        dob: '1999-01-18',
-        passportNo: 'A1122334',
-        status: 'Deleted',
-        actionBy: 'Supervisor',
-        actionOn: '2025-03-20T10:00:00Z',
-      },
-      {
-        id: 5,
-        referenceNo: 'REF-0005',
-        name: 'Rohit Sharma',
-        gender: 'Male',
-        dob: '1992-06-30',
-        passportNo: 'K5566778',
-        status: 'Deleted',
-        actionBy: 'Admin',
-        actionOn: '2025-04-02T11:20:00Z',
-      },
-    ],
-  };
-
-  const onRefreshAttestationDeleteApplication = () => {
-    if (!USE_MOCK) getData(params);
+  const onRefreshAttestationDeletedApplication = () => {
+    getData(params);
     setRetrieveModalOpen(false);
   };
 
   useEffect(() => {
-    if (!USE_MOCK) getData(params);
-  }, [params, USE_MOCK, getData]);
+    getData(params);
+  }, [params, getData]);
 
   const handleSortChange = (selector) => {
     setParams((prev) => ({
@@ -117,7 +54,7 @@ const AttestationDeleteApplication = () => {
     return (
       <>
         <Tooltip
-          id={`retrieve-${row?.id}`}
+          id={`retrieve-${row?.attestation_application_id}`}
           place="bottom"
           content="Retrieve"
           style={{ backgroundColor: '#051a53' }}
@@ -126,7 +63,7 @@ const AttestationDeleteApplication = () => {
         <button
           type="button"
           className="btn btn-link p-0"
-          data-tooltip-id={`retrieve-${row?.id}`}
+          data-tooltip-id={`retrieve-${row?.attestation_application_id}`}
           onClick={() => setRetrieveModalOpen(row)}
           style={{ textDecoration: 'none' }}
         >
@@ -211,26 +148,22 @@ const AttestationDeleteApplication = () => {
   }, [debouncedSearch]);
 
   const handleRetrieve = () => {
-    if (USE_MOCK) {
-      setRetrieveModalOpen(false);
-      return;
-    }
-
-    // ✅ You can change API call name here if you have retrieve endpoint
-    // Example:
-    // retrieveData(retrieveModalOpen?.id, () => onRefreshAttestationDeleteApplication());
-
-    // Temporary: using deleteData placeholder (replace this!)
-    if (retrieveModalOpen?.id) {
-      deleteData(retrieveModalOpen?.id, () => {
-        onRefreshAttestationDeleteApplication();
-      });
+    if (retrieveModalOpen?.attestation_application_id) {
+      restoreApplication(
+        {
+          attestation_application_id: retrieveModalOpen.attestation_application_id,
+          comment: comment
+        },
+        () => {
+          onRefreshDeletedAttestationApplications();
+        }
+      );
     }
   };
 
   // ✅ dataset
-  const tableData = USE_MOCK ? mockAttestationDeleteApplicationData : attestationDeleteApplicationData;
-  const loading = USE_MOCK ? false : isLoadingGet;
+  const tableData = deletedAttestationApplicationData;
+  const loading = isLoadingGet;
 
   return (
     <>
@@ -264,10 +197,22 @@ const AttestationDeleteApplication = () => {
       {retrieveModalOpen && (
         <CustomActionModal
           // ✅ this modal used for confirmation; set isDelete={false} if your modal supports it
+          showCommentBox
           showModal={retrieveModalOpen}
           closeModal={() => setRetrieveModalOpen(false)}
-          isLoading={USE_MOCK ? false : isLoadingDelete}
-          message={`Are you sure you want to retrieve ${retrieveModalOpen?.name}?`}
+          isLoading={isLoadingDelete}
+          message={
+            <>
+              Are you sure you want to restore{" "}
+              <b>
+                {retrieveModalOpen?.first_name}
+                {retrieveModalOpen?.surname ? " " + retrieveModalOpen.surname : ""}
+              </b>
+              ?
+              <br />
+              <span>[ Ref: {retrieveModalOpen?.appointment_reference_no || "-"} ]</span>
+            </>
+          }
           onCancel={() => setRetrieveModalOpen(false)}
           onSubmit={handleRetrieve}
         />
@@ -276,4 +221,4 @@ const AttestationDeleteApplication = () => {
   );
 };
 
-export default AttestationDeleteApplication;
+export default AttestationDeletedApplication;

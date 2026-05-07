@@ -24,7 +24,7 @@ const changeServicesSchema = z
         remark: z.string().optional(),
     })
     .superRefine((data, ctx) => {
-        // ✅ If cancel is checked, reason is required
+        // If cancel is checked, reason is required
         if (data.cancelApplication) {
 
             if (!data.govtFeeCancel && !data.icwfFeeCancel) {
@@ -45,12 +45,8 @@ const changeServicesSchema = z
         }
     });
 
-export default function ChangeServicesModal({
-    showModal,
-    closeModal,
-    onRefreshOCIApplications,
-}) {
-
+export default function ChangeServicesModal({ showModal, closeModal, onRefreshOCIApplications, }) {
+    
     const serviceTypeId = 3;
     const { options: ociServiceOptions, loading: serviceLoading } = useServiceOptions(serviceTypeId);
 

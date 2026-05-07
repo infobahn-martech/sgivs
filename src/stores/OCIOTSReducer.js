@@ -4,25 +4,21 @@ import ociOTSService from '../services/OCIOTSService';
 
 const useOCIOTSReducer = create((set) => ({
     isLoadingGet: false,
+    errorMessage: '',
     ociOTSData: null,
+    isLoadingPost: false,
 
-    getData: async (params) => {
+    getData: async (payload) => {
         try {
             set({ isLoadingGet: true });
-            const { data } = await ociOTSService.getData(params);
-            const datas = data;
-            set({
-                ociOTSData: datas?.data,
-                // successMessage: data?.response?.data?.message ?? data?.message,
-                isLoadingGet: false,
-            });
+            const response = await ociOTSService.getData(payload);
+            const data = response?.data;
+            set({ ociOTSData: data?.data ?? [], isLoadingGet: false, });
         } catch (err) {
             const { error } = useAlertReducer.getState();
-            set({
-                errorMessage: err?.response?.data?.message ?? err?.message,
-                isLoadingGet: false,
-            });
-            error(err?.response?.data?.message ?? err.message);
+            const msg =err?.response?.data?.message || err?.message || 'Something went wrong';
+            set({ errorMessage: msg, isLoadingGet: false, });
+            error(msg);
         }
     },
 }));

@@ -2,16 +2,19 @@ import React, { useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+
 import CustomModal from '../../components/common/CustomModal';
 import Phonenumber from '../../components/common/Phonenumber';
+
 import useOCIApplicationReducer from '../../stores/OCIApplicationReducer';
 import useAppointmentTypeReducer from '../../stores/AppointmentTypeReducer';
 import useApplicationModeReducer from '../../stores/ApplicationModeReducer';
-import useServiceOptions from '../../hooks/useServiceOptions';
 import useUserReducer from '../../stores/UserReducer';
 import useCourierTypeReducer from '../../stores/CourierTypeReducer';
+import useServiceReducer from '../../stores/ServiceReducer';
+import useServiceOptions from '../../hooks/useServiceOptions';
 
-// ===================== OPTIONS (Replace with API options if needed) =====================
+// ===================== OPTIONS =====================
 
 const tokenOptions = [
 ];
@@ -22,11 +25,6 @@ const genderOptions = [
   { value: 'Other', label: 'Other' },
 ];
 
-const paymentModeOptions = [
-  { value: '1', label: 'Cash' },
-  { value: '2', label: 'Credit Card / Debit Card / Other POS Transaction' },
-];
-
 // Application Facilitation Services (multiple checkbox)
 const afsOptions = [
   { value: '1', label: 'Photocopy' },
@@ -35,45 +33,42 @@ const afsOptions = [
   { value: '4', label: 'SMS' },
 ];
 
-function buildOCIApplicationPayload(data, feeValues) {
-  return {
-    oci_application: {
-      appointment_reference_no: data.appointmentPostalRefNo,
-      oci_file_number: data.ociFileNo,
-      application_mode_id: data.applicationBy,
+const paymentModeOptions = [
+  { value: '1', label: 'Cash' },
+  { value: '2', label: 'Credit Card / Debit Card / Other POS Transaction' },
+];
 
-      first_name: data.firstName,
-      surname: data.surname,
-      dob: data.dob,
-      gender: data.gender,
+const cardTypeOptions = [
+  { value: '1', label: 'Local Bank Debit Card' },
+  { value: '2', label: 'Local Bank Credit Card' },
+  { value: '3', label: 'International Bank Card' },
+];
 
-      mobile_number: data.mobileNumber, 
-      email: data.email,
+const OCI_SERVICE_TYPE_ID = 3;
+const CARD_PAYMENT_MODE_ID = '2';
 
-      passport_no: data.passportNo,
-      father_husband_name: data.fatherMotherSpouseName,
-
-      courier: data.courierRequired ? 1 : 0,
-
-      appointment_type_id: Number(data.applicationType),
-      service_id: Number(data.serviceRequested),
-      center_id: 1,
-    },
-
-    fees: {
-      govt_fee: feeValues?.govtFees || 0,
-      icwf_fee: feeValues?.icwfFees || 0,
-      sgv_service_fee: feeValues?.serviceFees || 0,
-      grand_total: feeValues?.totalFees || 0,
-    },
-
-    payment: {
-      payment_mode_id: Number(data.paymentMode),
-    },
-
-    comment: data.comment || "",
-  };
+function getEmployeeIdFromStorage() {
+  try {
+    const val = localStorage.getItem('employee_id');
+    if (val == null) return null;
+    const n = parseInt(val, 10);
+    return Number.isNaN(n) ? null : n;
+  } catch {
+    return null;
+  }
 }
+
+function getCenterIdFromStorage() {
+  try {
+    const val = localStorage.getItem('center_id');
+    if (val == null) return null;
+    const n = parseInt(val, 10);
+    return Number.isNaN(n) ? null : n;
+  } catch {
+    return null;
+  }
+}
+
 // ===================== VALIDATION =====================
 const schema = z
   .object({
@@ -91,16 +86,19 @@ const schema = z
     surname: z.string().optional(),
     dob: z.string().nonempty('Date of Birth is required'),
     gender: z.string().nonempty('Gender is required'),
+
     mobileNumber: z
       .string()
       .nonempty('Mobile number is required')
       .min(8, 'Invalid mobile number'),
     email: z.string().nonempty('Email is required').email('Invalid email format'),
     passportNo: z.string().nonempty('Passport number is required').max(30),
-    fatherMotherSpouseName: z.string().nonempty('Father / husband name is required').max(80),
+    fatherMotherSpouseName: z.string().optional(),
+
     returnCourierAddress: z.string().optional(),
 
     courierRequired: z.boolean().optional(),
+
     residenceCountry: z.string().optional(),
     addressLine1: z.string().optional(),
     addressLine2: z.string().optional(),
@@ -110,7 +108,14 @@ const schema = z
     courierType: z.string().optional(),
 
     afs: z.array(z.string()).optional(),
+    photocopyCounts: z
+      .number()
+      .min(0, 'Invalid photocopy count')
+      .optional(),
+
     paymentMode: z.string().nonempty('Payment mode is required'),
+    cardType: z.string().optional(),
+    transactionId: z.string().optional(),
   })
   .superRefine((val, ctx) => {
     if (val.courierRequired) {
@@ -171,13 +176,45 @@ const schema = z
         });
       }
     }
+
+    if (val.paymentMode === '2') {
+      if (!val.cardType) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['cardType'],
+          message: 'Card type is required',
+        });
+      }
+
+      if (!val.transactionId?.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['transactionId'],
+          message: 'Transaction ID is required',
+        });
+      }
+    }
   });
 
 // ===================== COMPONENT =====================
-export function AddEditModal({ showModal, closeModal, onRefreshOCIApplications, onFeeValuesChange, serviceTypeId = 3, }) {
-  
-  // Start Dropdown
+export function AddEditModal({ showModal, closeModal, onRefreshOCIApplications, onFeeValuesChange, serviceTypeId = OCI_SERVICE_TYPE_ID, }) {
+
   const { appointmentTypeData, getData: fetchAppointmentTypes, } = useAppointmentTypeReducer((state) => state);
+  const { applicationModeData, getData: fetchApplicationModes, } = useApplicationModeReducer((state) => state);
+  const { countryList, getCountries } = useUserReducer();
+  const { courierTypeList, getData: fetchCourierTypes } = useCourierTypeReducer((state) => state);
+  const { getServiceById, selectedService } = useServiceReducer();
+
+  const { options: serviceRequestedOptions, loading: serviceLoading } = useServiceOptions(serviceTypeId);
+
+  const {
+    createOCIApplication,
+    updateOCIApplication,
+    isCreateOCIApplicationLoading,
+    isUpdateOCIApplicationLoading,
+  } = useOCIApplicationReducer((state) => state);
+
+  // ================= INIT LOAD =================
   useEffect(() => {
     fetchAppointmentTypes();
   }, [fetchAppointmentTypes]);
@@ -189,10 +226,7 @@ export function AddEditModal({ showModal, closeModal, onRefreshOCIApplications, 
       })),
     [appointmentTypeData]
   );
-  // End Dropdown
 
-  // Start Dropdown
-  const { applicationModeData, getData: fetchApplicationModes, } = useApplicationModeReducer((state) => state);
   useEffect(() => {
     fetchApplicationModes();
   }, [fetchApplicationModes]);
@@ -202,11 +236,7 @@ export function AddEditModal({ showModal, closeModal, onRefreshOCIApplications, 
       label: item.application_mode,
     }));
   }, [applicationModeData]);
-  // End Dropdown
 
-
-  // Start Country Dropdown
-  const { countryList, getCountries, isLoadingCountries } = useUserReducer((state) => state);
   useEffect(() => {
     getCountries();
   }, [getCountries]);
@@ -216,10 +246,7 @@ export function AddEditModal({ showModal, closeModal, onRefreshOCIApplications, 
       label: item.country_name,
     }));
   }, [countryList]);
-  // End Country Dropdown
 
-  // Start Country Dropdown
-  const { courierTypeList, getData: fetchCourierTypes } = useCourierTypeReducer((state) => state);
   useEffect(() => {
     fetchCourierTypes();
   }, [fetchCourierTypes]);
@@ -229,16 +256,9 @@ export function AddEditModal({ showModal, closeModal, onRefreshOCIApplications, 
       label: item.courier_type,
     }));
   }, [courierTypeList]);
-  // End Country Dropdown
 
-  const {
-    createOCIApplication,
-    updateOCIApplication,
-    isCreateOCIApplicationLoading,
-    isUpdateOCIApplicationLoading,
-  } = useOCIApplicationReducer((state) => state);
-
-  const { options: serviceRequestedOptions, loading: serviceLoading } = useServiceOptions(serviceTypeId);
+  // ================= FORM =================
+  
 
   const defaultValues = useMemo(
     () => ({
@@ -257,6 +277,7 @@ export function AddEditModal({ showModal, closeModal, onRefreshOCIApplications, 
       email: '',
       passportNo: '',
       fatherMotherSpouseName: '',
+
       returnCourierAddress: '',
 
       courierRequired: false,
@@ -269,7 +290,11 @@ export function AddEditModal({ showModal, closeModal, onRefreshOCIApplications, 
       courierType: '',
 
       afs: [],
+      photocopyCounts: 1,
+
       paymentMode: '',
+      cardType: '',
+      transactionId: '',
     }),
     []
   );
@@ -277,69 +302,61 @@ export function AddEditModal({ showModal, closeModal, onRefreshOCIApplications, 
   const {
     register,
     handleSubmit,
-    formState: { errors },
     setValue,
     reset,
     watch,
+    formState: { errors },
   } = useForm({
     resolver: zodResolver(schema),
     defaultValues,
     mode: 'onSubmit',
   });
 
+  const serviceRequested = watch('serviceRequested');
   const courierRequired = watch('courierRequired');
   const selectedAfs = watch('afs') || [];
-  const serviceRequested = watch('serviceRequested');
+  const paymentMode = watch('paymentMode');
 
-  function getServiceFees(serviceId) {
-    const feeMap = {
-      5: { serviceFees: 100, govtFees: 50, icwfFees: 20, onlinePaid: 10 },
-      6: { serviceFees: 200, govtFees: 80, icwfFees: 30, onlinePaid: 20 },
-      7: { serviceFees: 150, govtFees: 60, icwfFees: 25, onlinePaid: 15 },
-    };
+  // Card mode detection based on ID (2)
+    const isCardPayment = String(paymentMode) === String(CARD_PAYMENT_MODE_ID);
+  
+    // Clear card fields if switching away from Card
+    useEffect(() => {
+      if (!isCardPayment) {
+        setValue('cardType', '', { shouldValidate: true });
+        setValue('transactionId', '', { shouldValidate: true });
+      }
+    }, [isCardPayment, setValue]);
 
-    const data = feeMap[serviceId] || {
-      serviceFees: 0,
-      govtFees: 0,
-      icwfFees: 0,
-      onlinePaid: 0,
-    };
+  // Dynamic fee calculation (replace with your actual fee logic/API)
+    const feeValues = useMemo(() => {
+      const govtFees = 0;
+      const icwfFees = 0;
+      const serviceFeesByType = { Normal: 6, Tatkal: 10, Courier: 8 };
+      const selectedLabel = serviceRequestedOptions.find((o) => o.value === serviceRequested)?.label;
+      const serviceFees = selectedLabel ? serviceFeesByType[selectedLabel] ?? 6 : 0;
+      return {
+        govtFees,
+        icwfFees,
+        serviceFees,
+        totalFees: govtFees + icwfFees + serviceFees,
+        onlinePaid: '...',
+      };
+    }, [serviceRequested, serviceRequestedOptions]);
+  
+    // Notify parent of fee values when Service Requested is selected (for FeeCalculator outside modal)
+    useEffect(() => {
+      if (typeof onFeeValuesChange !== 'function') return;
+      if (serviceRequested) onFeeValuesChange(feeValues);
+      else onFeeValuesChange(null);
+    }, [serviceRequested, feeValues, onFeeValuesChange]);
 
-    return {
-      ...data,
-      totalFees:
-        data.serviceFees +
-        data.govtFees +
-        data.icwfFees +
-        data.onlinePaid,
-    };
-  }
-
-  const feeValues = useMemo(() => {
-  if (!serviceRequested) return null;
-  return getServiceFees(serviceRequested);
-}, [serviceRequested]);
-
-// const [feeValues, setFeeValues] = React.useState(null);
-
-// useEffect(() => {
-//   if (!serviceRequested) {
-//     setFeeValues(null);
-//     return;
-//   }
-
-//   const data = getServiceFees(serviceRequested); // static for now
-//   setFeeValues(data);
-// }, [serviceRequested]);
-
-useEffect(() => {
-  if (!onFeeValuesChange) return;
-
-  onFeeValuesChange(feeValues);
-}, [feeValues, onFeeValuesChange]);
+  // ================= EDIT PREFILL =================
 
   // Prefill form when editing
   useEffect(() => {
+    if (!showModal) return;
+
     if (showModal?.oci_application_id) {
       reset({
         appointmentPostalRefNo: showModal.appointment_reference_no || '',
@@ -360,55 +377,122 @@ useEffect(() => {
         fatherMotherSpouseName: showModal.father_husband_name || '',
 
         courierRequired: showModal.courier === "1",
-        paymentMode: '', // ⚠️ API not returning → handle separately
+        paymentMode: '',
       });
     } else {
       reset(defaultValues);
     }
-  }, [
-    showModal,
-    appointmentTypeOptions,
-    applicationByOptions,
-    serviceRequestedOptions
-  ]);
+  }, [showModal, reset]);
 
-  const toggleAfsItem = (value) => {
-    const current = new Set(selectedAfs);
-    if (current.has(value)) current.delete(value);
-    else current.add(value);
-    setValue('afs', Array.from(current), { shouldValidate: true });
-  };
-
-  const onToggleCourier = (e) => {
-    const checked = e.target.checked;
-    if (checked) {
-      setValue('courierRequired', true, { shouldValidate: true });
-      return;
-    }
-
-    setValue('courierRequired', false, { shouldValidate: true });
-    setValue('returnCourierAddress', '', { shouldValidate: true });
-  };
-
+  // ================= SUBMIT =================
   const onSubmit = (data) => {
-    // If no courier => clear courier fields
-    const payload = {
-      ...data,
-      ...(data.courierRequired ? {} : { returnCourierAddress: '' }),
+    const employeeId = getEmployeeIdFromStorage();
+    const centerId = getCenterIdFromStorage();
+
+    const ociApplication = {
+      center_id: centerId,
+      appointment_reference_no: data.appointmentPostalRefNo,
+      appointment_type_id: Number(data.applicationType),
+      application_mode_id: Number(data.applicationBy),
+
+      oci_file_number: data.ociFileNo,
+      service_id: Number(data.serviceRequested),
+
+      first_name: data.firstName,
+      surname: data.surname,
+      dob: data.dob,
+      gender: data.gender,
+
+      mobile_number: data.mobileNumber,
+      email: data.email,
+      passport_no: data.passportNo,
+      father_husband_name: data.fatherMotherSpouseName,
+
+      return_courier_address: data.returnCourierAddress,
+      courier: data.courierRequired ? 1 : 0,
+
+      status: 14,
+      created_by: employeeId,
     };
 
-    const apiPayload = buildOCIApplicationPayload(payload, feeValues);
+    // ✅ ONLY ADD courier fields when required
+    let courier_details = null;
+
+    if (data.courierRequired) {
+      courier_details = {
+        country_id: data.residenceCountry,
+        address_1	: data.addressLine1,
+        address_2	: data.addressLine2,
+        state: data.state,
+        city: data.city,
+        postal_code: data.postalCode,
+        courier_type_id	: Number(data.courierType),
+      };
+    }
+    const vas_services = (data.afs || []).map((id) => ({
+      vas_service_id: id,
+      quantity: id === '1' ? data.photocopyCounts || '' : '',
+    }));
+
+    const payload = {
+      oci_application: ociApplication,
+
+      fees: {
+        govt_fee: feeValues?.govtFees || 0,
+        icwf_fee: feeValues?.icwfFees || 0,
+        sgv_service_fee: feeValues?.serviceFees || 0,
+        grand_total: feeValues?.totalFees || 0,
+      },
+
+      ...(courier_details ? { courier_details } : {}),
+
+      payment: {
+        payment_mode_id: Number(data.paymentMode),
+        card_type_id: Number(data.cardType),
+        transaction_id: data.transactionId || "",
+      },
+      vas_services,
+    };
+
+
     if (showModal?.oci_application_id) {
-      updateOCIApplication(showModal.oci_application_id, apiPayload, () => {
+      updateOCIApplication(showModal.oci_application_id, payload, () => {
         onRefreshOCIApplications?.();
         closeModal?.();
       });
     } else {
-      createOCIApplication(apiPayload, () => {
+      createOCIApplication(payload, () => {
         onRefreshOCIApplications?.();
         closeModal?.();
       });
     }
+  };  
+
+  const onToggleCourier = (e) => {
+    const checked = e.target.checked;
+    setValue('courierRequired', checked, { shouldValidate: true });
+
+    if (!checked) {
+      setValue('returnCourierAddress', '');
+      setValue('residenceCountry', '');
+      setValue('addressLine1', '');
+      setValue('addressLine2', '');
+      setValue('state', '');
+      setValue('city', '');
+      setValue('postalCode', '');
+      setValue('courierType', '');
+    }
+  };
+
+  const toggleAfsItem = (value) => {
+    const current = new Set(selectedAfs);
+    if (current.has(value)) {
+      current.delete(value);
+      if (value === '1') setValue('photocopyCounts', '1', { shouldValidate: true });
+    } else {
+      current.add(value);
+    }
+    setValue('afs', Array.from(current), { shouldValidate: true });
   };
 
   const renderHeader = () => (
@@ -536,9 +620,7 @@ useEffect(() => {
         </div>
         <div className="col-md-6">
           <div className="form-group">
-            <label className="form-label">
-              Surname <span className="text-danger">*</span>
-            </label>
+            <label className="form-label">Surname </label>
             <input type="text" className="form-control" autoComplete="off" maxLength={50} {...register('surname')} />
             {errors.surname && <span className="error">{errors.surname.message}</span>}
           </div>
@@ -612,9 +694,7 @@ useEffect(() => {
         </div>
         <div className="col-md-6">
           <div className="form-group">
-            <label className="form-label">
-              Father/Mother/Spouse Name (For courier delivery) <span className="text-danger">*</span>
-            </label>
+            <label className="form-label">Father/Mother/Spouse Name (For courier delivery)</label>
             <input type="text" className="form-control" rows={3} autoComplete="off" maxLength={80} {...register('fatherMotherSpouseName')} />
             {errors.fatherMotherSpouseName && <span className="error">{errors.fatherMotherSpouseName.message}</span>}
           </div>
@@ -625,13 +705,12 @@ useEffect(() => {
         <div className="col-md-12">
           <div className="form-group">
             <label className="form-label">
-              Return Courier Address Filled By Applicant (For filling agent only)
+              Return Courier Address Filled By Applicant
             </label>
             <textarea
               className="form-control"
               rows={5}
               style={{ resize: 'vertical', minHeight: '120px' }}
-              disabled
               {...register('returnCourierAddress')}
             />
             {errors.returnCourierAddress && (
@@ -763,6 +842,24 @@ useEffect(() => {
               ))}
             </div>
 
+            {selectedAfs.includes('1') && (
+              <div className="mt-3">
+                <label className="form-label">Photocopy Counts</label>
+                <input
+                  type="number"
+                  className="form-control"
+                  min={1}
+                  {...register('photocopyCounts', {
+                    valueAsNumber: true,
+                    setValueAs: (v) => (v === '' ? 1 : Number(v)),
+                  })}
+                />
+                {errors.photocopyCounts && (
+                  <span className="error">{errors.photocopyCounts.message}</span>
+                )}
+              </div>
+            )}
+
             {errors.afs && <span className="error">{errors.afs.message}</span>}
           </div>
         </div>
@@ -787,6 +884,46 @@ useEffect(() => {
           </div>
         </div>
       </div>
+      {paymentMode === '2' && (
+        <>
+          <div className="row">
+            <div className="col-md-6">
+              <div className="form-group">
+                <label className="form-label">
+                  Card Type <span className="text-danger">*</span>
+                </label>
+                <select className="form-control" {...register('cardType')}>
+                  <option value="">Select</option>
+                  {cardTypeOptions.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+                {errors.cardType && (
+                  <span className="error">{errors.cardType.message}</span>
+                )}
+              </div>
+            </div>
+
+            <div className="col-md-6">
+              <div className="form-group">
+                <label className="form-label">
+                  Transaction ID (Auth Code) <span className="text-danger">*</span>
+                </label>
+                <input
+                  type="text"
+                  className="form-control"
+                  {...register('transactionId')}
+                />
+                {errors.transactionId && (
+                  <span className="error">{errors.transactionId.message}</span>
+                )}
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 

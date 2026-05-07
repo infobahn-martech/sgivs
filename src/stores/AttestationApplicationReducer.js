@@ -7,6 +7,9 @@ const useAttestationApplicationReducer = create((set) => ({
   isCreateAttestationApplicationLoading: false,
   isUpdateAttestationApplicationLoading: false,
   isDeleteAttestationApplicationLoading: false,
+
+  editORviewAttestationApplicationData: null, isLoadingEditOrViewAttestationApplication: false,
+
   errorMessage: '',
   successMessage: '',
   attestationApplicationsData: [],
@@ -103,8 +106,29 @@ const useAttestationApplicationReducer = create((set) => ({
     }
   },
 
+  getAttestationApplicationById: async (id) => {
+    try {
+      set({
+        editORviewAttestationApplicationData: null, // clear old data
+        isLoadingEditOrViewAttestationApplication: true,
+      });
 
+      const res = await attestationApplicationService.getAttestationApplicationById(id);
 
+      set({
+        editORviewAttestationApplicationData: res?.data?.data || null,
+        isLoadingEditOrViewAttestationApplication: false,
+      });
+
+      return res?.data?.data;
+
+    } catch (err) {
+      set({ isLoadingEditOrViewAttestationApplication: false });
+
+      const { error } = useAlertReducer.getState();
+      error(err?.response?.data?.message ?? err.message);
+    }
+  },
 }));
 
 export default useAttestationApplicationReducer;

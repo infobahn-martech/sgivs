@@ -35,6 +35,12 @@ const afsOptions = [
   { value: '4', label: 'SMS' },
 ];
 
+const cardTypeOptions = [
+  { value: 'Local Bank Debit Card', label: 'Local Bank Debit Card' },
+  { value: 'Local Bank Credit Card', label: 'Local Bank Credit Card' },
+  { value: 'International Bank Card', label: 'International Bank Card' },
+];
+
 // ===================== VALIDATION =====================
 const schema = z
   .object({
@@ -63,16 +69,16 @@ const schema = z
     email: z.string().nonempty('Email is required').email('Invalid email format'),
 
     nationality: z.string().nonempty('Nationality is required'),
+    fatherMotherSpouseName: z.string().nonempty('Father / husband name is required').max(80),
 
     passportNo: z.string().nonempty('Passport number is required').max(30),
     passportPlaceOfIssue: z.string().nonempty('Place of issue is required').max(100),
     passportDateOfIssue: z.string().nonempty('Date of issue is required'),
     passportExpiryDate: z.string().nonempty('Expiry date is required'),
 
-    fatherHusbandName: z.string().nonempty('Father / husband name is required').max(80),
+    returnCourierAddress: z.string().optional(),
 
     courierRequired: z.boolean().optional(),
-    returnCourierAddress: z.string().optional(),
 
     residenceCountry: z.string().optional(),
     addressLine1: z.string().optional(),
@@ -85,6 +91,8 @@ const schema = z
     afs: z.array(z.string()).optional(),
 
     paymentMode: z.string().nonempty('Payment mode is required'),
+    cardType: z.string().optional(),
+    transactionId: z.string().optional(),
   })
   .superRefine((val, ctx) => {
     if (val.courierRequired) {
@@ -142,6 +150,24 @@ const schema = z
           code: z.ZodIssueCode.custom,
           path: ['courierType'],
           message: 'Courier type is required',
+        });
+      }
+    }
+
+    if (val.paymentMode === '2') {
+      if (!val.cardType) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['cardType'],
+          message: 'Card type is required',
+        });
+      }
+
+      if (!val.transactionId?.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['transactionId'],
+          message: 'Transaction ID is required',
         });
       }
     }
@@ -226,20 +252,22 @@ export function AddEditModal({ showModal, closeModal, onRefreshAttestationApplic
       email: '',
 
       nationality: '',
+      fatherMotherSpouseName: '',
 
       passportNo: '',
       passportPlaceOfIssue:'',
       passportDateOfIssue:'',
       passportExpiryDate: '',
 
-      fatherHusbandName: '',
-
-      courierRequired: false,
       returnCourierAddress: '',
 
+      courierRequired: false,
+      
       afs: [],
 
       paymentMode: '',
+      cardType: '',
+      transactionId: '',
     }),
     []
   );
@@ -257,9 +285,10 @@ export function AddEditModal({ showModal, closeModal, onRefreshAttestationApplic
     mode: 'onSubmit',
   });
 
+  const serviceRequested = watch('serviceRequested');
   const courierRequired = watch('courierRequired');
   const selectedAfs = watch('afs') || [];
-  const serviceRequested = watch('serviceRequested');
+  const paymentMode = watch('paymentMode');
 
   // Prefill form when editing
   function getServiceFees(serviceId) {
@@ -310,6 +339,8 @@ export function AddEditModal({ showModal, closeModal, onRefreshAttestationApplic
 
   // Prefill form when editing
   useEffect(() => {
+    if (!showModal) return;
+
     if (showModal?.oci_application_id) {
       reset({
         appointmentPostalRefNo: showModal.appointment_reference_no || '',
@@ -335,12 +366,7 @@ export function AddEditModal({ showModal, closeModal, onRefreshAttestationApplic
     } else {
       reset(defaultValues);
     }
-  }, [
-    showModal,
-    appointmentTypeOptions,
-    applicationByOptions,
-    serviceRequestedOptions
-  ]);
+  }, [showModal,]);
 
   const toggleAfsItem = (value) => {
     const current = new Set(selectedAfs);
@@ -363,44 +389,52 @@ export function AddEditModal({ showModal, closeModal, onRefreshAttestationApplic
 
   const onSubmit = (data) => {
     const payload = {
+      center_id: 1,
+      appointment_reference_no:data.appointmentPostalRefNo,
+      appointment_type_id: Number(data.applicationType),
+      application_mode_id: Number(data.applicationBy),
+
+      service_id: Number(data.serviceRequested),
+
       first_name: data.firstName,
       surname: data.surname,
       dob: data.dob,
       gender: data.gender,
       mobile_number: data.mobileNumber,
       email: data.email,
+      nationality: data.nationality,
+      father_name: data.fatherMotherSpouseName,
 
       passport_no: data.passportNo,
       passport_place_of_issue: data.passportPlaceOfIssue,
       passport_date_of_issue: data.passportDateOfIssue,
       passport_date_of_expiry: data.passportExpiryDate,
 
-      service_id: Number(data.serviceRequested),
-
-      father_name: data.fatherHusbandName,
-      nationality: data.nationality,
-
+      return_courier_address: data.returnCourierAddress,
+      
       courier_required: data.courierRequired ? 1 : 0,
-      return_courier_address: data.courierRequired
-        ? `${data.addressLine1}, ${data.addressLine2 || ''}, ${data.city}, ${data.state}, ${data.postalCode}`
-        : "",
+      // courierRequired: data.courierRequired
+      //   ? `${data.addressLine1}, ${data.addressLine2 || ''}, ${data.city}, ${data.state}, ${data.postalCode}`
+      //   : "",
 
       // Fees (you already calculated)
       govt_fee: feeValues?.govtFees || 0,
       icwf_fee: feeValues?.icwfFees || 0,
       sgv_service_fee: feeValues?.serviceFees || 0,
-      urgent_fee: 0,
+      //urgent_fee: 0,
       vat_percent: 5,
       vat_amount: feeValues?.onlinePaid || 0,
       grand_total: feeValues?.totalFees || 0,
-
-      payment_mode_id: Number(data.paymentMode),
 
       // AFS mapping
       vas: (data.afs || []).reduce((acc, item) => {
         acc[item] = 1;
         return acc;
       }, {}),
+
+      payment_mode_id: Number(data.paymentMode),
+      card_type: data.cardType || '',
+      transaction_id: data.transactionId || '',
     };
 
     if (showModal?.attestation_application_id) {
@@ -606,11 +640,8 @@ export function AddEditModal({ showModal, closeModal, onRefreshAttestationApplic
 
         <div className="col-md-6">
           <div className="form-group">
-            <label className="form-label">
-              Father/Mother/Spouse Name <span className="text-danger">*</span>
-            </label>
-            <input type="text" className="form-control" autoComplete="off" maxLength={80} {...register('fatherHusbandName')} />
-            {errors.fatherHusbandName && <span className="error">{errors.fatherHusbandName.message}</span>}
+            <label className="form-label">Father/Mother/Spouse Name </label>
+            <input type="text" className="form-control" autoComplete="off" maxLength={80} {...register('fatherMotherSpouseName')} />
           </div>
         </div>
       </div>
@@ -685,6 +716,26 @@ export function AddEditModal({ showModal, closeModal, onRefreshAttestationApplic
         </div>
       </div>
 
+      <div className="row">
+        <div className="col-md-12">
+          <div className="form-group">
+            <label className="form-label">
+              Return Courier Address Filled By Applicant
+            </label>
+            <textarea
+              className="form-control"
+              rows={5}
+              style={{ resize: 'vertical', minHeight: '120px' }}
+              disabled
+              {...register('returnCourierAddress')}
+            />
+            {errors.returnCourierAddress && (
+              <span className="error">{errors.returnCourierAddress.message}</span>
+            )}
+          </div>
+        </div>
+      </div>
+
       <hr />
 
       {/* ========== Courier Section ========== */}
@@ -701,7 +752,6 @@ export function AddEditModal({ showModal, closeModal, onRefreshAttestationApplic
 
       {courierRequired && (
         <>
-          {/* ROW 1 */}
           <div className="row">
             <div className="col-md-4">
               <div className="form-group">
@@ -735,7 +785,6 @@ export function AddEditModal({ showModal, closeModal, onRefreshAttestationApplic
             </div>
           </div>
 
-          {/* ROW 2 */}
           <div className="row">
             <div className="col-md-4">
               <div className="form-group">
@@ -760,7 +809,6 @@ export function AddEditModal({ showModal, closeModal, onRefreshAttestationApplic
             </div>
           </div>
 
-          {/* ROW 3 */}
           <div className="row">
             <div className="col-md-4">
               <div className="form-group">
@@ -826,6 +874,47 @@ export function AddEditModal({ showModal, closeModal, onRefreshAttestationApplic
           </div>
         </div>
       </div>
+
+      {paymentMode === '2' && (
+        <>
+          <div className="row">
+            <div className="col-md-6">
+              <div className="form-group">
+                <label className="form-label">
+                  Card Type <span className="text-danger">*</span>
+                </label>
+                <select className="form-control" {...register('cardType')}>
+                  <option value="">Select</option>
+                  {cardTypeOptions.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+                {errors.cardType && (
+                  <span className="error">{errors.cardType.message}</span>
+                )}
+              </div>
+            </div>
+
+            <div className="col-md-6">
+              <div className="form-group">
+                <label className="form-label">
+                  Transaction ID (Auth Code) <span className="text-danger">*</span>
+                </label>
+                <input
+                  type="text"
+                  className="form-control"
+                  {...register('transactionId')}
+                />
+                {errors.transactionId && (
+                  <span className="error">{errors.transactionId.message}</span>
+                )}
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 

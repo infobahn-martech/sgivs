@@ -3,29 +3,28 @@ import useAlertReducer from './AlertReducer';
 import ociOTMService from '../services/ociOTMService';
 
 const useOCIOTMReducer = create((set) => ({
-    isLoading: false,
     isLoadingGet: false,
     errorMessage: '',
     successMessage: '',
     ociOTMData: null,
 
-    getData: async (params) => {
+    getData: async (payload) => {
         try {
             set({ isLoadingGet: true });
-            const { data } = await ociOTMService.getData(params);
-            const datas = data;
+            const response = await ociOTMService.getData(payload);
+            const list = response?.data?.data || [];
             set({
-                ociOTMData: datas?.data,
-                // successMessage: data?.response?.data?.message ?? data?.message,
-                isLoadingGet: false,
-            });
+            ociOTMData: {
+                data: list,
+                total: list.length,
+            },
+            isLoadingGet: false,
+        });
         } catch (err) {
             const { error } = useAlertReducer.getState();
-            set({
-                errorMessage: err?.response?.data?.message ?? err?.message,
-                isLoadingGet: false,
-            });
-            error(err?.response?.data?.message ?? err.message);
+            const msg =err?.response?.data?.message || err?.message || 'Something went wrong';
+            set({ errorMessage: msg, isLoadingGet: false, });
+            error(msg);
         }
     },
 }));

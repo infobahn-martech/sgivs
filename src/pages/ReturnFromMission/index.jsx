@@ -15,8 +15,6 @@ import { debounce } from 'lodash';
 import CustomActionModal from '../../components/common/CustomActionModal';
 
 const ReturnFromMission = () => {
-  // ✅ Toggle this (VERY useful for large admin projects)
-  const USE_MOCK = true;
 
   const { getData, returnFromMissionData, isLoadingGet, deleteData, isLoadingDelete } =
     useReturnFromMissionReducer((state) => state);
@@ -36,104 +34,14 @@ const ReturnFromMission = () => {
 
   const [params, setParams] = useState(initialParams);
 
-  // ✅ Dummy Data (UPDATED as per required fields)
-  const mockReturnFromMissionData = {
-    total: 6,
-    data: [
-      {
-        id: 1,
-        centre: 'Dubai Center',
-        refNo: 'REF-30001',
-        returnFromMissionDate: '2025-01-10T09:30:00Z',
-        by: 'Operator',
-        reason: 'Returned by mission',
-        applicantName: 'Akhil Thomas',
-        applicationType: 'New',
-        serviceName: 'Courier',
-        currentStatus: 'Returned',
-        createdAt: '2025-01-10T09:30:00Z',
-      },
-      {
-        id: 2,
-        centre: 'Abu Dhabi Center',
-        refNo: 'REF-30002',
-        returnFromMissionDate: '2025-02-14T12:15:00Z',
-        by: 'Supervisor',
-        reason: 'Incorrect document',
-        applicantName: 'Fathima Ali',
-        applicationType: 'Renewal',
-        serviceName: 'Typing',
-        currentStatus: 'Pending Review',
-        createdAt: '2025-02-14T12:15:00Z',
-      },
-      {
-        id: 3,
-        centre: 'Sharjah Center',
-        refNo: 'REF-30003',
-        returnFromMissionDate: '2025-03-05T08:45:00Z',
-        by: 'Operator',
-        reason: 'Mission rejected',
-        applicantName: 'Sajith Kumar',
-        applicationType: 'Urgent',
-        serviceName: 'SMS',
-        currentStatus: 'Rejected',
-        createdAt: '2025-03-05T08:45:00Z',
-      },
-      {
-        id: 4,
-        centre: 'Ajman Center',
-        refNo: 'REF-30004',
-        returnFromMissionDate: '2025-03-20T10:00:00Z',
-        by: 'Operator',
-        reason: 'Returned for correction',
-        applicantName: 'Noor Hassan',
-        applicationType: 'New',
-        serviceName: 'Photograph',
-        currentStatus: 'Returned',
-        createdAt: '2025-03-20T10:00:00Z',
-      },
-      {
-        id: 5,
-        centre: 'Dubai Center',
-        refNo: 'REF-30005',
-        returnFromMissionDate: '2025-04-02T11:20:00Z',
-        by: 'Supervisor',
-        reason: 'Missing signature',
-        applicantName: 'Vishnu Menon',
-        applicationType: 'Renewal',
-        serviceName: 'Photocopy',
-        currentStatus: 'Pending',
-        createdAt: '2025-04-02T11:20:00Z',
-      },
-      {
-        id: 6,
-        centre: 'Abu Dhabi Center',
-        refNo: 'REF-30006',
-        returnFromMissionDate: '2025-04-10T15:10:00Z',
-        by: 'Operator',
-        reason: 'Returned by mission',
-        applicantName: 'Mary Joseph',
-        applicationType: 'Urgent',
-        serviceName: 'Form Filling',
-        currentStatus: 'Returned',
-        createdAt: '2025-04-10T15:10:00Z',
-      },
-    ],
-  };
-
   const onRefreshReturnFromMission = () => {
-    if (!USE_MOCK) {
-      getData(params);
-    }
+    getData(params);
     setDeleteModalOpen(false);
   };
 
   // ✅ Call API only if not mock
   useEffect(() => {
-    if (!USE_MOCK) {
-      getData(params);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    getData(params);
   }, [params]);
 
   const handleSortChange = (selector) => {
@@ -144,53 +52,35 @@ const ReturnFromMission = () => {
     }));
   };
 
-  const renderAction = (row) => {
-    return (
-      <>
-        <Tooltip id="edit" place="bottom" content="Edit" style={{ backgroundColor: '#051a53' }} />
-        <Tooltip id="delete" place="bottom" content="Delete" style={{ backgroundColor: '#051a53' }} />
-
-        <img src={editIcon} alt="edit" data-tooltip-id="edit" />
-
-        <img
-          src={deleteIcon}
-          alt="delete"
-          data-tooltip-id="delete"
-          onClick={() => setDeleteModalOpen(row)}
-        />
-      </>
-    );
-  };
-
   const columns = [
     {
       name: 'Centre',
       selector: 'centre',
     },
     {
-      name: 'Ref#',
-      selector: 'refNo',
+      name: 'Reference No',
+      selector: 'reference_no',
     },
     {
       name: 'Return From Mission Date',
-      selector: 'returnFromMissionDate',
-      cell: (row) => <span>{row?.returnFromMissionDate ? formatDate(row?.returnFromMissionDate) : '-'}</span>,
+      selector: 'returned_at',
+      cell: (row) => <span>{row?.returned_at ? formatDate(row?.returned_at) : '-'}</span>,
     },
     {
-      name: 'By',
-      selector: 'by',
+      name: 'Rerurn By',
+      selector: 'returned_by',
     },
     {
       name: 'Reason',
-      selector: 'reason',
+      selector: 'return_reason',
     },
     {
       name: 'Applicant Name',
-      selector: 'applicantName',
+      selector: 'applicant_name',
     },
     {
       name: 'Application Type',
-      selector: 'applicationType',
+      selector: 'application_type',
     },
     {
       name: 'Service Name',
@@ -198,22 +88,8 @@ const ReturnFromMission = () => {
     },
     {
       name: 'Current Status',
-      selector: 'currentStatus',
+      selector: 'status_name',
     },
-    // ✅ If you want Action column later, uncomment
-    // {
-    //   name: 'Action',
-    //   contentClass: 'action-wrap',
-    //   disableViewClick: true,
-    //   thclass: 'actions-edit employee-actn-edit',
-    //   cell: (row) => (
-    //     <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-    //       <span style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-    //         {renderAction(row)}
-    //       </span>
-    //     </div>
-    //   ),
-    // },
   ];
 
   // ✅ Stable debounce
@@ -230,11 +106,6 @@ const ReturnFromMission = () => {
   );
 
   const handleDelete = () => {
-    if (USE_MOCK) {
-      setDeleteModalOpen(false);
-      return;
-    }
-
     if (deleteModalOpen?.id) {
       deleteData(deleteModalOpen?.id, () => {
         onRefreshReturnFromMission();
@@ -243,12 +114,17 @@ const ReturnFromMission = () => {
   };
 
   // ✅ Decide dataset
-  const tableData = USE_MOCK ? mockReturnFromMissionData : returnFromMissionData;
-  const loading = USE_MOCK ? false : isLoadingGet;
+  const tableData = returnFromMissionData;
+  const loading = isLoadingGet;
 
   return (
     <>
       <CommonHeader
+        addButton={{
+          name: 'Add Item',
+          type: 'button',
+          action: () => setModal(true),
+        }}
         hideFilter
         onSearch={debouncedSearch}
         submitFilter={(filters) => {
@@ -282,7 +158,7 @@ const ReturnFromMission = () => {
       {deleteModalOpen && (
         <CustomActionModal
           isDelete
-          isLoading={USE_MOCK ? false : isLoadingDelete}
+          isLoading={isLoadingDelete}
           showModal={deleteModalOpen}
           closeModal={() => setDeleteModalOpen(false)}
           message={`Are you sure you want to delete this ${deleteModalOpen?.refNo || deleteModalOpen?.applicantName || ''

@@ -2,7 +2,6 @@ import { create } from 'zustand';
 import ociApplicationService from '../services/OCIApplicationService';
 import useAlertReducer from './AlertReducer';
 
-
 const useOCIApplicationReducer = create((set) => ({
     isCreateOCIApplicationLoading: false,
     isUpdateOCIApplicationLoading: false,
@@ -16,10 +15,10 @@ const useOCIApplicationReducer = create((set) => ({
     isLoadingGet: false,
     pagination: {},
 
-    createOCIApplication: async (data, cb) => {
+    createOCIApplication: async (payload, cb) => {
         try {
             set({ isCreateOCIApplicationLoading: true });
-            const res = await ociApplicationService.createOCIApplication(data);
+            const res = await ociApplicationService.createOCIApplication(payload);
             set({ isCreateOCIApplicationLoading: false });
             const { success } = useAlertReducer.getState();
             success(res?.data?.message || 'Created successfully');
@@ -34,25 +33,25 @@ const useOCIApplicationReducer = create((set) => ({
     getOCIApplications: async (params) => {
         try {
             set({ isLoadingGet: true });
-
-            const response = await ociApplicationService.getOCIApplications(params);
-            const resData = response.data;
+            const { data } = await ociApplicationService.getOCIApplications(params);
+            const ociApplicationsData = data?.data;
             set({
-                ociApplicationsData: {
-                    data: resData?.data || [],
-                    total: resData?.recordsTotal || 0,
-                },
+                ociApplicationsData,
                 isLoadingGet: false,
+                pagination: {
+                    total_count: data?.pagination?.total_count,
+                    page: data?.pagination?.page_no,
+                    limit: data?.pagination?.limit,
+                    total_pages: data?.pagination?.total_pages,
+                }
             });
         } catch (err) {
             const { error } = useAlertReducer.getState();
-
             set({
                 isLoadingGet: false,
                 ociApplicationsData: [],
                 pagination: {},
             });
-
             error(err?.response?.data?.message ?? err.message);
         }
     },

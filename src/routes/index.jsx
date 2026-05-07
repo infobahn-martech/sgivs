@@ -64,7 +64,7 @@ import OCICounterDelivery from '../pages/OCICounterDelivery';
 import OCIOTC from '../pages/OCIOTC';
 import OCITracking from '../pages/OCITracking';
 import AttestationApplications from '../pages/AttestationApplications';
-import AttestationDeleteApplication from '../pages/AttestationDeleteApplication';
+import AttestationDeletedApplication from '../pages/AttestationDeletedApplication';
 import AttestationInScan from '../pages/AttestationInScan';
 import AttestationOTM from '../pages/AttestationOTM';
 import AttestationIFM from '../pages/AttestationIFM';
@@ -177,7 +177,7 @@ const router = createHashRouter([
               { path: '/oci-outscan-to-courier', element: <OCIOTC /> },
               { path: '/oci-tracking', element: <OCITracking /> },
               { path: '/attestation-applications', element: <AttestationApplications /> },
-              { path: '/attestation-delete-application', element: <AttestationDeleteApplication /> },
+              { path: '/attestation-deleted-application', element: <AttestationDeletedApplication /> },
               { path: '/attestation-in-scan', element: <AttestationInScan /> },
               { path: '/attestation-outscan-to-mission', element: <AttestationOTM /> },
               { path: '/attestation-inscan-from-mission', element: <AttestationIFM /> },

@@ -398,7 +398,7 @@ export default function EmployeeAddEditModal({ showModal, closeModal, onRefreshE
                             placeholder={isLoadingCountries ? 'Loading countries...' : 'Select Country'}
                             isDisabled={isLoadingCountries}
                             showIndicator={false}
-                            className="form-select form-control"
+                            className="form-control"
                         />
                         {errors?.country_id?.message && <span className="error">{errors?.country_id?.message}</span>}
                     </div>
@@ -426,7 +426,7 @@ export default function EmployeeAddEditModal({ showModal, closeModal, onRefreshE
                             placeholder={isLoadingMissions ? 'Loading mission...' : 'Select Mission'}
                             isDisabled={isLoadingMissions}
                             showIndicator={false}
-                            className="form-select form-control"
+                            className="form-control"
                         />
                         {errors?.mission_id?.message && <span className="error">{errors?.mission_id?.message}</span>}
                     </div>
@@ -448,7 +448,7 @@ export default function EmployeeAddEditModal({ showModal, closeModal, onRefreshE
                             placeholder={isLoadingCenters ? 'Loading centers...' : 'Select Center'}
                             isDisabled={isLoadingCenters}
                             showIndicator={false}
-                            className="form-select form-control"
+                            className="form-control"
                         />
                         {errors?.center_id?.message && <span className="error">{errors?.center_id?.message}</span>}
                     </div>

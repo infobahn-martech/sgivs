@@ -1,7 +1,7 @@
 import Gateway from '../config/gateway';
 
 
-const getData = (params) => Gateway.get('/visa-vas-applications', { params });
+const getData = (params) => Gateway.post('finance/visa_vas_report', params );
 
 export default {
     getData,

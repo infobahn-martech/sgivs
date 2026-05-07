@@ -13,6 +13,8 @@ const useServiceReducer = create((set) => ({
   serviceData: null,
   serviceTypes: [],
 
+  serviceMap: {},
+
   postData: async (payload, cb) => {
     try {
       set({ isLoading: true });
@@ -115,6 +117,30 @@ const useServiceReducer = create((set) => ({
         errorMessage: err?.response?.data?.message ?? err?.message,
         isLoadingDelete: false,
       });
+      error(err?.response?.data?.message ?? err.message);
+    }
+  },
+
+  getServiceById: async (service_id, cb) => {
+    try {
+      set({ isLoadingGet: true });
+
+      const { data } = await serviceService.getServiceById({ service_id });
+
+      set({
+        selectedService: data?.data, // store single service
+        isLoadingGet: false,
+      });
+
+      cb?.(data?.data);
+    } catch (err) {
+      const { error } = useAlertReducer.getState();
+
+      set({
+        errorMessage: err?.response?.data?.message ?? err?.message,
+        isLoadingGet: false,
+      });
+
       error(err?.response?.data?.message ?? err.message);
     }
   },

@@ -11,9 +11,12 @@ const patchData = (payload) => Gateway.put('users/update_center', payload);
 
 const deleteData = (id) => Gateway.delete(`/center/${id}`);
 
+const getCentersByMissionId = (mission_id) => Gateway.post(`users/centers-by-mission`,{mission_id});
+
 export default {
   postData,
   patchData,
   getData,
   deleteData,
+  getCentersByMissionId,
 };

@@ -6,6 +6,7 @@ const useOCIInScanReducer = create((set) => ({
     isLoadingGet: false,
     errorMessage: '',
     ociInScanData: null,
+    isLoadingPost: false,
 
     getData: async (payload) => {
         try {
@@ -17,6 +18,26 @@ const useOCIInScanReducer = create((set) => ({
             const { error } = useAlertReducer.getState();
             const msg =err?.response?.data?.message || err?.message || 'Something went wrong';
             set({ errorMessage: msg, isLoadingGet: false, });
+            error(msg);
+        }
+    },
+
+    bulkInscan: async (payload, callback) => {
+        try {
+            set({ isLoadingPost: true });
+            const response = await ociInScanService.bulkInscan(payload);
+            const data = response?.data;
+            const { success } = useAlertReducer.getState();
+            success(data?.message || 'Inscan completed');
+            set({ isLoadingPost: false });
+            if (callback) callback(data);
+        } catch (err) {
+            const { error } = useAlertReducer.getState();
+            const msg =
+                err?.response?.data?.message ||
+                err?.message ||
+                'Something went wrong';
+            set({ errorMessage: msg, isLoadingPost: false });
             error(msg);
         }
     },

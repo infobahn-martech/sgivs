@@ -1,7 +1,7 @@
 import Gateway from '../config/gateway';
 
-const createOCIApplication = (data) => Gateway.post('oci/add', data);
-const getOCIApplications = (params) => Gateway.get('oci/list', { params });
+const createOCIApplication = (payload) => Gateway.post('oci/add', payload);
+const getOCIApplications = (params) => Gateway.post('oci/list',  params );
 const getOCIApplicationById  = (id) => Gateway.post('oci/view', { oci_application_id: id });
 const updateOCIApplication = (id, data) => Gateway.patch(`oci-application/${id}`, data);
 const deleteOCIApplication = (data) => Gateway.post(`oci/delete`, data);

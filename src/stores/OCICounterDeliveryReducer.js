@@ -3,26 +3,22 @@ import useAlertReducer from './AlertReducer';
 import ociCounterDeliveryService from '../services/OCICounterDeliveryService';
 
 const useOCICounterDeliveryReducer = create((set) => ({
+
     isLoadingGet: false,
+    errorMessage: '',
     ociCounterDeliveryData: null,
 
-    getData: async (params) => {
+    getData: async (payload) => {
         try {
             set({ isLoadingGet: true });
-            const { data } = await ociCounterDeliveryService.getData(params);
-            const datas = data;
-            set({
-                ociCounterDeliveryData: datas?.data,
-                // successMessage: data?.response?.data?.message ?? data?.message,
-                isLoadingGet: false,
-            });
+            const response = await ociCounterDeliveryService.getData(payload);
+            const data = response?.data;
+            set({ ociCounterDeliveryData: data?.data ?? [], isLoadingGet: false, });
         } catch (err) {
             const { error } = useAlertReducer.getState();
-            set({
-                errorMessage: err?.response?.data?.message ?? err?.message,
-                isLoadingGet: false,
-            });
-            error(err?.response?.data?.message ?? err.message);
+            const msg = err?.response?.data?.message || err?.message || 'Something went wrong';
+            set({ errorMessage: msg, isLoadingGet: false, });
+            error(msg);
         }
     },
 }));

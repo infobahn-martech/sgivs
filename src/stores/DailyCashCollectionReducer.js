@@ -10,10 +10,13 @@ const useDailyCashCollectionReducer = create((set) => ({
         try {
             set({ isLoadingGet: true });
             const { data } = await dailyCashCollectionService.getData(params);
-            const datas = data;
             set({
-                dailyCashCollectionData: datas?.data,
-                // successMessage: data?.response?.data?.message ?? data?.message,
+                dailyCashCollectionData: {
+                    records: data?.data?.records ?? [],
+                    total_count: data?.data?.total_count ?? 0,
+                    limit: data?.data?.limit ?? 10,
+                    offset: data?.data?.offset ?? 0,
+                },
                 isLoadingGet: false,
             });
         } catch (err) {

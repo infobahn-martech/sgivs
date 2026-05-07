@@ -16,7 +16,7 @@ import CustomActionModal from '../../components/common/CustomActionModal';
 
 const VisaVasApplications = () => {
   // ✅ Toggle this (VERY useful for large admin projects)
-  const USE_MOCK = true;
+  const USE_MOCK = false;
 
   const { getData, visaVasApplicationsData, isLoadingGet, deleteData, isLoadingDelete } =
     useVisaVasApplicationsReducer((state) => state);
@@ -24,14 +24,24 @@ const VisaVasApplications = () => {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
 
   const initialParams = {
-    search: '',
+    // search: '',
+    // page: 1,
+    // limit: 10,
+    // fromDate: null,
+    // toDate: null,
+    // sortBy: 'createdAt',
+    // sortOrder: 'DESC',
+    // isExcelExport: 'false',
+     country_id: '',
+    mission_id: '',
+    center_id: '',
+    start_date: "",
+    end_date: "",
+    search: "",
     page: 1,
     limit: 10,
-    fromDate: null,
-    toDate: null,
-    sortBy: 'createdAt',
-    sortOrder: 'DESC',
-    isExcelExport: 'false',
+    sort_by: "va.created_at",
+    sort_order: "DESC"
   };
 
   const [params, setParams] = useState(initialParams);

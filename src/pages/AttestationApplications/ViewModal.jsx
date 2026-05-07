@@ -1,47 +1,59 @@
+import React, { useEffect } from 'react';
 import moment from 'moment';
 import CustomModal from '../../components/common/CustomModal';
+import useAttestationApplicationReducer from '../../stores/AttestationApplicationReducer';
 
 const emptyVal = (v) => (v != null && v !== '' ? String(v) : '—');
 
 export function ViewModal({ showModal, closeModal }) {
-    const row = showModal || {};
 
-    // Support both API/mock shape and form shape
-    const referenceNo = emptyVal(row.referenceNo);
-    const appliedOn = row.createdAt
-        ? moment(row.createdAt).format('YYYY-MM-DD HH:mm:ss')
+    const {
+        getAttestationApplicationById,
+        editORviewAttestationApplicationData,
+        isLoadingEditOrViewAttestationApplication
+    } = useAttestationApplicationReducer();
+
+    useEffect(() => {
+        if (showModal.attestation_application_id) {
+            getAttestationApplicationById(showModal.attestation_application_id);
+        }
+    }, [showModal]);
+
+    const application = editORviewAttestationApplicationData?.application || {};
+    const referenceNo = emptyVal(application.appointment_reference_no);
+    const appliedOn = application.created_at
+        ? moment(application.created_at).format('YYYY-MM-DD HH:mm:ss')
         : '—';
-    const firstName = emptyVal(row.firstName ?? (row.name ? row.name.split(' ')[0] : ''));
-    const lastName = emptyVal(row.lastName ?? (row.name ? row.name.split(' ').slice(1).join(' ') : ''));
-    const dob = emptyVal(row.dob);
-    const passportNumber = emptyVal(row.oldPassportNo ?? row.ppNo);
-    const email = emptyVal(row.email);
-    const contact = emptyVal(
-        row.mobileNumber
-            ? [row.mobileCode, row.mobileNumber].filter(Boolean).join(' ')
-            : row.contact
-    );
-    const passportType = emptyVal(
-        row.passportType ?? [row.applicationType, row.serviceName].filter(Boolean).join(' ')
-    );
 
-    const homeAddressLine1 = emptyVal(row.addressLine1);
-    const homeAddressLine2 = emptyVal(row.addressLine2);
-    const state = emptyVal(row.state);
-    const city = emptyVal(row.city);
-    const country = emptyVal(row.residenceCountry);
-    const postalCode = emptyVal(row.postalCode);
+    const firstName = emptyVal(application.first_name);
+    const lastName = emptyVal(application.surname);
+    const dob = emptyVal(application.dob);
+    const passportNumber = emptyVal(application.passport_no);
+    const email = '—'; // not in API
+    const contact = '—'; // not in API
+    const passportType = emptyVal(application.service_name);
 
-    const smsTimestamp = row.smsTimestamp ?? row.createdAt;
+    const homeAddressLine1 = '—';
+    const homeAddressLine2 = '—';
+    const state = '—';
+    const city = '—';
+    const country = emptyVal(application.nationality);
+    const postalCode = '—';
+
+    const smsTimestamp = application.created_at;
+
     const smsMessage =
-        row.smsMessage ??
-        (referenceNo !== '—' && row.arn
-            ? `Your passport application (Ref #: ${row.referenceNo}) / (ARN #: ${row.arn}) is received at SGIVS ICAC, Salalah on ${row.createdAt ? moment(row.createdAt).format('DD-MM-YYYY') : '—'}`
-            : '—');
+        referenceNo !== '—'
+            ? `Your application (Ref #: ${referenceNo}) is received at ${application.center_name} on ${application.created_at
+                ? moment(application.created_at).format('DD-MM-YYYY')
+                : '—'
+            }`
+            : '—';
+    
 
     const renderHeader = () => (
         <>
-            <h4 className="modal-title">View Passport Application</h4>
+            <h4 className="modal-title">View Attestation Application</h4>
             <button
                 type="button"
                 className="btn-close"

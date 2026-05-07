@@ -4,97 +4,55 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 
 import CustomModal from '../../components/common/CustomModal';
+import useServiceOptions from '../../hooks/useServiceOptions';
 
 // ✅ Schema (numbers from inputs come as string -> use preprocess)
 const changeServicesSchema = z
     .object({
+        attestationServiceId: z.string().nonempty('Attestation Service is required'),
         referenceNo: z.string().nonempty('Reference No is required'),
         applicantName: z.string().nonempty('Applicant Name is required'),
 
-        visaServiceId: z.string().nonempty('Visa Service is required'),
-        visaDuration: z.string().nonempty('Visa Duration is required'),
-        visaEntry: z.string().nonempty('Visa Entry is required'),
-        nationality: z.string().nonempty('Nationality is required'),
-
-        govtFee: z.preprocess(
-            (v) => (v === '' || v === null || v === undefined ? undefined : Number(v)),
-            z
-                .number({ invalid_type_error: 'Govt Fee is required' })
-                .min(0, 'Govt Fee must be 0 or more')
-        ),
-
-        icwfFee: z.preprocess(
-            (v) => (v === '' || v === null || v === undefined ? undefined : Number(v)),
-            z
-                .number({ invalid_type_error: 'ICWF Fee is required' })
-                .min(0, 'ICWF Fee must be 0 or more')
-        ),
-
-        sgivsServiceFee: z.preprocess(
-            (v) => (v === '' || v === null || v === undefined ? undefined : Number(v)),
-            z
-                .number({ invalid_type_error: 'SGIVS Service Fee is required' })
-                .min(0, 'SGIVS Service Fee must be 0 or more')
-        ),
-
-        urgentFee: z.boolean().optional(),
+        govtFee: z.string().optional(),
+        icwfFee: z.string().optional(),
+        sgivsServiceFee: z.string().optional(),
 
         cancelApplication: z.boolean().optional(),
+        govtFeeCancel: z.boolean().optional(),
+        icwfFeeCancel: z.boolean().optional(),
         cancelReason: z.string().optional(),
         remark: z.string().optional(),
     })
     .superRefine((data, ctx) => {
-        // ✅ If cancel is checked, reason is required
+        // If cancel is checked, reason is required
         if (data.cancelApplication) {
-            if (!data.cancelReason || !data.cancelReason.trim()) {
+
+            if (!data.govtFeeCancel && !data.icwfFeeCancel) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    path: ['govtFeeCancel'],
+                    message: 'Select at least one fee to cancel',
+                });
+            }
+
+            if (!data.cancelReason?.trim()) {
                 ctx.addIssue({
                     code: z.ZodIssueCode.custom,
                     path: ['cancelReason'],
-                    message: 'Cancel reason is required',
+                    message: 'Cancellation reason is required',
                 });
             }
         }
     });
 
-export default function ChangeServicesModal({
-    showModal,
-    closeModal,
-    onRefreshPassportApplications,
-}) {
-    // ✅ Replace these with API data if needed
-    const visaServiceOptions = [
-        { value: 'normal', label: 'Normal' },
-        { value: 'premium', label: 'Premium' },
-        { value: 'express', label: 'Express' },
-    ];
+export default function ChangeServicesModal({ showModal, closeModal, onRefreshPassportApplications, }) {
 
-    const visaDurationOptions = [
-        { value: '14_days', label: '14 Days' },
-        { value: '30_days', label: '30 Days' },
-        { value: '60_days', label: '60 Days' },
-        { value: '90_days', label: '90 Days' },
-    ];
-
-    const visaEntryOptions = [
-        { value: 'single', label: 'Single Entry' },
-        { value: 'multiple', label: 'Multiple Entry' },
-    ];
-
-    const nationalityOptions = [
-        { value: 'india', label: 'India' },
-        { value: 'uae', label: 'UAE' },
-        { value: 'pakistan', label: 'Pakistan' },
-        { value: 'bangladesh', label: 'Bangladesh' },
-        { value: 'sri_lanka', label: 'Sri Lanka' },
-        { value: 'nepal', label: 'Nepal' },
-        { value: 'other', label: 'Other' },
-    ];
+    const serviceTypeId = 4;
+    const { options: attestationServiceOptions, loading: serviceLoading } = useServiceOptions(serviceTypeId);
 
     const cancelReasonOptions = [
-        { value: 'wrong_details', label: 'Entered wrong details' },
-        { value: 'duplicate', label: 'Duplicate application' },
-        { value: 'not_required', label: 'Not required now' },
-        { value: 'other', label: 'Other' },
+        { value: 'Applicant wishes to withdraw', label: 'Applicant wishes to withdraw' },
+        { value: 'Any Other reason', label: 'Any Other reason' },
     ];
 
     const {
@@ -107,21 +65,17 @@ export default function ChangeServicesModal({
     } = useForm({
         resolver: zodResolver(changeServicesSchema),
         defaultValues: {
+            attestationServiceId: '',
             referenceNo: '',
             applicantName: '',
-
-            visaServiceId: '',
-            visaDuration: '',
-            visaEntry: '',
-            nationality: '',
 
             govtFee: '',
             icwfFee: '',
             sgivsServiceFee: '',
 
-            urgentFee: false,
-
             cancelApplication: false,
+            govtFeeCancel: false,
+            icwfFeeCancel: false,
             cancelReason: '',
             remark: '',
         },
@@ -132,28 +86,31 @@ export default function ChangeServicesModal({
 
     // ✅ Prefill when opening (from row)
     useEffect(() => {
-        if (showModal) {
-            reset({
-                referenceNo: showModal?.referenceNo ?? '',
-                applicantName: showModal?.applicantName ?? '',
+        if (!showModal) return;
 
-                visaServiceId: showModal?.visaServiceId ?? '',
-                visaDuration: showModal?.visaDuration ?? '',
-                visaEntry: showModal?.visaEntry ?? '',
-                nationality: showModal?.nationality ?? '',
+        reset({
+            attestationServiceId: '',
+            referenceNo: showModal?.appointment_reference_no ?? '',
+            applicantName: `${showModal?.first_name ?? ''} ${showModal?.surname ?? ''}`.trim(),
 
-                govtFee: showModal?.govtFee ?? '',
-                icwfFee: showModal?.icwfFee ?? '',
-                sgivsServiceFee: showModal?.sgivsServiceFee ?? '',
+            govtFee: '',
+            icwfFee: '',
+            sgivsServiceFee: '',
 
-                urgentFee: !!showModal?.urgentFee,
-
-                cancelApplication: !!showModal?.cancelApplication,
-                cancelReason: showModal?.cancelReason ?? '',
-                remark: showModal?.remark ?? '',
-            });
-        }
+            cancelApplication: false,
+            govtFeeCancel: false,
+            icwfFeeCancel: false,
+            cancelReason: '',
+            remark: '',
+        });
     }, [showModal, reset]);
+
+    useEffect(() => {
+        if (!showModal) return;
+        if (attestationServiceOptions.length === 0) return;
+
+        setValue('attestationServiceId', String(showModal?.service_id || ''));
+    }, [showModal, attestationServiceOptions, setValue]);
 
     const onSubmit = (data) => {
         console.log('Change Service/Fee Payload:', data);
@@ -167,7 +124,7 @@ export default function ChangeServicesModal({
 
     const renderHeader = () => (
         <>
-            <h4 className="modal-title">Change Visa Service / Fee</h4>
+            <h4 className="modal-title">Change Attestation Service / Fees</h4>
             <button type="button" className="btn-close" aria-label="Close" onClick={closeModal} />
         </>
     );
@@ -175,11 +132,36 @@ export default function ChangeServicesModal({
     const renderBody = () => (
         <div className="modal-body custom-scroll">
             <div className="row g-3">
+                {/* Attestation Service dropdown */}
+                <div className="col-md-12">
+                    <div className="form-group">
+                        <label className="form-label">Attestation Service</label>
+                        <select
+                            className="form-control"
+                            {...register('attestationServiceId')}
+                            disabled={serviceLoading}
+                        >
+                            <option value="">
+                                {serviceLoading ? 'Loading services...' : 'Select Service'}
+                            </option>
+
+                            {attestationServiceOptions.map((opt) => (
+                                <option key={opt.value} value={opt.value}>
+                                    {opt.label}
+                                </option>
+                            ))}
+                        </select>
+                        {errors?.attestationServiceId && (
+                            <p className="text-danger mt-1">{errors.attestationServiceId.message}</p>
+                        )}
+                    </div>
+                </div>
+
                 {/* Reference No */}
                 <div className="col-md-6">
                     <div className="form-group">
                         <label className="form-label">Reference No</label>
-                        <input
+                        <input disabled
                             type="text"
                             className="form-control"
                             placeholder="REF-0001"
@@ -195,7 +177,7 @@ export default function ChangeServicesModal({
                 <div className="col-md-6">
                     <div className="form-group">
                         <label className="form-label">Applicant Name</label>
-                        <input
+                        <input disabled
                             type="text"
                             className="form-control"
                             placeholder="Enter applicant name"
@@ -207,102 +189,30 @@ export default function ChangeServicesModal({
                     </div>
                 </div>
 
-                {/* Visa Service dropdown */}
-                <div className="col-md-6">
-                    <div className="form-group">
-                        <label className="form-label">Visa Service</label>
-                        <select className="form-select" {...register('visaServiceId')}>
-                            <option value="">Select Visa Service</option>
-                            {visaServiceOptions.map((opt) => (
-                                <option key={opt.value} value={opt.value}>
-                                    {opt.label}
-                                </option>
-                            ))}
-                        </select>
-                        {errors?.visaServiceId && (
-                            <p className="text-danger mt-1">{errors.visaServiceId.message}</p>
-                        )}
-                    </div>
-                </div>
-
-                {/* Visa Duration dropdown */}
-                <div className="col-md-6">
-                    <div className="form-group">
-                        <label className="form-label">Visa Duration</label>
-                        <select className="form-select" {...register('visaDuration')}>
-                            <option value="">Select Visa Duration</option>
-                            {visaDurationOptions.map((opt) => (
-                                <option key={opt.value} value={opt.value}>
-                                    {opt.label}
-                                </option>
-                            ))}
-                        </select>
-                        {errors?.visaDuration && (
-                            <p className="text-danger mt-1">{errors.visaDuration.message}</p>
-                        )}
-                    </div>
-                </div>
-
-                {/* Visa Entry dropdown */}
-                <div className="col-md-6">
-                    <div className="form-group">
-                        <label className="form-label">Visa Entry</label>
-                        <select className="form-select" {...register('visaEntry')}>
-                            <option value="">Select Visa Entry</option>
-                            {visaEntryOptions.map((opt) => (
-                                <option key={opt.value} value={opt.value}>
-                                    {opt.label}
-                                </option>
-                            ))}
-                        </select>
-                        {errors?.visaEntry && (
-                            <p className="text-danger mt-1">{errors.visaEntry.message}</p>
-                        )}
-                    </div>
-                </div>
-
-                {/* Nationality dropdown */}
-                <div className="col-md-6">
-                    <div className="form-group">
-                        <label className="form-label">Nationality</label>
-                        <select className="form-select" {...register('nationality')}>
-                            <option value="">Select Nationality</option>
-                            {nationalityOptions.map((opt) => (
-                                <option key={opt.value} value={opt.value}>
-                                    {opt.label}
-                                </option>
-                            ))}
-                        </select>
-                        {errors?.nationality && (
-                            <p className="text-danger mt-1">{errors.nationality.message}</p>
-                        )}
-                    </div>
-                </div>
-
                 {/* Govt Fee */}
-                <div className="col-md-6">
+                <div className="col-md-4">
                     <div className="form-group">
                         <label className="form-label">Govt Fee</label>
-                        <input type="number" className="form-control" placeholder="0" {...register('govtFee')} />
+                        <input disabled type="text" className="form-control" placeholder="0" {...register('govtFee')} />
                         {errors?.govtFee && <p className="text-danger mt-1">{errors.govtFee.message}</p>}
                     </div>
                 </div>
 
                 {/* ICWF Fee */}
-                <div className="col-md-6">
+                <div className="col-md-4">
                     <div className="form-group">
                         <label className="form-label">ICWF Fee</label>
-                        <input type="number" className="form-control" placeholder="0" {...register('icwfFee')} />
+                        <input disabled type="text" className="form-control" placeholder="0" {...register('icwfFee')} />
                         {errors?.icwfFee && <p className="text-danger mt-1">{errors.icwfFee.message}</p>}
                     </div>
                 </div>
 
                 {/* SGIVS Service Fee */}
-                <div className="col-md-6">
+                <div className="col-md-4">
                     <div className="form-group">
                         <label className="form-label">SGIVS Service Fee</label>
-                        <input
-                            type="number"
+                        <input disabled
+                            type="text"
                             className="form-control"
                             placeholder="0"
                             {...register('sgivsServiceFee')}
@@ -310,18 +220,6 @@ export default function ChangeServicesModal({
                         {errors?.sgivsServiceFee && (
                             <p className="text-danger mt-1">{errors.sgivsServiceFee.message}</p>
                         )}
-                    </div>
-                </div>
-
-                {/* Urgent fee checkbox */}
-                <div className="col-md-6">
-                    <div className="form-group mt-2">
-                        <div className="form-check">
-                            <input className="form-check-input" type="checkbox" id="urgentFee" {...register('urgentFee')} />
-                            <label className="form-check-label" htmlFor="urgentFee">
-                                Urgent Fee
-                            </label>
-                        </div>
                     </div>
                 </div>
 
@@ -348,11 +246,40 @@ export default function ChangeServicesModal({
                     </div>
                 </div>
 
+
                 {/* Cancel reason dropdown (show only if cancel checked) */}
                 {cancelApplication && (
-                    <div className="col-md-6">
+                    <div className="col-md-12">
+
                         <div className="form-group">
-                            <label className="form-label">Select reason</label>
+
+                            <div className="form-check">
+                                <input
+                                    className="form-check-input"
+                                    type="checkbox" disabled={!cancelApplication}
+                                    id="govtFeeCancel"
+                                    {...register('govtFeeCancel')}
+                                />
+                                <label className="form-check-label" htmlFor="govtFeeCancel">
+                                    Govt Fee Cancellation
+                                </label>
+                            </div>
+
+                            <div className="form-check">
+                                <input
+                                    className="form-check-input"
+                                    type="checkbox" disabled={!cancelApplication}
+                                    id="icwfFeeCancel"
+                                    {...register('icwfFeeCancel')}
+                                />
+                                <label className="form-check-label" htmlFor="icwfFeeCancel">
+                                    ICWF Fee Cancellation
+                                </label>
+                            </div>
+                        </div>
+
+                        <div className="form-group">
+                            <label className="form-label">Please select reason for cancellation</label>
                             <select className="form-select" {...register('cancelReason')}>
                                 <option value="">Select Reason</option>
                                 {cancelReasonOptions.map((opt) => (
@@ -372,7 +299,7 @@ export default function ChangeServicesModal({
                 <div className="col-12">
                     <div className="form-group">
                         <label className="form-label">Remark</label>
-                        <textarea rows={4} className="form-control" placeholder="Enter remark" {...register('remark')} />
+                        <textarea rows={4} style={{ minHeight: "120px" }} className="form-control" placeholder="Enter remark" {...register('remark')} />
                         {errors?.remark && <p className="text-danger mt-1">{errors.remark.message}</p>}
                     </div>
                 </div>

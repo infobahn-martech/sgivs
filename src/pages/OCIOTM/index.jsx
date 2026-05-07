@@ -12,7 +12,6 @@ import { formatDate } from '../../config/config';
 import AddEditModal from './AddEditModal';
 
 const OCIOTM = () => {
-  const USE_MOCK = true;
 
   const { getData, ociOTMData, isLoadingGet } = useOCIOTMReducer((state) => state);
 
@@ -31,51 +30,10 @@ const OCIOTM = () => {
   const [addEditModal, setAddEditModal] = useState(false);
   const [selectedOTM, setSelectedOTM] = useState(null);
 
-  // ✅ Dummy Data (Required fields)
-  const mockOCIOTMData = {
-    total: 5,
-    data: [
-      {
-        id: 1,
-        date: '2025-01-10T09:30:00Z',
-        by: 'Admin',
-        totalApplication: 12,
-        manifestId: 'MAN-0001',
-      },
-      {
-        id: 2,
-        date: '2025-02-14T12:15:00Z',
-        by: 'Operator',
-        totalApplication: 7,
-        manifestId: 'MAN-0002',
-      },
-      {
-        id: 3,
-        date: '2025-03-05T08:45:00Z',
-        by: 'Admin',
-        totalApplication: 19,
-        manifestId: 'MAN-0003',
-      },
-      {
-        id: 4,
-        date: '2025-03-20T10:00:00Z',
-        by: 'Supervisor',
-        totalApplication: 5,
-        manifestId: 'MAN-0004',
-      },
-      {
-        id: 5,
-        date: '2025-04-02T11:20:00Z',
-        by: 'Admin',
-        totalApplication: 9,
-        manifestId: 'MAN-0005',
-      },
-    ],
-  };
 
   useEffect(() => {
-    if (!USE_MOCK) getData(params);
-  }, [params, USE_MOCK, getData]);
+    getData(params);
+  }, [params, getData]);
 
   const handleSortChange = (selector) => {
     setParams((prev) => ({
@@ -228,8 +186,8 @@ const OCIOTM = () => {
     return () => debouncedSearch.cancel();
   }, [debouncedSearch]);
 
-  const tableData = USE_MOCK ? mockOCIOTMData : ociOTMData;
-  const loading = USE_MOCK ? false : isLoadingOCIOTMGet;
+  const tableData = ociOTMData;
+  const loading = isLoadingGet;
 
   return (
     <>

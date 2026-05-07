@@ -12,17 +12,17 @@ import AddEditModal from './AddEditModal';
 
 const OCIInScan = () => {
 
-  const { getData, ociInScanDataData, isLoadingGet } = useOCIInScanReducer((state) => state);
+  const { getData, ociInScanData, isLoadingGet } = useOCIInScanReducer((state) => state);
   const initialParams = {
-    search: '',
-    page: 1,
-    limit: 10,
-    fromDate: null,
-    toDate: null,
-    sortBy: 'date',
-    sortOrder: 'DESC',
-    isExcelExport: 'false',
-    status_id: 15,
+    // search: '',
+    // page: 1,
+    // limit: 10,
+    // fromDate: null,
+    // toDate: null,
+    // sortBy: 'date',
+    // sortOrder: 'DESC',
+    // isExcelExport: 'false',
+    status_id: 26,
   };
 
   const [params, setParams] = useState(initialParams);
@@ -80,7 +80,7 @@ const OCIInScan = () => {
     return () => debouncedSearch.cancel();
   }, [debouncedSearch]);
 
-  const tableData = ociInScanDataData;
+  const tableData = ociInScanData;
   const loading = isLoadingGet;
 
   return (

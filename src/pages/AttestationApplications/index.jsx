@@ -13,6 +13,8 @@ import { AddEditModal } from './AddEditModal';
 import FeeCalculator from '../../components/common/FeeCalculator';
 import CustomActionModal from '../../components/common/CustomActionModal';
 import ActionsMenu from './ActionsMenu';
+import PrintReceiptModal from './PrintReceipt';
+import PrintBarcodeModal from './PrintBarcode';
 import ViewModal from './ViewModal';
 import CommentModal from './CommentModal';
 import ChangeServicesModal from './ChangeServices';
@@ -20,121 +22,56 @@ import ActivityLog from './ActivityLog';
 import AddRemoveBiometric from './AddRemoveBiometric';
 
 const AttestationApplications = () => {
-  const USE_MOCK = true;
 
-  const { getData, attestationApplicationsData, isLoadingGet, deleteData, isLoadingDelete } =
-    useAttestationApplicationReducer((state) => state);
+  const { getAttestationApplications, attestationApplicationsData, isLoadingGet, 
+    deleteData, isLoadingDelete 
+  } = useAttestationApplicationReducer((state) => state);
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [modal, setModal] = useState(false);
   const [viewModal, setViewModal] = useState(false);
+  const [printReceiptModal, setPrintReceiptModal] = useState(false);
+  const [printBarcodeModal, setPrintBarcodeModal] = useState(false);
   const [commentModal, setCommentModal] = useState(false);
   const [changeServicesModal, setChangeServicesModal] = useState(false);
   const [addRemoveBiometricModal, setAddRemoveBiometricModal] = useState(false);
   const [activityLogModal, setActivityLogModal] = useState(false);
   const [feeValues, setFeeValues] = useState(null);
   const initialParams = {
+    // search: '',
+    // page: 1,
+    // limit: 10,
+    // fromDate: null,
+    // toDate: null,
+    // sortBy: 'createdAt',
+    // sortOrder: 'DESC',
+    // isExcelExport: 'false',
     search: '',
-    page: 1,
-    limit: 10,
-    fromDate: null,
-    toDate: null,
-    sortBy: 'createdAt',
-    sortOrder: 'DESC',
-    isExcelExport: 'false',
+     start: 0,
+  length: 10,
+  from_date: "2026-04-01",
+  to_date: "2026-04-10",
+  country_id: "",
+  mission_id: "",
+  center_id: "",
+  passport_no: "",
+  oci_file_no: "",
+  status: 12,
+  applicant_name: ""
   };
 
   const [params, setParams] = useState(initialParams);
 
-  const mockAttestationApplicationsData = {
-    total: 5,
-    data: [
-      {
-        id: 1,
-        referenceNo: 'REF-0001',
-        name: 'Abdul Rahman',
-        center: 'Dubai Center',
-        consproMFileNo: 'CPM-10001',
-        nationality: 'UAE',
-        passportNo: 'P1234567',
-        applicationType: 'New',
-        serviceName: 'Normal Service',
-        deliveryType: 'Courier',
-        status: { value: 'Submitted', by: 'Dennis', on: '2025-01-10T09:30:00Z' },
-        createdAt: '2025-01-10T09:30:00Z',
-      },
-      {
-        id: 2,
-        referenceNo: 'REF-0002',
-        name: 'Haseeb',
-        center: 'Abu Dhabi Center',
-        consproMFileNo: 'CPM-10002',
-        nationality: 'Pakistan',
-        passportNo: 'P9988776',
-        applicationType: 'Renewal',
-        serviceName: 'Premium',
-        deliveryType: 'Counter',
-        status: { value: 'In Process', by: 'Joel', on: '2025-02-14T12:15:00Z' },
-        createdAt: '2025-02-14T12:15:00Z',
-      },
-      {
-        id: 3,
-        referenceNo: 'REF-0003',
-        name: 'Fathima',
-        center: 'Sharjah Center',
-        consproMFileNo: 'CPM-10003',
-        nationality: 'India',
-        passportNo: 'P2233445',
-        applicationType: 'New',
-        serviceName: 'Express',
-        deliveryType: 'Courier',
-        status: { value: 'Approved', by: 'Admin', on: '2025-03-05T08:45:00Z' },
-        createdAt: '2025-03-05T08:45:00Z',
-      },
-      {
-        id: 4,
-        referenceNo: 'REF-0004',
-        name: 'Joseph',
-        center: 'Ajman Center',
-        consproMFileNo: 'CPM-10004',
-        nationality: 'Philippines',
-        passportNo: 'P6655443',
-        applicationType: 'Renewal',
-        serviceName: 'Normal Service',
-        deliveryType: 'Counter',
-        status: { value: 'Rejected', by: 'Supervisor', on: '2025-03-20T10:00:00Z' },
-        createdAt: '2025-03-20T10:00:00Z',
-      },
-      {
-        id: 5,
-        referenceNo: 'REF-0005',
-        name: 'Amina',
-        center: 'Dubai Center',
-        consproMFileNo: 'CPM-10005',
-        nationality: 'Egypt',
-        passportNo: 'P4455667',
-        applicationType: 'New',
-        serviceName: 'Premium',
-        deliveryType: 'Courier',
-        status: { value: 'Delivered', by: 'Courier', on: '2025-04-02T11:20:00Z' },
-        createdAt: '2025-04-02T11:20:00Z',
-      },
-    ],
-  };
-
-
   const onRefreshAttestationApplications = () => {
-    if (!USE_MOCK) {
-      getData(params);
-    }
+    getAttestationApplications(params);
+
     setModal(false);
+    setPrintReceiptModal(false);
     setDeleteModalOpen(false);
   };
 
   useEffect(() => {
-    if (!USE_MOCK) {
-      getData(params);
-    }
+    getAttestationApplications(params);
   }, [params]);
 
   const handleSortChange = (selector) => {
@@ -151,11 +88,11 @@ const AttestationApplications = () => {
 
   // ✅ action handlers (replace with your actual flows)
   const handlePrintReceipt = (row) => {
-    console.log('Print Receipt:', row);
+    setPrintReceiptModal(row);
   };
 
   const handlePrintBarcode = (row) => {
-    console.log('Print Barcode:', row);
+    setPrintBarcodeModal(row);
   };
 
   const handleViewApplication = (row) => {
@@ -187,24 +124,41 @@ const AttestationApplications = () => {
 
 
   const columns = [
-    { name: 'Reference No', selector: 'referenceNo' },
-    { name: 'Name', selector: 'name' },
-    { name: 'Center', selector: 'center' },
-    { name: 'ConsproM File No', selector: 'consproMFileNo' },
-    { name: 'Nationality', selector: 'nationality' },
-    { name: 'Passport No', selector: 'passportNo' },
-    { name: 'Application Type', selector: 'applicationType' },
-    { name: 'Service Name', selector: 'serviceName' },
-    { name: 'Delivery Type', selector: 'deliveryType' },
+    { name: 'Reference No', selector: 'appointment_reference_no' },
+    {
+      name: 'Name',
+      selector: 'name',
+      cell: (row) => {
+        const fullName = [row?.first_name, row?.surname]
+          .filter(Boolean)
+          .join(' ');
+
+        return <span>{fullName || '-'}</span>;
+      },
+    },
+    { name: 'Center', selector: 'center_name' },
+    { name: 'Gender', selector: 'gender' },
+    { name: 'Passport No', selector: 'passport_no' },
+    { name: 'Application Type', selector: 'appointment_type' },
+    { name: 'Service Name', selector: 'service_id' },
+    {
+      name: 'Delivery Type',
+      selector: 'delivery_type',
+      cell: (row) => <span>{row?.deliveryType || 'Counter Delivery'}</span>,
+    },
     {
       name: 'Status / By, On',
       selector: 'status',
       cell: (row) => (
-        <span>
-          {row?.status?.value || '-'}
-          {row?.status?.by ? ` / ${row.status.by}` : ''}
-          {row?.status?.on ? `, ${formatDate(row.status.on)}` : ''}
-        </span>
+        <div className="d-flex flex-column">
+          <span>
+            <b>{row?.status || '-'}</b>
+          </span>
+          <small className="text-muted">
+            {row?.created_by || '-'}
+            {row?.created_at ? `, ${formatDate(row.created_at)}` : ''}
+          </small>
+        </div>
       ),
     },
     {
@@ -244,11 +198,6 @@ const AttestationApplications = () => {
   );
 
   const handleDelete = () => {
-    if (USE_MOCK) {
-      setDeleteModalOpen(false);
-      return;
-    }
-
     if (deleteModalOpen?.id) {
       deleteData(deleteModalOpen?.id, () => {
         onRefreshAttestationApplications();
@@ -256,8 +205,8 @@ const AttestationApplications = () => {
     }
   };
 
-  const tableData = USE_MOCK ? mockAttestationApplicationsData : attestationApplicationsData;
-  const loading = USE_MOCK ? false : isLoadingGet;
+  const tableData = attestationApplicationsData;
+  const loading = isLoadingGet;
 
   return (
     <>
@@ -287,7 +236,7 @@ const AttestationApplications = () => {
         pagination={{ currentPage: params.page, limit: params.limit }}
         count={tableData?.total || 0}
         columns={columns}
-        data={tableData?.data || []}
+        data={tableData || []}
         isLoading={loading}
         onPageChange={(page) => setParams({ ...params, page })}
         setLimit={(limit) => setParams({ ...params, limit })}
@@ -332,7 +281,7 @@ const AttestationApplications = () => {
       {deleteModalOpen && (
         <CustomActionModal
           isDelete
-          isLoading={USE_MOCK ? false : isLoadingDelete}
+          isLoading={isLoadingDelete}
           showModal={deleteModalOpen}
           closeModal={() => setDeleteModalOpen(false)}
           message={`Are you sure you want to delete this ${deleteModalOpen?.name}?`}
@@ -340,6 +289,15 @@ const AttestationApplications = () => {
           onSubmit={handleDelete}
         />
       )}
+
+      {printReceiptModal && (
+        <PrintReceiptModal
+          showModal={printReceiptModal}
+          closeModal={() => setPrintReceiptModal(false)}
+        />
+      )}
+
+      {printBarcodeModal && <PrintBarcodeModal showModal={printBarcodeModal} closeModal={() => setPrintBarcodeModal(false)} />}
 
       {viewModal && (
         <ViewModal

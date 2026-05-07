@@ -2,8 +2,8 @@ import { create } from 'zustand';
 import useAlertReducer from './AlertReducer';
 import ociDeletedApplicationService from '../services/ociDeletedApplicationService';
 
-const useOCIDeletedApplicationReducer = create((set) => ({ 
-  isLoading: false,  isLoadingGet: false, isLoadingRestore: false,
+const useOCIDeletedApplicationReducer = create((set) => ({
+  isLoading: false, isLoadingGet: false, isLoadingRestore: false,
   errorMessage: '', successMessage: '',
   deletedOCIApplicationData: { data: [], total: 0 },
 

@@ -11,7 +11,7 @@ import { formatDate } from '../../config/config';
 import AddEditModal from './AddEditModal';
 
 const OCIOTS = () => {
-  const USE_MOCK = true;
+  const USE_MOCK = false;
 
   const { getData, ociOTSData, isLoadingGet } = useOCIOTSReducer((state) => state);
   const { isLoadingOCIOTSGet } = useOCIOTSReducer((state) => state);

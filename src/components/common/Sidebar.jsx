@@ -171,10 +171,10 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
       name: 'Attestation Manager',
       icon: EZIcon, // change icon if needed
       path: '/attestation-applications',
-      activeRoutes: ['/attestation-applications', '/attestation-delete-application', '/attestation-in-scan', '/attestation-outscan-to-mission', '/attestation-inscan-from-mission', '/attestation-outscan-to-spoke', '/attestation-counter-delivery', '/attestation-outscan-to-courier', '/attestation-tracking'],
+      activeRoutes: ['/attestation-applications', '/attestation-deleted-application', '/attestation-in-scan', '/attestation-outscan-to-mission', '/attestation-inscan-from-mission', '/attestation-outscan-to-spoke', '/attestation-counter-delivery', '/attestation-outscan-to-courier', '/attestation-tracking'],
       subMenu: [
         { name: 'Attestation Applications', path: '/attestation-applications', icon: MessagesIcon },
-        { name: 'Deleted Application', path: '/attestation-delete-application', icon: MessagesIcon },
+        { name: 'Deleted Application', path: '/attestation-deleted-application', icon: MessagesIcon },
         { name: 'Inscan At Hub', path: '/attestation-in-scan', icon: MessagesIcon },
         { name: 'OutScan To Mission', path: '/attestation-outscan-to-mission', icon: MessagesIcon },
         { name: 'Inscan From Mission', path: '/attestation-inscan-from-mission', icon: MessagesIcon },

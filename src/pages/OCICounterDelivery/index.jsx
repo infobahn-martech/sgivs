@@ -13,40 +13,28 @@ import { formatDate } from '../../config/config';
 import AddEditModal from './AddEditModal';
 
 const OCICounterDelivery = () => {
-  const USE_MOCK = true;
 
-  const { getData, ociCounterDeliveryData, isLoadingOCICounterDeliveryGet } =
-    useOCICounterDeliveryReducer((state) => state);
+  const { getData, ociCounterDeliveryData, isLoadingOCICounterDeliveryGet } = useOCICounterDeliveryReducer((state) => state);
+  
   const initialParams = {
-    search: '',
     page: 1,
     limit: 10,
-    fromDate: null,
-    toDate: null,
+    from_date: '',
+    to_date: '',
     sortBy: 'date',
     sortOrder: 'DESC',
-    isExcelExport: 'false',
+    country_id: '',
+    mission_id: '',
+    center_id: ''
   };
 
   const [params, setParams] = useState(initialParams);
   const [addEditModal, setAddEditModal] = useState(false);
   const [selectedCounterDelivery, setSelectedCounterDelivery] = useState(null);
 
-  // ✅ Dummy Data
-  const mockOCICounterDeliveryData = {
-    total: 5,
-    data: [
-      { id: 1, date: '2025-01-10T09:30:00Z', by: 'Admin', totalApplication: 12 },
-      { id: 2, date: '2025-02-14T12:15:00Z', by: 'Operator', totalApplication: 7 },
-      { id: 3, date: '2025-03-05T08:45:00Z', by: 'Admin', totalApplication: 19 },
-      { id: 4, date: '2025-03-20T10:00:00Z', by: 'Supervisor', totalApplication: 5 },
-      { id: 5, date: '2025-04-02T11:20:00Z', by: 'Admin', totalApplication: 9 },
-    ],
-  };
-
   useEffect(() => {
-    if (!USE_MOCK) getData(params);
-  }, [params, USE_MOCK, getData]);
+    getData(params);
+  }, [params, getData]);
 
   const handleSortChange = (selector) => {
     setParams((prev) => ({
@@ -130,8 +118,8 @@ const OCICounterDelivery = () => {
     return () => debouncedSearch.cancel();
   }, [debouncedSearch]);
 
-  const tableData = USE_MOCK ? mockOCICounterDeliveryData : ociCounterDeliveryData;
-  const loading = USE_MOCK ? false : isLoadingOCICounterDeliveryGet;
+  const tableData = ociCounterDeliveryData;
+  const loading = isLoadingOCICounterDeliveryGet;
 
   return (
     <>
@@ -147,13 +135,13 @@ const OCICounterDelivery = () => {
         hideFilter
         onSearch={debouncedSearch}
         submitFilter={(filters) => {
-          const { fromDate, toDate, ...rest } = filters;
+          const { from_date, to_date, ...rest } = filters;
 
           setParams({
             ...params,
             ...rest,
-            fromDate: fromDate ? moment(fromDate).format('YYYY-MM-DD') : null,
-            toDate: toDate ? moment(toDate).format('YYYY-MM-DD') : null,
+            from_date: from_date ? moment(from_date).format('YYYY-MM-DD') : null,
+            to_date: to_date ? moment(to_date).format('YYYY-MM-DD') : null,
             page: 1,
           });
         }}
