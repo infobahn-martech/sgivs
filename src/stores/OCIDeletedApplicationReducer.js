@@ -3,26 +3,27 @@ import useAlertReducer from './AlertReducer';
 import ociDeletedApplicationService from '../services/ociDeletedApplicationService';
 
 const useOCIDeletedApplicationReducer = create((set) => ({
-  isLoading: false, isLoadingGet: false, isLoadingRestore: false,
-  errorMessage: '', successMessage: '',
-  deletedOCIApplicationData: { data: [], total: 0 },
+  isLoadingGet: false, 
+  errorMessage: '', 
+  successMessage: '',
+  deletedOCIApplicationData: null,
+  isLoadingRestore: false,
 
   getData: async (payload) => {
     try {
       set({ isLoadingGet: true });
 
-      const res =
-        await ociDeletedApplicationService.getDeletedOCIApplications(payload);
+      const res = await ociDeletedApplicationService.getDeletedOCIApplications(payload);
 
-      const apiData = res?.data;
+      const list = res?.data;
 
       set({
-        deletedOCIApplicationData: {
-          data: apiData?.data || [],
-          total: apiData?.pagination?.total_records || 0,
-        },
+        deletedOCIApplicationData: list?.data ?? [],
+        pagination: list?.pagination ?? null,
         isLoadingGet: false,
       });
+
+
     } catch (err) {
       const { error } = useAlertReducer.getState();
 

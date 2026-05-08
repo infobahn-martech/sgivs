@@ -429,10 +429,18 @@ export function AddEditModal({ showModal, closeModal, onRefreshOCIApplications, 
         courier_type_id	: Number(data.courierType),
       };
     }
-    const vas_services = (data.afs || []).map((id) => ({
-      vas_service_id: id,
-      quantity: id === '1' ? data.photocopyCounts || '' : '',
-    }));
+    const vas_services = (data.afs || []).map((id) => {
+      const item = {
+        vas_service_id: Number(id),
+      };
+
+      // ONLY Photocopy gets quantity
+      if (id === '1') {
+        item.quantity = Number(data.photocopyCounts || 1);
+      }
+
+      return item;
+    });
 
     const payload = {
       oci_application: ociApplication,
@@ -870,7 +878,7 @@ export function AddEditModal({ showModal, closeModal, onRefreshOCIApplications, 
         <div className="col-md-6">
           <div className="form-group">
             <label className="form-label">
-              Payment mode <span className="text-danger">*</span>
+              Payment Mode <span className="text-danger">*</span>
             </label>
             <select className="form-control" {...register('paymentMode')}>
               <option value="">Select</option>

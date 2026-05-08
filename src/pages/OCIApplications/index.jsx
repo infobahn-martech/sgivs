@@ -54,11 +54,12 @@ const OCIApplications = () => {
   const [addRemoveBiometricModal, setAddRemoveBiometricModal] = useState(false);
   const [activityLogModal, setActivityLogModal] = useState(false);
   const [feeValues, setFeeValues] = useState(null);
+  
   const initialParams = {
     page: 1,
     limit: 10,
-    sortBy: 'created_at', 
-    sortOrder: 'DESC',
+    sort_by: 'created_at', 
+    sort_order: 'DESC',
   };
 
   const [params, setParams] = useState(initialParams);
@@ -94,9 +95,7 @@ const OCIApplications = () => {
   );
 
   const onCountryChange = (countryId) => {
-    debugger
     if (countryId) {
-      debugger
       getMissionsByCountry(countryId);
     }
   };
@@ -123,8 +122,8 @@ const OCIApplications = () => {
   const handleSortChange = (selector) => {
     setParams((prev) => ({
       ...prev,
-      sortBy: selector,
-      sortOrder: prev.sortOrder === 'ASC' ? 'DESC' : 'ASC',
+      sort_by: selector,
+      sort_order: prev.sort_order === 'ASC' ? 'DESC' : 'ASC',
     }));
   };
 
@@ -145,10 +144,8 @@ const OCIApplications = () => {
     const id = row?.oci_application_id;
 
     if (!id) {
-      console.error("Missing OCI Application ID", row);
       return;
     }
-
     await getOCIApplicationById(id);
     setViewModal(true);
   };
@@ -218,7 +215,6 @@ const OCIApplications = () => {
     {
       name: 'Delivery Type',
       selector: 'courier',
-      cell: (row) => (row.courier === "1" ? 'Courier' : 'Walk-in'),
       sort: true,
     },
     {
@@ -235,6 +231,7 @@ const OCIApplications = () => {
           </small>
         </div>
       ),
+      sort: true,
     },
     {
       name: 'Action',
@@ -274,9 +271,12 @@ const OCIApplications = () => {
   const handleDelete = (comment) => {
     if (!deleteModalOpen?.id) return;
 
+    const employeeId = localStorage.getItem('employee_id');
+
     const payload = {
       oci_application_id: deleteModalOpen.id,
       comment: comment,
+      comment_by:employeeId,
     };
 
     deleteOCIApplication(payload, () => {
@@ -337,9 +337,9 @@ const OCIApplications = () => {
           type: 'button',
           action: () => setModal(true),
         }}
+        onSearch={debouncedSearch}
         // hideFilter
         filterOptions={filterOptions}
-        onSearch={debouncedSearch}
         submitFilter={(filters) => {
           setParams({
             ...params,

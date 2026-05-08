@@ -10,26 +10,77 @@ import CustomTable from '../../components/common/CustomTable';
 import useOCIOTMReducer from '../../stores/OCIOTMReducer';
 import { formatDate } from '../../config/config';
 import AddEditModal from './AddEditModal';
+import useUserReducer from '../../stores/UserReducer';
 
 const OCIOTM = () => {
 
-  const { getData, ociOTMData, isLoadingGet } = useOCIOTMReducer((state) => state);
+  const { getData, ociOTMData, isLoadingGet, pagination } = useOCIOTMReducer((state) => state);
 
   const initialParams = {
-    search: '',
     page: 1,
     limit: 10,
-    fromDate: null,
-    toDate: null,
-    sortBy: 'date',
-    sortOrder: 'DESC',
-    isExcelExport: 'false',
+    sort_by: 'created_at',
+    sort_order: 'DESC',
+    status_id: 28,
   };
 
   const [params, setParams] = useState(initialParams);
   const [addEditModal, setAddEditModal] = useState(false);
   const [selectedOTM, setSelectedOTM] = useState(null);
 
+  const {
+    countryList,
+    missionList,
+    centerList,
+    isLoadingCountries,
+    isLoadingMissions,
+    isLoadingCenters,
+    getCountries,
+    getMissionsByCountry,
+    getCentersByMission
+  } = useUserReducer();
+
+  useEffect(() => {
+    getCountries();
+  }, []);
+
+  const countryOptions = useMemo(
+    () =>
+      (countryList || []).map((item) => ({
+        value: item.country_id,
+        label: item.country_name,
+      })),
+    [countryList]
+  );
+  const missionOptions = useMemo(
+    () =>
+      (missionList || []).map((item) => ({
+        value: item.mission_id,
+        label: item.mission_name,
+      })),
+    [missionList]
+  );
+
+  const centerOptions = useMemo(
+    () =>
+      (centerList || []).map((item) => ({
+        value: item.center_id,
+        label: item.center_name,
+      })),
+    [centerList]
+  );
+
+  const onCountryChange = (countryId) => {
+    if (countryId) {
+      getMissionsByCountry(countryId);
+    }
+  };
+
+  const onMissionChange = (missionId) => {
+    if (missionId) {
+      getCentersByMission(missionId);
+    }
+  };
 
   useEffect(() => {
     getData(params);
@@ -38,135 +89,38 @@ const OCIOTM = () => {
   const handleSortChange = (selector) => {
     setParams((prev) => ({
       ...prev,
-      sortBy: selector,
-      sortOrder: prev.sortOrder === 'ASC' ? 'DESC' : 'ASC',
+      sort_by: selector,
+      sort_order: prev.sort_order === 'ASC' ? 'DESC' : 'ASC',
     }));
-  };
-
-  // ✅ Download handlers (replace with your real API/file urls)
-  const downloadDataFiles = (row) => {
-    console.log('Download Data Files:', row);
-    // Example:
-    // window.open(row?.dataFilesUrl, '_blank');
-  };
-
-  const downloadImageFile = (row) => {
-    console.log('Download Image File:', row);
-  };
-
-  const downloadProcessFile = (row) => {
-    console.log('Download Process File:', row);
-  };
-
-  const downloadDocumentFile = (row) => {
-    console.log('Download Document File:', row);
-  };
-
-  const renderAction = (row) => {
-    return (
-      <div className="d-flex gap-2 flex-wrap">
-        <Tooltip
-          id={`otm-data-${row?.id}`}
-          place="bottom"
-          content="Download Data Files"
-          style={{ backgroundColor: '#051a53' }}
-        />
-        <Tooltip
-          id={`otm-image-${row?.id}`}
-          place="bottom"
-          content="Download Image File"
-          style={{ backgroundColor: '#051a53' }}
-        />
-        <Tooltip
-          id={`otm-process-${row?.id}`}
-          place="bottom"
-          content="Download Process File"
-          style={{ backgroundColor: '#051a53' }}
-        />
-        <Tooltip
-          id={`otm-doc-${row?.id}`}
-          place="bottom"
-          content="Download Document File"
-          style={{ backgroundColor: '#051a53' }}
-        />
-
-        <button
-          type="button"
-          className="btn btn-link p-0"
-          data-tooltip-id={`otm-data-${row?.id}`}
-          onClick={() => downloadDataFiles(row)}
-          style={{ textDecoration: 'none' }}
-        >
-          Data
-        </button>
-
-        <button
-          type="button"
-          className="btn btn-link p-0"
-          data-tooltip-id={`otm-image-${row?.id}`}
-          onClick={() => downloadImageFile(row)}
-          style={{ textDecoration: 'none' }}
-        >
-          Image
-        </button>
-
-        <button
-          type="button"
-          className="btn btn-link p-0"
-          data-tooltip-id={`otm-process-${row?.id}`}
-          onClick={() => downloadProcessFile(row)}
-          style={{ textDecoration: 'none' }}
-        >
-          Process
-        </button>
-
-        <button
-          type="button"
-          className="btn btn-link p-0"
-          data-tooltip-id={`otm-doc-${row?.id}`}
-          onClick={() => downloadDocumentFile(row)}
-          style={{ textDecoration: 'none' }}
-        >
-          Document
-        </button>
-      </div>
-    );
   };
 
   const columns = [
     {
       name: 'Date',
       selector: 'date',
-      sortable: true,
+      sort: true,
       sortField: 'date',
       cell: (row) => <span>{row?.date ? formatDate(row?.date) : '-'}</span>,
     },
     {
       name: 'By',
-      selector: 'by',
-      sortable: true,
-      sortField: 'by',
+      selector: 'employee_name',
+      sort: true,
+      sortField: 'employee_name',
     },
     {
       name: 'Total Application',
-      selector: 'totalApplication',
-      sortable: true,
-      sortField: 'totalApplication',
-      cell: (row) => <span>{row?.totalApplication ?? 0}</span>,
+      selector: 'total_application',
+      sort: true,
+      sortField: 'total_application',
+      cell: (row) => <span>{row?.total_application ?? 0}</span>,
     },
     {
       name: 'Manifest ID',
-      selector: 'manifestId',
-      sortable: true,
-      sortField: 'manifestId',
-      cell: (row) => <span>{row?.manifestId || '-'}</span>,
-    },
-    {
-      name: 'Action',
-      contentClass: 'action-wrap',
-      disableViewClick: true,
-      thclass: 'actions-edit employee-actn-edit',
-      cell: (row) => renderAction(row),
+      selector: 'manifest_id_display',
+      sort: true,
+      sortField: 'manifest_id_display',
+      cell: (row) => <span>{row?.manifest_id_display || '-'}</span>,
     },
   ];
 
@@ -186,7 +140,39 @@ const OCIOTM = () => {
     return () => debouncedSearch.cancel();
   }, [debouncedSearch]);
 
-  const tableData = ociOTMData;
+  const filterOptions = [
+    {
+      fieldName: 'Country',
+      BE_keyName: 'country_id',
+      fieldType: 'select',
+      Options: countryOptions,
+      callBack: onCountryChange,
+      isLoading: isLoadingCountries,
+    },
+    {
+      fieldName: 'Mission',
+      BE_keyName: 'mission_id',
+      fieldType: 'select',
+      Options: missionOptions,
+      callBack: onMissionChange,
+      isLoading: isLoadingMissions,
+    },
+    {
+      fieldName: 'Center',
+      BE_keyName: 'center_id',
+      fieldType: 'select',
+      Options: centerOptions,
+      isLoading: isLoadingCenters,
+    },
+    {
+      fieldName: 'Joined Date',
+      fieldType: 'dateRangeCombined',
+      fromKey: 'from_date',
+      toKey: 'to_date',
+    },
+  ];
+
+  const tableData = ociOTMData || [];
   const loading = isLoadingGet;
 
   return (
@@ -200,17 +186,14 @@ const OCIOTM = () => {
             setSelectedOTM(null);
           },
         }}
-        hideFilter
+        //hideFilter
+        filterOptions={filterOptions}
         onSearch={debouncedSearch}
         submitFilter={(filters) => {
-          const { fromDate, toDate, ...rest } = filters;
-
           setParams({
             ...params,
-            ...rest,
-            fromDate: fromDate ? moment(fromDate).format('YYYY-MM-DD') : null,
-            toDate: toDate ? moment(toDate).format('YYYY-MM-DD') : null,
-            page: 1,
+            ...filters,
+            page: 1
           });
         }}
         clearOptions={() => setParams(initialParams)}
@@ -218,9 +201,9 @@ const OCIOTM = () => {
 
       <CustomTable
         pagination={{ currentPage: params.page, limit: params.limit }}
-        count={tableData?.total || 0}
+        count={pagination?.total_count || 0}
         columns={columns}
-        data={tableData?.data || []}
+        data={tableData}
         isLoading={loading}
         onPageChange={(page) => setParams({ ...params, page })}
         setLimit={(limit) => setParams({ ...params, limit })}

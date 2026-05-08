@@ -9,25 +9,77 @@ import CustomTable from '../../components/common/CustomTable';
 import useOCIInScanReducer from '../../stores/OCIInScanReducer';
 import { formatDate } from '../../config/config';
 import AddEditModal from './AddEditModal';
+import useUserReducer from '../../stores/UserReducer';
 
 const OCIInScan = () => {
 
-  const { getData, ociInScanData, isLoadingGet } = useOCIInScanReducer((state) => state);
+  const { getData, ociInScanData, isLoadingGet, pagination  } = useOCIInScanReducer((state) => state);
+
   const initialParams = {
-    // search: '',
-    // page: 1,
-    // limit: 10,
-    // fromDate: null,
-    // toDate: null,
-    // sortBy: 'date',
-    // sortOrder: 'DESC',
-    // isExcelExport: 'false',
+    page: 1,
+    limit: 10,
+    sort_by: 'created_at', 
+    sort_order: 'DESC',
     status_id: 26,
   };
 
   const [params, setParams] = useState(initialParams);
   const [addEditModal, setAddEditModal] = useState(false);
   const [selectedInScan, setSelectedInScan] = useState(null);
+
+  const {
+      countryList,
+      missionList,
+      centerList,
+      isLoadingCountries,
+      isLoadingMissions,
+      isLoadingCenters,
+      getCountries,
+      getMissionsByCountry,
+      getCentersByMission
+    } = useUserReducer();
+
+  useEffect(() => {
+    getCountries();
+  }, []);
+
+  const countryOptions = useMemo(
+    () =>
+      (countryList || []).map((item) => ({
+        value: item.country_id,
+        label: item.country_name,
+      })),
+    [countryList]
+  );
+  const missionOptions = useMemo(
+    () =>
+      (missionList || []).map((item) => ({
+        value: item.mission_id,
+        label: item.mission_name,
+      })),
+    [missionList]
+  );
+
+  const centerOptions = useMemo(
+    () =>
+      (centerList || []).map((item) => ({
+        value: item.center_id,
+        label: item.center_name,
+      })),
+    [centerList]
+  );
+
+  const onCountryChange = (countryId) => {
+    if (countryId) {
+      getMissionsByCountry(countryId);
+    }
+  };
+
+  const onMissionChange = (missionId) => {
+    if (missionId) {
+      getCentersByMission(missionId);
+    }
+  };
 
   useEffect(() => {
     getData(params);
@@ -36,8 +88,8 @@ const OCIInScan = () => {
   const handleSortChange = (selector) => {
     setParams((prev) => ({
       ...prev,
-      sortBy: selector,
-      sortOrder: prev.sortOrder === 'ASC' ? 'DESC' : 'ASC',
+      sort_by: selector,
+      sort_order: prev.sort_order === 'ASC' ? 'DESC' : 'ASC',
     }));
   };
 
@@ -45,20 +97,20 @@ const OCIInScan = () => {
     {
       name: 'Date',
       selector: 'date',
-      sortable: true,
+      sort: true,
       sortField: 'date',
       cell: (row) => <span>{row?.date ? formatDate(row?.date) : '-'}</span>,
     },
     {
       name: 'By',
-      selector: 'employee_name',
-      sortable: true,
-      sortField: 'employee_name',
+      selector: 'created_by',
+      sort: true,
+      sortField: 'created_by',
     },
     {
       name: 'Total Application',
       selector: 'total_application',
-      sortable: true,
+      sort: true,
       sortField: 'total_application',
       cell: (row) => <span>{row?.total_application ?? 0}</span>,
     },
@@ -80,7 +132,39 @@ const OCIInScan = () => {
     return () => debouncedSearch.cancel();
   }, [debouncedSearch]);
 
-  const tableData = ociInScanData;
+  const filterOptions = [
+    {
+      fieldName: 'Country',
+      BE_keyName: 'country_id',
+      fieldType: 'select',
+      Options: countryOptions,
+      callBack: onCountryChange,
+      isLoading: isLoadingCountries,
+    },
+    {
+      fieldName: 'Mission',
+      BE_keyName: 'mission_id',
+      fieldType: 'select',
+      Options: missionOptions,
+      callBack: onMissionChange,
+      isLoading: isLoadingMissions,
+    },
+    {
+      fieldName: 'Center',
+      BE_keyName: 'center_id',
+      fieldType: 'select',
+      Options: centerOptions,
+      isLoading: isLoadingCenters,
+    },
+    {
+      fieldName: 'Joined Date',
+      fieldType: 'dateRangeCombined',
+      fromKey: 'from_date',
+      toKey: 'to_date',
+    },
+  ];
+
+  const tableData = ociInScanData || [];
   const loading = isLoadingGet;
 
   return (
@@ -94,17 +178,14 @@ const OCIInScan = () => {
             setSelectedInScan(null);
           },
         }}
-        hideFilter
+        //hideFilter
         onSearch={debouncedSearch}
+        filterOptions={filterOptions}
         submitFilter={(filters) => {
-          const { fromDate, toDate, ...rest } = filters;
-
           setParams({
             ...params,
-            ...rest,
-            fromDate: fromDate ? moment(fromDate).format('YYYY-MM-DD') : null,
-            toDate: toDate ? moment(toDate).format('YYYY-MM-DD') : null,
-            page: 1,
+            ...filters,
+            page: 1
           });
         }}
         clearOptions={() => setParams(initialParams)}
@@ -112,9 +193,9 @@ const OCIInScan = () => {
 
       <CustomTable
         pagination={{ currentPage: params.page, limit: params.limit }}
-        count={tableData?.total || 0}
+        count={pagination?.total_count  || 0}
         columns={columns}
-        data={tableData?.data || []}
+        data={tableData}
         isLoading={loading}
         onPageChange={(page) => setParams({ ...params, page })}
         setLimit={(limit) => setParams({ ...params, limit })}

@@ -151,10 +151,10 @@ function OCIBarcodeContent({ data }) {
             </table>
 
             {/* SECOND BARCODE */}
-            <div className="barcode-section" style={{ marginTop: 20 }}>
+            {/* <div className="barcode-section" style={{ marginTop: 20 }}>
                 <div className="barcode-value">{fileNo}</div>
                 <BarcodeSvg value={fileNo} />
-            </div>
+            </div> */}
 
         </div>
     );

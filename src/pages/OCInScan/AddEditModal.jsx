@@ -9,8 +9,7 @@ import useOCIInScanReducer from '../../stores/OCIInScanReducer';
 const nameSchema = z.object({
     applicationNumbers: z
         .string()
-        .nonempty('At least one Application Number is required')
-        .max(20, 'Application Number must be 10 characters or less'),
+        .nonempty('At least one Application Number is required'),
 });
 
 export default function AddEditModal({ showModal, closeModal, onRefreshInScan }) {
@@ -30,26 +29,35 @@ export default function AddEditModal({ showModal, closeModal, onRefreshInScan })
     const { bulkInscan, isLoadingPost } = useOCIInScanReducer((state) => state);
 
     const onSubmit = (data) => {
+        const oci_ids = data.applicationNumbers
+            .split('\n')
+            .map(v => v.trim())
+            .filter(Boolean);
+        const employeeId = localStorage.getItem('employee_id');
         const payload = {
-            application_numbers: data.applicationNumbers
-                .split('\n')
-                .map(v => v.trim())
-                .filter(Boolean)
-                .join('\n'),
-            employee_id: 123,
+            oci_ids,
+            employee_id: employeeId,
         };
 
-        bulkInscan(payload, (res) => {
-            const result = res?.data;
+        // bulkInscan(payload, (res) => {
+        //     const result = res?.data;
 
-            // Optional: show extra info
-            console.log('Updated:', result?.updated_count);
-            console.log('Not Found:', result?.not_found);
+        //     if (!result) return;
+
+        //     if (result.status === 'error') {
+        //         return; // keep modal open
+        //     }
+
+        //     onRefreshInScan();
+
+        //     closeModal();
+        // }); 
+        bulkInscan(payload, (res) => {
+            if (!res) return;
 
             onRefreshInScan();
+            closeModal();
         });
-
-        closeModal();
     };
 
     const renderHeader = () => (
@@ -57,7 +65,7 @@ export default function AddEditModal({ showModal, closeModal, onRefreshInScan })
             <h4 className="modal-title">Add OCI In Scan At Hub</h4>
             <button
                 type="button"
-                class="btn-close"
+                className="btn-close"
                 data-bs-dismiss="modal"
                 aria-label="Close"
                 onClick={closeModal}
@@ -72,14 +80,13 @@ export default function AddEditModal({ showModal, closeModal, onRefreshInScan })
                     <div className="col-12">
                         <div className="form-group">
                             <label htmlFor="applicationNumbers" className="form-label">
-                                Application Numbers <span className="text-danger">*</span>
+                                Application Numbers [ Each Number should be in new line ]<span className="text-danger">*</span>
                             </label>
                             <textarea
-                                type="text"
                                 id="applicationNumbers"
                                 className="form-control"
+                                placeholder="Enter one Application Number per line"
                                 autoComplete="off"
-                                maxLength={20}
                                 {...register('applicationNumbers')}
                                 style={{minHeight:'120px'}}
                             />
