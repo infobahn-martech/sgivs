@@ -38,20 +38,7 @@ export default function AddEditModal({ showModal, closeModal, onRefreshInScan })
             oci_ids,
             employee_id: employeeId,
         };
-
-        // bulkInscan(payload, (res) => {
-        //     const result = res?.data;
-
-        //     if (!result) return;
-
-        //     if (result.status === 'error') {
-        //         return; // keep modal open
-        //     }
-
-        //     onRefreshInScan();
-
-        //     closeModal();
-        // }); 
+        
         bulkInscan(payload, (res) => {
             if (!res) return;
 
@@ -62,7 +49,7 @@ export default function AddEditModal({ showModal, closeModal, onRefreshInScan })
 
     const renderHeader = () => (
         <>
-            <h4 className="modal-title">Add OCI In Scan At Hub</h4>
+            <h4 className="modal-title">Add OCI InScan At Hub</h4>
             <button
                 type="button"
                 className="btn-close"

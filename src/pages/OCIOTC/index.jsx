@@ -5,111 +5,114 @@ import { debounce } from 'lodash';
 
 import '../../assets/scss/usermanagement.scss';
 
-import editIcon from '../../assets/images/edit.svg';
-
 import CommonHeader from '../../components/common/CommonHeader';
 import CustomTable from '../../components/common/CustomTable';
 import useOCIOTCReducer from '../../stores/OCIOTCReducer';
 import { formatDate } from '../../config/config';
 import AddEditModal from './AddEditModal';
+import useUserReducer from '../../stores/UserReducer';
 
 const OCIOTC = () => {
-  const USE_MOCK = true;
 
-  const { getData, ociOTCData, isLoadingOCIOTCGet } = useOCIOTCReducer((state) => state);
+  const { getData, ociOTCData, isLoadingOCIOTCGet, pagination } = useOCIOTCReducer((state) => state);
 
   const initialParams = {
-    search: '',
     page: 1,
     limit: 10,
-    fromDate: null,
-    toDate: null,
-    sortBy: 'date',
-    sortOrder: 'DESC',
-    isExcelExport: 'false',
+    sort_by: 'created_at',
+    sort_order: 'DESC',
   };
 
   const [params, setParams] = useState(initialParams);
   const [addEditModal, setAddEditModal] = useState(false);
   const [selectedOCIOTC, setSelectedOCIOTC] = useState(null);
 
-  // ✅ Dummy Data
-  const mockOCIOTCData = {
-    total: 5,
-    data: [
-      { id: 1, date: '2025-01-10T09:30:00Z', by: 'Admin', totalApplication: 12 },
-      { id: 2, date: '2025-02-14T12:15:00Z', by: 'Operator', totalApplication: 7 },
-      { id: 3, date: '2025-03-05T08:45:00Z', by: 'Admin', totalApplication: 19 },
-      { id: 4, date: '2025-03-20T10:00:00Z', by: 'Supervisor', totalApplication: 5 },
-      { id: 5, date: '2025-04-02T11:20:00Z', by: 'Admin', totalApplication: 9 },
-    ],
+  const {
+    countryList,
+    missionList,
+    centerList,
+    isLoadingCountries,
+    isLoadingMissions,
+    isLoadingCenters,
+    getCountries,
+    getMissionsByCountry,
+    getCentersByMission
+  } = useUserReducer();
+
+  useEffect(() => {
+    getCountries();
+  }, []);
+
+  const countryOptions = useMemo(
+    () =>
+      (countryList || []).map((item) => ({
+        value: item.country_id,
+        label: item.country_name,
+      })),
+    [countryList]
+  );
+  const missionOptions = useMemo(
+    () =>
+      (missionList || []).map((item) => ({
+        value: item.mission_id,
+        label: item.mission_name,
+      })),
+    [missionList]
+  );
+
+  const centerOptions = useMemo(
+    () =>
+      (centerList || []).map((item) => ({
+        value: item.center_id,
+        label: item.center_name,
+      })),
+    [centerList]
+  );
+
+  const onCountryChange = (countryId) => {
+    if (countryId) {
+      getMissionsByCountry(countryId);
+    }
+  };
+
+  const onMissionChange = (missionId) => {
+    if (missionId) {
+      getCentersByMission(missionId);
+    }
   };
 
   useEffect(() => {
-    if (!USE_MOCK) getData(params);
-  }, [params, USE_MOCK, getData]);
+    getData(params);
+  }, [params, getData]);
 
   const handleSortChange = (selector) => {
     setParams((prev) => ({
       ...prev,
-      sortBy: selector,
-      sortOrder: prev.sortOrder === 'ASC' ? 'DESC' : 'ASC',
+      sort_by: selector,
+      sort_order: prev.sort_order === 'ASC' ? 'DESC' : 'ASC',
     }));
-  };
-
-  const onClickEdit = (row) => {
-    setSelectedOCIOTC(row);
-    setAddEditModal(true);
-  };
-
-  const renderAction = (row) => {
-    return (
-      <div className="d-flex gap-2 align-items-center">
-        <Tooltip
-          id={`oci-otc-edit-${row?.id}`}
-          place="bottom"
-          content="Edit"
-          style={{ backgroundColor: '#051a53' }}
-        />
-
-        <img
-          src={editIcon}
-          alt="edit"
-          data-tooltip-id={`oci-otc-edit-${row?.id}`}
-          onClick={() => onClickEdit(row)}
-          style={{ cursor: 'pointer' }}
-        />
-      </div>
-    );
   };
 
   const columns = [
     {
       name: 'Date',
       selector: 'date',
-      sortable: true,
+      sort: true,
       sortField: 'date',
       cell: (row) => <span>{row?.date ? formatDate(row?.date) : '-'}</span>,
     },
     {
       name: 'By',
       selector: 'by',
-      sortable: true,
+      sort: true,
       sortField: 'by',
     },
     {
       name: 'Total Application',
       selector: 'totalApplication',
-      sortable: true,
+      sort: true,
       sortField: 'totalApplication',
       cell: (row) => <span>{row?.totalApplication ?? 0}</span>,
-    },
-    {
-      name: 'Action',
-      contentClass: 'action-wrap',
-      disableViewClick: true,
-      thclass: 'actions-edit employee-actn-edit',
-      cell: (row) => renderAction(row),
     },
   ];
 
@@ -129,8 +132,40 @@ const OCIOTC = () => {
     return () => debouncedSearch.cancel();
   }, [debouncedSearch]);
 
-  const tableData = USE_MOCK ? mockOCIOTCData : ociOTCData;
-  const loading = USE_MOCK ? false : isLoadingOCIOTCGet;
+  const filterOptions = [
+    {
+      fieldName: 'Country',
+      BE_keyName: 'country_id',
+      fieldType: 'select',
+      Options: countryOptions,
+      callBack: onCountryChange,
+      isLoading: isLoadingCountries,
+    },
+    {
+      fieldName: 'Mission',
+      BE_keyName: 'mission_id',
+      fieldType: 'select',
+      Options: missionOptions,
+      callBack: onMissionChange,
+      isLoading: isLoadingMissions,
+    },
+    {
+      fieldName: 'Center',
+      BE_keyName: 'center_id',
+      fieldType: 'select',
+      Options: centerOptions,
+      isLoading: isLoadingCenters,
+    },
+    {
+      fieldName: 'Joined Date',
+      fieldType: 'dateRangeCombined',
+      fromKey: 'from_date',
+      toKey: 'to_date',
+    },
+  ];
+
+  const tableData = ociOTCData || [];
+  const loading = isLoadingOCIOTCGet;
 
   return (
     <>
@@ -143,17 +178,14 @@ const OCIOTC = () => {
             setSelectedOCIOTC(null);
           },
         }}
-        hideFilter
+        //hideFilter
         onSearch={debouncedSearch}
+        filterOptions={filterOptions}
         submitFilter={(filters) => {
-          const { fromDate, toDate, ...rest } = filters;
-
           setParams({
             ...params,
-            ...rest,
-            fromDate: fromDate ? moment(fromDate).format('YYYY-MM-DD') : null,
-            toDate: toDate ? moment(toDate).format('YYYY-MM-DD') : null,
-            page: 1,
+            ...filters,
+            page: 1
           });
         }}
         clearOptions={() => setParams(initialParams)}
@@ -161,9 +193,9 @@ const OCIOTC = () => {
 
       <CustomTable
         pagination={{ currentPage: params.page, limit: params.limit }}
-        count={tableData?.total || 0}
+        count={pagination?.total_count || 0}
         columns={columns}
-        data={tableData?.data || []}
+        data={tableData}
         isLoading={loading}
         onPageChange={(page) => setParams({ ...params, page })}
         setLimit={(limit) => setParams({ ...params, limit })}

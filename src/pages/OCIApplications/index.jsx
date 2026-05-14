@@ -25,11 +25,9 @@ import useUserReducer from '../../stores/UserReducer';
 const OCIApplications = () => {
 
   const { getOCIApplications, ociApplicationsData, isLoadingGet, pagination,
-    deleteOCIApplication,
-    isDeleteOCIApplicationLoading,
-    getOCIApplicationById,
-    editORviewOCIApplicationData,
-    isLoadingEditOrViewOCIApplication
+    deleteOCIApplication, isDeleteOCIApplicationLoading,
+    getOCIApplicationById, editORviewOCIApplicationData, isLoadingEditOrViewOCIApplication,
+    getOCIStatusList, ociStatusList, isLoadingStatusList,
   } = useOCIApplicationReducer((state) => state);
 
   const {
@@ -66,6 +64,7 @@ const OCIApplications = () => {
 
   useEffect(() => {
     getCountries();
+    getOCIStatusList();
   }, []);
 
   const countryOptions = useMemo(
@@ -76,6 +75,16 @@ const OCIApplications = () => {
       })),
     [countryList]
   );
+
+  const statusOptions = useMemo(
+    () =>
+      (ociStatusList || []).map((item) => ({
+        label: item.status,
+        value: item.status_id,
+      })),
+    [ociStatusList]
+  );
+
   const missionOptions = useMemo(
     () =>
       (missionList || []).map((item) => ({
@@ -159,7 +168,6 @@ const OCIApplications = () => {
   };
 
   const handleEditApplication = (row) => {
-    console.log('Edit application:', row);
     setModal(row); // if you want to open modal in edit mode, you can store editRow state
   };
 
@@ -310,12 +318,10 @@ const OCIApplications = () => {
     },
     {
       fieldName: 'Status',
-      BE_keyName: 'status',
+      BE_keyName: 'status_id',
       fieldType: 'select',
-      Options: [
-        { label: 'Active', value: 1 },
-        { label: 'Blocked', value: 2 },
-      ],
+      Options: statusOptions,
+      isLoading: isLoadingStatusList,
     },
     {
       fieldName: 'Joined Date',
@@ -325,8 +331,7 @@ const OCIApplications = () => {
     },
   ];
 
-
-  const tableData = ociApplicationsData;
+  const tableData = ociApplicationsData || [];
   const loading = isLoadingGet;
 
   return (
@@ -354,7 +359,7 @@ const OCIApplications = () => {
         pagination={{ currentPage: params.page, limit: params.limit }}
         count={pagination?.total_count || 0}
         columns={columns}
-        data={tableData || []}
+        data={tableData}
         isLoading={loading}
         onPageChange={(page) =>
           setParams((prev) => ({

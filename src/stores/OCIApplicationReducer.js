@@ -15,6 +15,9 @@ const useOCIApplicationReducer = create((set) => ({
     isLoadingGet: false,
     pagination: {},
 
+    ociStatusList: [],
+    isLoadingStatusList: false,
+
     createOCIApplication: async (payload, cb) => {
         try {
             set({ isCreateOCIApplicationLoading: true });
@@ -77,21 +80,22 @@ const useOCIApplicationReducer = create((set) => ({
         }
     },
 
-    updateOCIApplication: async (id, data) => {
+    updateOCIApplication: async (updatePayload,cb) => {
         try {
             set({ isUpdateOCIApplicationLoading: true });
-            const { data } = await ociApplicationService.updateOCIApplication(id, data);
+            const { data } = await ociApplicationService.updateOCIApplication(updatePayload);
             const { success } = useAlertReducer.getState();
             success(data?.response?.data?.message ?? data?.message);
             set({
                 successMessage: data?.response?.data?.message ?? data?.message,
                 isUpdateOCIApplicationLoading: false,
             });
+            cb?.(data);
         } catch (err) {
             const { error } = useAlertReducer.getState();
             set({
                 errorMessage: err?.response?.data?.message ?? err?.message,
-                isDeleteOCIApplicationLoading: false,
+                isUpdateOCIApplicationLoading: false,
             });
             error(err?.response?.data?.message ?? err.message);
         }
@@ -106,6 +110,24 @@ const useOCIApplicationReducer = create((set) => ({
             cb?.(res?.data);
         } catch (err) {
             set({ isDeleteOCIApplicationLoading: false });
+
+            const { error } = useAlertReducer.getState();
+            error(err?.response?.data?.message ?? err.message);
+        }
+    },
+
+    getOCIStatusList: async () => {
+        try {
+            set({ isLoadingStatusList: true });
+
+            const res = await ociApplicationService.getOCIStatusList();
+
+            set({
+                ociStatusList: res?.data?.data || [],
+                isLoadingStatusList: false,
+            });
+        } catch (err) {
+            set({ isLoadingStatusList: false });
 
             const { error } = useAlertReducer.getState();
             error(err?.response?.data?.message ?? err.message);

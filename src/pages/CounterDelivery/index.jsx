@@ -11,64 +11,88 @@ import CustomTable from '../../components/common/CustomTable';
 import useCounterDeliveryReducer from '../../stores/CounterDeliveryReducer';
 import { formatDate } from '../../config/config';
 import AddEditModal from './AddEditModal';
+import useUserReducer from '../../stores/UserReducer';
 
 const CounterDelivery = () => {
-  const { getData, counterDeliveryData, isLoadingGet } =
-    useCounterDeliveryReducer((state) => state);
+  const { getData, counterDeliveryData, isLoadingGet, pagination } = useCounterDeliveryReducer((state) => state);
 
   const initialParams = {
-    search: '',
     page: 1,
     limit: 10,
-    fromDate: null,
-    toDate: null,
-    sortBy: 'date',
-    sortOrder: 'DESC',
-    isExcelExport: 'false',
+    sort_by: 'created_at',
+    sort_order: 'DESC',
   };
 
   const [params, setParams] = useState(initialParams);
   const [addEditModal, setAddEditModal] = useState(false);
   const [selectedCounterDelivery, setSelectedCounterDelivery] = useState(null);
 
+  const {
+      countryList,
+      missionList,
+      centerList,
+      isLoadingCountries,
+      isLoadingMissions,
+      isLoadingCenters,
+      getCountries,
+      getMissionsByCountry,
+      getCentersByMission
+    } = useUserReducer();
+  
+    useEffect(() => {
+      getCountries();
+    }, []);
+  
+    const countryOptions = useMemo(
+      () =>
+        (countryList || []).map((item) => ({
+          value: item.country_id,
+          label: item.country_name,
+        })),
+      [countryList]
+    );
+    const missionOptions = useMemo(
+      () =>
+        (missionList || []).map((item) => ({
+          value: item.mission_id,
+          label: item.mission_name,
+        })),
+      [missionList]
+    );
+  
+    const centerOptions = useMemo(
+      () =>
+        (centerList || []).map((item) => ({
+          value: item.center_id,
+          label: item.center_name,
+        })),
+      [centerList]
+    );
+  
+    const onCountryChange = (countryId) => {
+      if (countryId) {
+        getMissionsByCountry(countryId);
+      }
+    };
+  
+    const onMissionChange = (missionId) => {
+      if (missionId) {
+        getCentersByMission(missionId);
+      }
+    };
+
   useEffect(() => {
     getData(params);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [params]);
+  }, [params, getData]);
 
   const handleSortChange = (selector) => {
     setParams((prev) => ({
       ...prev,
-      sortBy: selector,
-      sortOrder: prev.sortOrder === 'ASC' ? 'DESC' : 'ASC',
+      sort_by: selector,
+      sort_order: prev.sort_order === 'ASC' ? 'DESC' : 'ASC',
     }));
   };
 
-  const onClickEdit = (row) => {
-    setSelectedCounterDelivery(row);
-    setAddEditModal(true);
-  };
-
-  const renderAction = (row) => {
-    return (
-      <div className="d-flex gap-2 align-items-center">
-        <Tooltip
-          id={`counter-delivery-edit-${row?.id}`}
-          place="bottom"
-          content="Edit"
-          style={{ backgroundColor: '#051a53' }}
-        />
-
-        <img
-          src={editIcon}
-          alt="edit"
-          data-tooltip-id={`counter-delivery-edit-${row?.id}`}
-          onClick={() => onClickEdit(row)}
-          style={{ cursor: 'pointer' }}
-        />
-      </div>
-    );
-  };
 
   const columns = [
     {
@@ -91,13 +115,6 @@ const CounterDelivery = () => {
       sortField: 'totalApplication',
       cell: (row) => <span>{row?.totalApplication ?? 0}</span>,
     },
-    {
-      name: 'Action',
-      contentClass: 'action-wrap',
-      disableViewClick: true,
-      thclass: 'actions-edit employee-actn-edit',
-      cell: (row) => renderAction(row),
-    },
   ];
 
   const debouncedSearch = useMemo(
@@ -116,6 +133,41 @@ const CounterDelivery = () => {
     return () => debouncedSearch.cancel();
   }, [debouncedSearch]);
 
+  const filterOptions = [
+    {
+      fieldName: 'Country',
+      BE_keyName: 'country_id',
+      fieldType: 'select',
+      Options: countryOptions,
+      callBack: onCountryChange,
+      isLoading: isLoadingCountries,
+    },
+    {
+      fieldName: 'Mission',
+      BE_keyName: 'mission_id',
+      fieldType: 'select',
+      Options: missionOptions,
+      callBack: onMissionChange,
+      isLoading: isLoadingMissions,
+    },
+    {
+      fieldName: 'Center',
+      BE_keyName: 'center_id',
+      fieldType: 'select',
+      Options: centerOptions,
+      isLoading: isLoadingCenters,
+    },
+    {
+      fieldName: 'Joined Date',
+      fieldType: 'dateRangeCombined',
+      fromKey: 'from_date',
+      toKey: 'to_date',
+    },
+  ];
+
+  const tableData = counterDeliveryData || [];
+  const loading = isLoadingGet;
+
   return (
     <>
       <CommonHeader
@@ -127,17 +179,14 @@ const CounterDelivery = () => {
             setSelectedCounterDelivery(null);
           },
         }}
-        hideFilter
+        //hideFilter
         onSearch={debouncedSearch}
+        filterOptions={filterOptions}
         submitFilter={(filters) => {
-          const { fromDate, toDate, ...rest } = filters;
-
           setParams({
             ...params,
-            ...rest,
-            fromDate: fromDate ? moment(fromDate).format('YYYY-MM-DD') : null,
-            toDate: toDate ? moment(toDate).format('YYYY-MM-DD') : null,
-            page: 1,
+            ...filters,
+            page: 1
           });
         }}
         clearOptions={() => setParams(initialParams)}
@@ -145,10 +194,10 @@ const CounterDelivery = () => {
 
       <CustomTable
         pagination={{ currentPage: params.page, limit: params.limit }}
-        count={counterDeliveryData?.total || 0}
+        count={pagination?.total_count || 0}
         columns={columns}
-        data={counterDeliveryData?.data || []}
-        isLoading={isLoadingGet}
+        data={tableData}
+        isLoading={loading}
         onPageChange={(page) => setParams({ ...params, page })}
         setLimit={(limit) => setParams({ ...params, limit })}
         onSortChange={handleSortChange}

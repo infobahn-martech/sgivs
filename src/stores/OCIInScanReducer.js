@@ -33,72 +33,91 @@ const useOCIInScanReducer = create((set) => ({
         const { success, error } = useAlertReducer.getState();
 
         try {
-            set({ isLoadingPost: true, errorMessage: '', successMessage: '', });
+            set({
+                isLoadingPost: true,
+                errorMessage: '',
+                successMessage: '',
+            });
 
             const response = await ociInScanService.bulkInscan(payload);
             const data = response?.data;
 
-            // Full error from backend
-            if (data?.status === 'error') {
-                error(data?.message || 'Something went wrong');
-                callback?.(data);
-                return;
-            }
+            const status = data?.status;
+            const backendMessage = data?.message || '';
 
-            // 🟢 SUCCESS CASE (build dynamic message)
+            // Arrays
             const updated = data?.updated_references || [];
             const deleted = data?.deleted_references || [];
             const missing = data?.missing_references || [];
+            const already = data?.already_in_same_status || [];
 
-            let parts = [];
+            // 🔥 BUILD MULTI-LINE TOAST
+            let lines = [];
 
+            // 1st line → backend message
+            if (backendMessage) {
+                lines.push(backendMessage);
+            }
+
+            // 2nd line → updated
             if (updated.length) {
-                parts.push(`${updated.length} updated: ${updated.join(', ')}`);
+                lines.push(`Updated (${updated.length}): ${updated.join(', ')}`);
             }
 
+            // 3rd line → deleted
             if (deleted.length) {
-                parts.push(`${deleted.length} deleted: ${deleted.join(', ')}`);
+                lines.push(`Deleted (${deleted.length}): ${deleted.join(', ')}`);
             }
 
+            // 4th line → missing
             if (missing.length) {
-                parts.push(`${missing.length} not found: ${missing.join(', ')}`);
+                lines.push(`Missing (${missing.length}): ${missing.join(', ')}`);
             }
 
-            const message = parts.join(' | ') || 'Operation completed';
+            // 5th line → already same status (optional but useful)
+            if (already.length) {
+                lines.push(`Already same (${already.length}): ${already.join(', ')}`);
+            }
 
-            // 🟡 PARTIAL SUCCESS (has missing OR deleted OR mixed result)
-            if (missing.length > 0) {
+            const message = lines.join(' | ');
+
+            // 🔥 TOAST HANDLING (ALL CASES SAME STRUCTURE)
+            if (status === 'error') {
                 error(message);
-
-                set({
-                    errorMessage: message,
-                    successMessage: '',
-                });
-            }
-            // 🟢 FULL SUCCESS
-            else {
+            } else if (status === 'info') {
                 success(message);
-
-                set({
-                    successMessage: message,
-                    errorMessage: '',
-                });
+            } else if (status === 'partial success') {
+                success(message);
+            } else {
+                success(message);
             }
+
+            set({
+                successMessage: status === 'error' ? '' : message,
+                errorMessage: status === 'error' ? message : '',
+            });
 
             callback?.(data);
 
         } catch (err) {
+
             const msg =
                 err?.response?.data?.message ||
                 err?.message ||
                 'Something went wrong';
 
-            set({ errorMessage: msg, successMessage: '', });
-
             error(msg);
-        }
-        finally {
-            set({ isLoadingPost: false });
+
+            set({
+                errorMessage: msg,
+                successMessage: '',
+            });
+
+        } finally {
+
+            set({
+                isLoadingPost: false,
+            });
         }
     },
 }));

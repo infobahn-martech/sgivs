@@ -22,19 +22,10 @@ const ChargeAndRefunds = () => {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
 
   const initialParams = {
-    search: '',
-    application_type: '',
-    payment_mode: '',
-    transaction_type: '',
-    start_date: null,
-    end_date: null,
     page: 1,
     limit: 10,
-    
-    sortBy: 'transaction_date',
-    sortOrder: 'DESC',
-    
-    
+    sort_by: 'created_at', 
+    sort_order: 'DESC',
   };
 
   const [params, setParams] = useState(initialParams);
@@ -49,30 +40,30 @@ const ChargeAndRefunds = () => {
   }, [params]);
 
   const handleSortChange = (selector) => {
-    setParams((prevParams) => ({
-      ...prevParams,
-      sortBy: selector,
-      sortOrder: prevParams.sortOrder === 'ASC' ? 'DESC' : 'ASC',
+    setParams((prev) => ({
+      ...prev,
+      sort_by: selector,
+      sort_order: prev.sort_order === 'ASC' ? 'DESC' : 'ASC',
     }));
   };
 
-  const renderAction = (row) => {
-    return (
-      <>
-        <Tooltip id="edit" place="bottom" content="Edit" style={{ backgroundColor: '#051a53' }} />
-        <Tooltip id="delete" place="bottom" content="Delete" style={{ backgroundColor: '#051a53' }} />
+  // const renderAction = (row) => {
+  //   return (
+  //     <>
+  //       <Tooltip id="edit" place="bottom" content="Edit" style={{ backgroundColor: '#051a53' }} />
+  //       <Tooltip id="delete" place="bottom" content="Delete" style={{ backgroundColor: '#051a53' }} />
 
-        <img src={editIcon} alt="edit" data-tooltip-id="edit" />
+  //       <img src={editIcon} alt="edit" data-tooltip-id="edit" />
 
-        <img
-          src={deleteIcon}
-          alt="delete"
-          data-tooltip-id="delete"
-          onClick={() => setDeleteModalOpen(row)}
-        />
-      </>
-    );
-  };
+  //       <img
+  //         src={deleteIcon}
+  //         alt="delete"
+  //         data-tooltip-id="delete"
+  //         onClick={() => setDeleteModalOpen(row)}
+  //       />
+  //     </>
+  //   );
+  // };
 
   const columns = [
     {
@@ -146,7 +137,7 @@ const ChargeAndRefunds = () => {
   };
 
   // ✅ Decide dataset
-  const tableData = chargeAndRefundsData;
+  const tableData = chargeAndRefundsData || [];
   const loading = isLoadingGet;
 
   return (
@@ -174,7 +165,7 @@ const ChargeAndRefunds = () => {
         pagination={{ currentPage: params.page, limit: params.limit }}
         count={tableData?.total || 0}
         columns={columns}
-        data={tableData?.data || []}
+        data={tableData}
         isLoading={loading}
         onPageChange={(page) => setParams({ ...params, page })}
         setLimit={(limit) => setParams({ ...params, limit })}

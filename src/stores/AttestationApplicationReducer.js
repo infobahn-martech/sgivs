@@ -14,7 +14,7 @@ const useAttestationApplicationReducer = create((set) => ({
   successMessage: '',
   attestationApplicationsData: [],
   isLoadingGet: false,
-  pagination: {},
+  pagination: null,
 
   createAttestationApplication: async (payload, callback) => {
     try {

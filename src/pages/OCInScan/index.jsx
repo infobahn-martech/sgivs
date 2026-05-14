@@ -13,12 +13,12 @@ import useUserReducer from '../../stores/UserReducer';
 
 const OCIInScan = () => {
 
-  const { getData, ociInScanData, isLoadingGet, pagination  } = useOCIInScanReducer((state) => state);
+  const { getData, ociInScanData, isLoadingGet, pagination } = useOCIInScanReducer((state) => state);
 
   const initialParams = {
     page: 1,
     limit: 10,
-    sort_by: 'created_at', 
+    sort_by: 'created_at',
     sort_order: 'DESC',
     status_id: 26,
   };
@@ -28,16 +28,16 @@ const OCIInScan = () => {
   const [selectedInScan, setSelectedInScan] = useState(null);
 
   const {
-      countryList,
-      missionList,
-      centerList,
-      isLoadingCountries,
-      isLoadingMissions,
-      isLoadingCenters,
-      getCountries,
-      getMissionsByCountry,
-      getCentersByMission
-    } = useUserReducer();
+    countryList,
+    missionList,
+    centerList,
+    isLoadingCountries,
+    isLoadingMissions,
+    isLoadingCenters,
+    getCountries,
+    getMissionsByCountry,
+    getCentersByMission
+  } = useUserReducer();
 
   useEffect(() => {
     getCountries();
@@ -193,7 +193,7 @@ const OCIInScan = () => {
 
       <CustomTable
         pagination={{ currentPage: params.page, limit: params.limit }}
-        count={pagination?.total_count  || 0}
+        count={pagination?.total_count || 0}
         columns={columns}
         data={tableData}
         isLoading={loading}

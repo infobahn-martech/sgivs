@@ -16,7 +16,7 @@ import CustomActionModal from '../../components/common/CustomActionModal';
 
 const AttestationVasApplications = () => {
   // ✅ Toggle this (VERY useful for large admin projects)
-  const USE_MOCK = true;
+  const USE_MOCK = false;
 
   const { getData, attestationVasApplicationsData, isLoadingGet, deleteData, isLoadingDelete } =
     useAttestationVasApplicationsReducer((state) => state);

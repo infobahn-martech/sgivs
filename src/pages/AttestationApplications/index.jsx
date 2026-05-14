@@ -20,12 +20,25 @@ import CommentModal from './CommentModal';
 import ChangeServicesModal from './ChangeServices';
 import ActivityLog from './ActivityLog';
 import AddRemoveBiometric from './AddRemoveBiometric';
+import useUserReducer from '../../stores/UserReducer';
 
 const AttestationApplications = () => {
 
-  const { getAttestationApplications, attestationApplicationsData, isLoadingGet, 
-    deleteData, isLoadingDelete 
+  const { getAttestationApplications, attestationApplicationsData, isLoadingGet, pagination,
+    deleteAttestationApplication, isDeleteAttesttaionApplicationLoading
   } = useAttestationApplicationReducer((state) => state);
+
+  const {
+    countryList,
+    missionList,
+    centerList,
+    isLoadingCountries,
+    isLoadingMissions,
+    isLoadingCenters,
+    getCountries,
+    getMissionsByCountry,
+    getCentersByMission
+  } = useUserReducer();
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [modal, setModal] = useState(false);
@@ -37,35 +50,63 @@ const AttestationApplications = () => {
   const [addRemoveBiometricModal, setAddRemoveBiometricModal] = useState(false);
   const [activityLogModal, setActivityLogModal] = useState(false);
   const [feeValues, setFeeValues] = useState(null);
+  
   const initialParams = {
-    // search: '',
-    // page: 1,
-    // limit: 10,
-    // fromDate: null,
-    // toDate: null,
-    // sortBy: 'createdAt',
-    // sortOrder: 'DESC',
-    // isExcelExport: 'false',
-    search: '',
-     start: 0,
-  length: 10,
-  from_date: "2026-04-01",
-  to_date: "2026-04-10",
-  country_id: "",
-  mission_id: "",
-  center_id: "",
-  passport_no: "",
-  oci_file_no: "",
-  status: 12,
-  applicant_name: ""
+    page: 1,
+    limit: 10,
+    sort_by: 'created_at', 
+    sort_order: 'DESC',
   };
 
   const [params, setParams] = useState(initialParams);
+
+  useEffect(() => {
+      getCountries();
+    }, []);
+  
+    const countryOptions = useMemo(
+      () =>
+        (countryList || []).map((item) => ({
+          value: item.country_id,
+          label: item.country_name,
+        })),
+      [countryList]
+    );
+    const missionOptions = useMemo(
+      () =>
+        (missionList || []).map((item) => ({
+          value: item.mission_id,
+          label: item.mission_name,
+        })),
+      [missionList]
+    );
+  
+    const centerOptions = useMemo(
+      () =>
+        (centerList || []).map((item) => ({
+          value: item.center_id,
+          label: item.center_name,
+        })),
+      [centerList]
+    );
+  
+    const onCountryChange = (countryId) => {
+      if (countryId) {
+        getMissionsByCountry(countryId);
+      }
+    };
+  
+    const onMissionChange = (missionId) => {
+      if (missionId) {
+        getCentersByMission(missionId);
+      }
+    };
 
   const onRefreshAttestationApplications = () => {
     getAttestationApplications(params);
 
     setModal(false);
+    setViewModal(false);
     setPrintReceiptModal(false);
     setDeleteModalOpen(false);
   };
@@ -75,10 +116,10 @@ const AttestationApplications = () => {
   }, [params]);
 
   const handleSortChange = (selector) => {
-    setParams((prevParams) => ({
-      ...prevParams,
-      sortBy: selector,
-      sortOrder: prevParams.sortOrder === 'ASC' ? 'DESC' : 'ASC',
+    setParams((prev) => ({
+      ...prev,
+      sort_by: selector,
+      sort_order: prev.sort_order === 'ASC' ? 'DESC' : 'ASC',
     }));
   };
 
@@ -122,9 +163,8 @@ const AttestationApplications = () => {
     setAddRemoveBiometricModal(row);
   };
 
-
   const columns = [
-    { name: 'Reference No', selector: 'appointment_reference_no' },
+    { name: 'Reference No', selector: 'appointment_reference_no', sort: true, },
     {
       name: 'Name',
       selector: 'name',
@@ -135,31 +175,34 @@ const AttestationApplications = () => {
 
         return <span>{fullName || '-'}</span>;
       },
+      sort: true,
     },
-    { name: 'Center', selector: 'center_name' },
-    { name: 'Gender', selector: 'gender' },
-    { name: 'Passport No', selector: 'passport_no' },
-    { name: 'Application Type', selector: 'appointment_type' },
-    { name: 'Service Name', selector: 'service_id' },
+    { name: 'Center', selector: 'center_name', sort: true, },
+    { name: 'Gender', selector: 'gender', sort: true, },
+    { name: 'Passport No', selector: 'passport_no', sort: true, },
+    { name: 'Application Type', selector: 'appointment_type', sort: true, },
+    { name: 'Service Name', selector: 'service_name', sort: true, },
     {
       name: 'Delivery Type',
       selector: 'delivery_type',
       cell: (row) => <span>{row?.deliveryType || 'Counter Delivery'}</span>,
+      sort: true,
     },
     {
       name: 'Status / By, On',
-      selector: 'status',
+      selector: 'status_name',
       cell: (row) => (
         <div className="d-flex flex-column">
           <span>
-            <b>{row?.status || '-'}</b>
+            <b>{row?.status_name || '-'}</b>
           </span>
           <small className="text-muted">
-            {row?.created_by || '-'}
+            {row?.created_by_name || '-'}
             {row?.created_at ? `, ${formatDate(row.created_at)}` : ''}
           </small>
         </div>
       ),
+      sort: true,
     },
     {
       name: 'Action',
@@ -183,7 +226,6 @@ const AttestationApplications = () => {
     },
   ];
 
-
   // ✅ Stable debounce
   const debouncedSearch = useMemo(
     () =>
@@ -197,15 +239,64 @@ const AttestationApplications = () => {
     []
   );
 
-  const handleDelete = () => {
-    if (deleteModalOpen?.id) {
-      deleteData(deleteModalOpen?.id, () => {
-        onRefreshAttestationApplications();
-      });
-    }
+  const handleDelete = (comment) => {
+    if (!deleteModalOpen?.id) return;
+
+    const employeeId = localStorage.getItem('employee_id');
+
+    const payload = {
+      attesation_application_id: deleteModalOpen.id,
+      comment: comment,
+      comment_by:employeeId,
+    };
+
+    deleteAttestationApplication(payload, () => {
+      onRefreshAttestationApplications();
+    });
   };
 
-  const tableData = attestationApplicationsData;
+  const filterOptions = [
+    {
+      fieldName: 'Country',
+      BE_keyName: 'country_id',
+      fieldType: 'select',
+      Options: countryOptions,
+      callBack: onCountryChange,
+      isLoading: isLoadingCountries,
+    },
+    {
+      fieldName: 'Mission',
+      BE_keyName: 'mission_id',
+      fieldType: 'select',
+      Options: missionOptions,
+      callBack: onMissionChange,
+      isLoading: isLoadingMissions,
+    },
+    {
+      fieldName: 'Center',
+      BE_keyName: 'center_id',
+      fieldType: 'select',
+      Options: centerOptions,
+      isLoading: isLoadingCenters,
+    },
+    {
+      fieldName: 'Status',
+      BE_keyName: 'status',
+      fieldType: 'select',
+      Options: [
+        { label: 'Active', value: 1 },
+        { label: 'Blocked', value: 2 },
+      ],
+    },
+    {
+      fieldName: 'Joined Date',
+      fieldType: 'dateRangeCombined',
+      fromKey: 'from_date',
+      toKey: 'to_date',
+    },
+  ];
+
+  const tableData = attestationApplicationsData || [];
   const loading = isLoadingGet;
 
   return (
@@ -216,17 +307,14 @@ const AttestationApplications = () => {
           type: 'button',
           action: () => setModal(true),
         }}
-        hideFilter
+        //hideFilter
         onSearch={debouncedSearch}
+        filterOptions={filterOptions}
         submitFilter={(filters) => {
-          const { fromDate, toDate, ...rest } = filters;
-
           setParams({
             ...params,
-            ...rest,
-            fromDate: fromDate ? moment(fromDate).format('YYYY-MM-DD') : null,
-            toDate: toDate ? moment(toDate).format('YYYY-MM-DD') : null,
-            page: 1,
+            ...filters,
+            page: 1
           });
         }}
         clearOptions={() => setParams(initialParams)}
@@ -234,9 +322,9 @@ const AttestationApplications = () => {
 
       <CustomTable
         pagination={{ currentPage: params.page, limit: params.limit }}
-        count={tableData?.total || 0}
+        count={pagination?.total_records || 0}
         columns={columns}
-        data={tableData || []}
+        data={tableData}
         isLoading={loading}
         onPageChange={(page) => setParams({ ...params, page })}
         setLimit={(limit) => setParams({ ...params, limit })}

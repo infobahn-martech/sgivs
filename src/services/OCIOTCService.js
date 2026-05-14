@@ -1,5 +1,9 @@
 import Gateway from '../config/gateway';
 
-const getData = (params) => Gateway.get('/oci-otc', { params });
+const getData = (payload) => Gateway.get('/oci/outscan-to-courier-list', payload);
+const bulkOTC = (payload) => Gateway.post('/oci/bulk-outscan-to-courier', payload);
 
-export default { getData };
+export default {
+    getData,
+    bulkOTC
+};

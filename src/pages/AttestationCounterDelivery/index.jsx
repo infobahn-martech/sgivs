@@ -11,79 +11,88 @@ import CustomTable from '../../components/common/CustomTable';
 import useAttestationCounterDeliveryReducer from '../../stores/AttestationCounterDeliveryReducer';
 import { formatDate } from '../../config/config';
 import AddEditModal from './AddEditModal';
+import useUserReducer from '../../stores/UserReducer';
 
 const AttestationCounterDelivery = () => {
-  const USE_MOCK = true;
 
-  const { getData, attestationCounterDeliveryData, isLoadingGetAttestationCounterDelivery } =
-    useAttestationCounterDeliveryReducer((state) => state);
+  const { getData, attestationCounterDeliveryData, isLoadingGet, pagination } = useAttestationCounterDeliveryReducer((state) => state);
+
   const initialParams = {
-    search: '',
     page: 1,
     limit: 10,
-    fromDate: null,
-    toDate: null,
-    sortBy: 'date',
-    sortOrder: 'DESC',
-    isExcelExport: 'false',
+    sort_by: 'created_at',
+    sort_order: 'DESC',
   };
 
   const [params, setParams] = useState(initialParams);
   const [addEditModal, setAddEditModal] = useState(false);
   const [selectedAttestationCounterDelivery, setSelectedAttestationCounterDelivery] = useState(null);
 
-  // ✅ Dummy Data
-  const mockAttestationCounterDeliveryData = {
-    total: 5,
-    data: [
-      { id: 1, date: '2025-01-10T09:30:00Z', by: 'Admin', totalApplication: 12 },
-      { id: 2, date: '2025-02-14T12:15:00Z', by: 'Operator', totalApplication: 7 },
-      { id: 3, date: '2025-03-05T08:45:00Z', by: 'Admin', totalApplication: 19 },
-      { id: 4, date: '2025-03-20T10:00:00Z', by: 'Supervisor', totalApplication: 5 },
-      { id: 5, date: '2025-04-02T11:20:00Z', by: 'Admin', totalApplication: 9 },
-    ],
+  const {
+    countryList,
+    missionList,
+    centerList,
+    isLoadingCountries,
+    isLoadingMissions,
+    isLoadingCenters,
+    getCountries,
+    getMissionsByCountry,
+    getCentersByMission
+  } = useUserReducer();
+
+  useEffect(() => {
+    getCountries();
+  }, []);
+
+  const countryOptions = useMemo(
+    () =>
+      (countryList || []).map((item) => ({
+        value: item.country_id,
+        label: item.country_name,
+      })),
+    [countryList]
+  );
+  const missionOptions = useMemo(
+    () =>
+      (missionList || []).map((item) => ({
+        value: item.mission_id,
+        label: item.mission_name,
+      })),
+    [missionList]
+  );
+
+  const centerOptions = useMemo(
+    () =>
+      (centerList || []).map((item) => ({
+        value: item.center_id,
+        label: item.center_name,
+      })),
+    [centerList]
+  );
+
+  const onCountryChange = (countryId) => {
+    if (countryId) {
+      getMissionsByCountry(countryId);
+    }
+  };
+
+  const onMissionChange = (missionId) => {
+    if (missionId) {
+      getCentersByMission(missionId);
+    }
   };
 
   useEffect(() => {
-    if (!USE_MOCK) getData(params);
-  }, [params, USE_MOCK, getData]);
+    getData(params);
+  }, [params, getData]);
 
   const handleSortChange = (selector) => {
     setParams((prev) => ({
       ...prev,
-      sortBy: selector,
-      sortOrder: prev.sortOrder === 'ASC' ? 'DESC' : 'ASC',
+      sort_by: selector,
+      sort_order: prev.sort_order === 'ASC' ? 'DESC' : 'ASC',
     }));
   };
-
-  const onClickEdit = (row) => {
-    setSelectedAttestationCounterDelivery(row);
-    setAddEditModal(true);
-  };
-
-  const renderAction = (row) => {
-    return (
-      <div className="d-flex gap-2 align-items-center">
-        <Tooltip
-          id={`counter-delivery-edit-${row?.id}`}
-          place="bottom"
-          content="Edit"
-          style={{ backgroundColor: '#051a53' }}
-        />
-
-        <button
-          type="button"
-          className="btn btn-link p-0"
-          data-tooltip-id={`counter-delivery-edit-${row?.id}`}
-          onClick={() => onClickEdit(row)}
-          style={{ textDecoration: 'none' }}
-        >
-          <img src={editIcon} alt="edit" />
-        </button>
-      </div>
-    );
-  };
-
   const columns = [
     {
       name: 'Date',
@@ -130,8 +139,40 @@ const AttestationCounterDelivery = () => {
     return () => debouncedSearch.cancel();
   }, [debouncedSearch]);
 
-  const tableData = USE_MOCK ? mockAttestationCounterDeliveryData : attestationCounterDeliveryData;
-  const loading = USE_MOCK ? false : isLoadingGetAttestationCounterDelivery;
+  const tableData = attestationCounterDeliveryData || [];
+  const loading = isLoadingGet;
+
+  const filterOptions = [
+    {
+      fieldName: 'Country',
+      BE_keyName: 'country_id',
+      fieldType: 'select',
+      Options: countryOptions,
+      callBack: onCountryChange,
+      isLoading: isLoadingCountries,
+    },
+    {
+      fieldName: 'Mission',
+      BE_keyName: 'mission_id',
+      fieldType: 'select',
+      Options: missionOptions,
+      callBack: onMissionChange,
+      isLoading: isLoadingMissions,
+    },
+    {
+      fieldName: 'Center',
+      BE_keyName: 'center_id',
+      fieldType: 'select',
+      Options: centerOptions,
+      isLoading: isLoadingCenters,
+    },
+    {
+      fieldName: 'Joined Date',
+      fieldType: 'dateRangeCombined',
+      fromKey: 'from_date',
+      toKey: 'to_date',
+    },
+  ];
 
   return (
     <>
@@ -144,17 +185,14 @@ const AttestationCounterDelivery = () => {
             setSelectedAttestationCounterDelivery(null);
           },
         }}
-        hideFilter
+        //hideFilter
         onSearch={debouncedSearch}
+        filterOptions={filterOptions}
         submitFilter={(filters) => {
-          const { fromDate, toDate, ...rest } = filters;
-
           setParams({
             ...params,
-            ...rest,
-            fromDate: fromDate ? moment(fromDate).format('YYYY-MM-DD') : null,
-            toDate: toDate ? moment(toDate).format('YYYY-MM-DD') : null,
-            page: 1,
+            ...filters,
+            page: 1
           });
         }}
         clearOptions={() => setParams(initialParams)}
@@ -162,9 +200,9 @@ const AttestationCounterDelivery = () => {
 
       <CustomTable
         pagination={{ currentPage: params.page, limit: params.limit }}
-        count={tableData?.total || 0}
+        count={pagination?.total_count || 0}
         columns={columns}
-        data={tableData?.data || []}
+        data={tableData}
         isLoading={loading}
         onPageChange={(page) => setParams({ ...params, page })}
         setLimit={(limit) => setParams({ ...params, limit })}

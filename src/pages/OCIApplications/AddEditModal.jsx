@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -10,9 +10,13 @@ import useOCIApplicationReducer from '../../stores/OCIApplicationReducer';
 import useAppointmentTypeReducer from '../../stores/AppointmentTypeReducer';
 import useApplicationModeReducer from '../../stores/ApplicationModeReducer';
 import useUserReducer from '../../stores/UserReducer';
-import useCourierTypeReducer from '../../stores/CourierTypeReducer';
+
 import useServiceReducer from '../../stores/ServiceReducer';
 import useServiceOptions from '../../hooks/useServiceOptions';
+import useCourierTypeReducer from '../../stores/CourierTypeReducer';
+
+const OCI_SERVICE_TYPE_ID = 3;
+const CARD_PAYMENT_MODE_ID = '2';
 
 // ===================== OPTIONS =====================
 
@@ -43,9 +47,6 @@ const cardTypeOptions = [
   { value: '2', label: 'Local Bank Credit Card' },
   { value: '3', label: 'International Bank Card' },
 ];
-
-const OCI_SERVICE_TYPE_ID = 3;
-const CARD_PAYMENT_MODE_ID = '2';
 
 function getEmployeeIdFromStorage() {
   try {
@@ -110,7 +111,7 @@ const schema = z
     afs: z.array(z.string()).optional(),
     photocopyCounts: z
       .number()
-      .min(0, 'Invalid photocopy count')
+      .min(1, 'Minimum 1 photocopy required')
       .optional(),
 
     paymentMode: z.string().nonempty('Payment mode is required'),
@@ -177,7 +178,7 @@ const schema = z
       }
     }
 
-    if (val.paymentMode === '2') {
+    if (val.paymentMode === CARD_PAYMENT_MODE_ID) {
       if (!val.cardType) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
@@ -208,10 +209,9 @@ export function AddEditModal({ showModal, closeModal, onRefreshOCIApplications, 
   const { options: serviceRequestedOptions, loading: serviceLoading } = useServiceOptions(serviceTypeId);
 
   const {
-    createOCIApplication,
-    updateOCIApplication,
-    isCreateOCIApplicationLoading,
-    isUpdateOCIApplicationLoading,
+    createOCIApplication, isCreateOCIApplicationLoading,
+    getOCIApplicationById, editORviewOCIApplicationData,
+    updateOCIApplication, isUpdateOCIApplicationLoading,
   } = useOCIApplicationReducer((state) => state);
 
   // ================= INIT LOAD =================
@@ -258,7 +258,6 @@ export function AddEditModal({ showModal, closeModal, onRefreshOCIApplications, 
   }, [courierTypeList]);
 
   // ================= FORM =================
-  
 
   const defaultValues = useMemo(
     () => ({
@@ -314,75 +313,148 @@ export function AddEditModal({ showModal, closeModal, onRefreshOCIApplications, 
 
   const serviceRequested = watch('serviceRequested');
   const courierRequired = watch('courierRequired');
-  const selectedAfs = watch('afs') || [];
+  const selectedAfs = watch('afs', []);
   const paymentMode = watch('paymentMode');
 
-  // Card mode detection based on ID (2)
-    const isCardPayment = String(paymentMode) === String(CARD_PAYMENT_MODE_ID);
-  
-    // Clear card fields if switching away from Card
-    useEffect(() => {
-      if (!isCardPayment) {
-        setValue('cardType', '', { shouldValidate: true });
-        setValue('transactionId', '', { shouldValidate: true });
-      }
-    }, [isCardPayment, setValue]);
+  const [serviceManuallyChanged, setServiceManuallyChanged] = useState(false);
 
-  // Dynamic fee calculation (replace with your actual fee logic/API)
-    const feeValues = useMemo(() => {
-      const govtFees = 0;
-      const icwfFees = 0;
-      const serviceFeesByType = { Normal: 6, Tatkal: 10, Courier: 8 };
-      const selectedLabel = serviceRequestedOptions.find((o) => o.value === serviceRequested)?.label;
-      const serviceFees = selectedLabel ? serviceFeesByType[selectedLabel] ?? 6 : 0;
-      return {
-        govtFees,
-        icwfFees,
-        serviceFees,
-        totalFees: govtFees + icwfFees + serviceFees,
-        onlinePaid: '...',
-      };
-    }, [serviceRequested, serviceRequestedOptions]);
-  
-    // Notify parent of fee values when Service Requested is selected (for FeeCalculator outside modal)
-    useEffect(() => {
-      if (typeof onFeeValuesChange !== 'function') return;
-      if (serviceRequested) onFeeValuesChange(feeValues);
-      else onFeeValuesChange(null);
-    }, [serviceRequested, feeValues, onFeeValuesChange]);
+  const isEditMode = !!showModal?.oci_application_id;
+
+  useEffect(() => {
+    if (serviceRequested) {
+      getServiceById(serviceRequested);
+    }
+  }, [serviceRequested, getServiceById]);
+
+  const onServiceChange = (e) => {
+    const value = e.target.value;
+
+    setValue('serviceRequested', value, {
+      shouldValidate: true,
+    });
+
+    if (isEditMode) {
+      setServiceManuallyChanged(true);
+    }
+  };
+
+  // Card mode detection based on ID (2)
+  const isCardPayment = String(paymentMode) === CARD_PAYMENT_MODE_ID;
+
+  // Clear card fields if switching away from Card
+  useEffect(() => {
+    if (!isCardPayment && !isEditMode) {
+      setValue('cardType', '', { shouldValidate: true });
+      setValue('transactionId', '', { shouldValidate: true });
+    }
+  }, [isCardPayment, setValue]);
+
+  // Dynamic fee calculation
+  const feeValues = useMemo(() => {
+    // ✅ EDIT MODE + NOT CHANGED → keep API fees (don’t override)
+    if (isEditMode && !serviceManuallyChanged) {
+      return null; // or keep previous API fee state externally
+    }
+
+    const govtFees = Number(selectedService?.govt_fee || 0);
+    const icwfFees = Number(selectedService?.icwf_fee || 0);
+    const serviceFees = Number(selectedService?.service_fee || 0);
+
+    return {
+      govtFees,
+      icwfFees,
+      serviceFees,
+      totalFees: govtFees + icwfFees + serviceFees,
+      onlinePaid: 0,
+    };
+  }, [selectedService, showModal?.oci_application_id, serviceManuallyChanged]);
+
+  // Notify parent of fee values when Service Requested is selected (for FeeCalculator outside modal)
+  useEffect(() => {
+    if (typeof onFeeValuesChange !== 'function') return;
+
+    // EDIT MODE + not touched → keep API fees (already sent in prefill)
+    if (showModal?.oci_application_id && !serviceManuallyChanged) return;
+
+    if (serviceRequested) {
+      onFeeValuesChange(feeValues);
+    } else {
+      onFeeValuesChange(null);
+    }
+  }, [
+    serviceRequested,
+    feeValues,
+    onFeeValuesChange,
+    showModal?.oci_application_id,
+    serviceManuallyChanged,
+  ]);
 
   // ================= EDIT PREFILL =================
 
+  useEffect(() => {
+    if (!showModal?.oci_application_id) return;
+
+    getOCIApplicationById(showModal.oci_application_id);
+  }, [showModal?.oci_application_id, getOCIApplicationById]);
+
   // Prefill form when editing
   useEffect(() => {
-    if (!showModal) return;
+    if (!showModal?.oci_application_id) return;
+    if (!editORviewOCIApplicationData) return;
 
-    if (showModal?.oci_application_id) {
-      reset({
-        appointmentPostalRefNo: showModal.appointment_reference_no || '',
-        applicationType: showModal.appointment_type_id || '',
-        applicationBy: showModal.application_mode_id || '',
-        ociFileNo: showModal.oci_file_number || '',
-        serviceRequested: showModal.service_id || '',
+    const data = editORviewOCIApplicationData;
 
-        firstName: showModal.first_name || '',
-        surname: showModal.surname || '',
-        dob: showModal.dob ? showModal.dob.split(' ')[0] : '',
-        gender: showModal.gender || '',
 
-        mobileNumber: showModal.mobile_number || '',
+    const app = data?.oci_application || {};
+    const fees = data?.fees || {};
+    const payment = data?.payment || {};
 
-        email: showModal.email || '',
-        passportNo: showModal.passport_no || '',
-        fatherMotherSpouseName: showModal.father_husband_name || '',
+    onFeeValuesChange({ govtFees: fees.govt_fee, icwfFees: fees.icwf_fee, serviceFees: fees.sgv_service_fee, totalFees: fees.grand_total, onlinePaid: fees.online_paid })
 
-        courierRequired: showModal.courier === "1",
-        paymentMode: '',
-      });
-    } else {
-      reset(defaultValues);
-    }
-  }, [showModal, reset]);
+    reset({
+      appointmentPostalRefNo: app.appointment_reference_no || '',
+      applicationType: String(app.appointment_type_id || ''),
+      applicationBy: String(app.application_mode_id || ''),
+      ociFileNo: app.oci_file_number || '',
+      serviceRequested: String(app.service_id || ''),
+
+      firstName: app.first_name || '',
+      surname: app.surname || '',
+      dob: app.dob ? app.dob.split(' ')[0] : '',
+      gender: app.gender || '',
+
+      mobileNumber: app.mobile_number || '',
+      email: app.email || '',
+      passportNo: app.passport_no || '',
+      fatherMotherSpouseName: app.father_husband_name || '',
+
+      returnCourierAddress: app.return_courier_address || '',
+
+      courierRequired: app.courier === "1" || app.courier === 1,
+
+      residenceCountry: app.residence_country_id || '',
+      addressLine1: app.address_line_1 || '',
+      addressLine2: app.address_line_2 || '',
+      state: app.state || '',
+      city: app.city || '',
+      postalCode: app.postal_code || '',
+      courierType: app.courier_type ? String(app.courier_type) : '',
+
+      afs: (data?.vas_services || []).map((item) =>
+        String(item.vas_service_id)
+      ),
+
+      photocopyCounts:
+        data?.vas_services?.find(
+          (item) => item.vas_service_id === 1
+        )?.quantity || 1,
+
+      paymentMode: String(payment.payment_mode_id || ''),
+      cardType: String(payment.card_type_id || ''),
+      transactionId: payment.transaction_id || '',
+    });
+
+  }, [editORviewOCIApplicationData]);
 
   // ================= SUBMIT =================
   const onSubmit = (data) => {
@@ -415,18 +487,19 @@ export function AddEditModal({ showModal, closeModal, onRefreshOCIApplications, 
       created_by: employeeId,
     };
 
-    // ✅ ONLY ADD courier fields when required
+    // ONLY ADD courier fields when required
     let courier_details = null;
 
     if (data.courierRequired) {
+
       courier_details = {
         country_id: data.residenceCountry,
-        address_1	: data.addressLine1,
-        address_2	: data.addressLine2,
+        address_1: data.addressLine1,
+        address_2: data.addressLine2,
         state: data.state,
         city: data.city,
         postal_code: data.postalCode,
-        courier_type_id	: Number(data.courierType),
+        courier_type_id: Number(data.courierType),
       };
     }
     const vas_services = (data.afs || []).map((id) => {
@@ -456,31 +529,40 @@ export function AddEditModal({ showModal, closeModal, onRefreshOCIApplications, 
 
       payment: {
         payment_mode_id: Number(data.paymentMode),
-        card_type_id: Number(data.cardType),
+        card_type_id: data.cardType
+          ? Number(data.cardType)
+          : null,
         transaction_id: data.transactionId || "",
       },
       vas_services,
     };
 
 
-    if (showModal?.oci_application_id) {
-      updateOCIApplication(showModal.oci_application_id, payload, () => {
+    if (isEditMode) {
+      const updatePayload = {
+        ...payload,
+        oci_application_id: showModal.oci_application_id,
+      };
+
+      updateOCIApplication(updatePayload, () => {
         onRefreshOCIApplications?.();
+        reset(defaultValues);
         closeModal?.();
       });
     } else {
       createOCIApplication(payload, () => {
         onRefreshOCIApplications?.();
+        reset(defaultValues);
         closeModal?.();
       });
     }
-  };  
+  };
 
   const onToggleCourier = (e) => {
     const checked = e.target.checked;
     setValue('courierRequired', checked, { shouldValidate: true });
 
-    if (!checked) {
+    if (!checked && !isEditMode) {
       setValue('returnCourierAddress', '');
       setValue('residenceCountry', '');
       setValue('addressLine1', '');
@@ -496,7 +578,7 @@ export function AddEditModal({ showModal, closeModal, onRefreshOCIApplications, 
     const current = new Set(selectedAfs);
     if (current.has(value)) {
       current.delete(value);
-      if (value === '1') setValue('photocopyCounts', '1', { shouldValidate: true });
+      if (value === '1') setValue('photocopyCounts', 1, { shouldValidate: true });
     } else {
       current.add(value);
     }
@@ -505,7 +587,7 @@ export function AddEditModal({ showModal, closeModal, onRefreshOCIApplications, 
 
   const renderHeader = () => (
     <>
-      <h4 className="modal-title">{showModal?.id ? 'Edit OCI Application' : 'Add OCI Application'}</h4>
+      <h4 className="modal-title">{showModal?.oci_application_id ? 'Edit OCI Application' : 'Add OCI Application'}</h4>
       <button
         type="button"
         className="btn-close"
@@ -583,7 +665,7 @@ export function AddEditModal({ showModal, closeModal, onRefreshOCIApplications, 
             <label className="form-label">
               Service Requested <span className="text-danger">*</span>
             </label>
-            <select className="form-control" {...register('serviceRequested')}>
+            <select className="form-control" {...register('serviceRequested')} onChange={onServiceChange}>
               <option value="">
                 {serviceLoading ? 'Loading services...' : 'Select'}
               </option>
@@ -703,7 +785,7 @@ export function AddEditModal({ showModal, closeModal, onRefreshOCIApplications, 
         <div className="col-md-6">
           <div className="form-group">
             <label className="form-label">Father/Mother/Spouse Name (For courier delivery)</label>
-            <input type="text" className="form-control" rows={3} autoComplete="off" maxLength={80} {...register('fatherMotherSpouseName')} />
+            <input type="text" className="form-control" autoComplete="off" maxLength={80} {...register('fatherMotherSpouseName')} />
             {errors.fatherMotherSpouseName && <span className="error">{errors.fatherMotherSpouseName.message}</span>}
           </div>
         </div>
@@ -892,7 +974,7 @@ export function AddEditModal({ showModal, closeModal, onRefreshOCIApplications, 
           </div>
         </div>
       </div>
-      {paymentMode === '2' && (
+      {paymentMode === CARD_PAYMENT_MODE_ID && (
         <>
           <div className="row">
             <div className="col-md-6">
@@ -935,7 +1017,7 @@ export function AddEditModal({ showModal, closeModal, onRefreshOCIApplications, 
     </div>
   );
 
-  const isLoading = isCreateOCIApplicationLoading || isUpdateOCIApplicationLoading;;
+  const isLoading = isCreateOCIApplicationLoading || isUpdateOCIApplicationLoading;
   const renderFooter = () => (
     <div className="modal-footer bottom-btn-sec">
       <button type="button" className="btn btn-cancel" onClick={closeModal}>

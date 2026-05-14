@@ -125,7 +125,7 @@ const useServiceReducer = create((set) => ({
     try {
       set({ isLoadingGet: true });
 
-      const { data } = await serviceService.getServiceById({ service_id });
+      const { data } = await serviceService.getServiceById(service_id);
 
       set({
         selectedService: data?.data, // store single service

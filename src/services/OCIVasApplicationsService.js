@@ -1,7 +1,7 @@
 import Gateway from '../config/gateway';
 
 
-const getData = (params) => Gateway.get('/oci-vas-applications', { params });
+const getData = (payload) => Gateway.post('finance/oci_vas_report', payload);
 
 export default {
     getData,

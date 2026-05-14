@@ -2,16 +2,20 @@ import React, { useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+
 import CustomModal from '../../components/common/CustomModal';
 import Phonenumber from '../../components/common/Phonenumber';
+
 import useAttestationApplicationReducer from '../../stores/AttestationApplicationReducer';
 import useAppointmentTypeReducer from '../../stores/AppointmentTypeReducer';
 import useApplicationModeReducer from '../../stores/ApplicationModeReducer';
 import useUserReducer from '../../stores/UserReducer';
+
+import useServiceReducer from '../../stores/ServiceReducer';
 import useServiceOptions from '../../hooks/useServiceOptions';
 import useCourierTypeReducer from '../../stores/CourierTypeReducer';
 
-// ===================== OPTIONS (Replace with API options if needed) =====================
+// ===================== OPTIONS =====================
 
 const tokenOptions = [
 ];
@@ -22,11 +26,6 @@ const genderOptions = [
   { value: 'Other', label: 'Other' },
 ];
 
-const paymentModeOptions = [
-  { value: '1', label: 'Cash' },
-  { value: '2', label: 'Credit Card / Debit Card / Other POS Transaction' },
-];
-
 // Application Facilitation Services (multiple checkbox)
 const afsOptions = [
   { value: '1', label: 'Photocopy' },
@@ -35,11 +34,41 @@ const afsOptions = [
   { value: '4', label: 'SMS' },
 ];
 
-const cardTypeOptions = [
-  { value: 'Local Bank Debit Card', label: 'Local Bank Debit Card' },
-  { value: 'Local Bank Credit Card', label: 'Local Bank Credit Card' },
-  { value: 'International Bank Card', label: 'International Bank Card' },
+const paymentModeOptions = [
+  { value: '1', label: 'Cash' },
+  { value: '2', label: 'Credit Card / Debit Card / Other POS Transaction' },
 ];
+
+const cardTypeOptions = [
+  { value: '1', label: 'Local Bank Debit Card' },
+  { value: '2', label: 'Local Bank Credit Card' },
+  { value: '3', label: 'International Bank Card' },
+];
+
+const ATTESTATION_SERVICE_TYPE_ID = 4;
+const CARD_PAYMENT_MODE_ID = '2';
+
+function getEmployeeIdFromStorage() {
+  try {
+    const val = localStorage.getItem('employee_id');
+    if (val == null) return null;
+    const n = parseInt(val, 10);
+    return Number.isNaN(n) ? null : n;
+  } catch {
+    return null;
+  }
+}
+
+function getCenterIdFromStorage() {
+  try {
+    const val = localStorage.getItem('center_id');
+    if (val == null) return null;
+    const n = parseInt(val, 10);
+    return Number.isNaN(n) ? null : n;
+  } catch {
+    return null;
+  }
+}
 
 // ===================== VALIDATION =====================
 const schema = z
@@ -89,6 +118,10 @@ const schema = z
     courierType: z.string().optional(),
 
     afs: z.array(z.string()).optional(),
+    photocopyCounts: z
+      .number()
+      .min(0, 'Invalid photocopy count')
+      .optional(),
 
     paymentMode: z.string().nonempty('Payment mode is required'),
     cardType: z.string().optional(),
@@ -174,10 +207,24 @@ const schema = z
   });
 
 // ===================== COMPONENT =====================
-export function AddEditModal({ showModal, closeModal, onRefreshAttestationApplications, onFeeValuesChange, serviceTypeId = 4, }) {
+export function AddEditModal({ showModal, closeModal, onRefreshAttestationApplications, onFeeValuesChange, serviceTypeId = ATTESTATION_SERVICE_TYPE_ID, }) {
 
-  // Start Dropdown
   const { appointmentTypeData, getData: fetchAppointmentTypes, } = useAppointmentTypeReducer((state) => state);
+  const { applicationModeData, getData: fetchApplicationModes, } = useApplicationModeReducer((state) => state);
+  const { countryList, getCountries } = useUserReducer();
+  const { courierTypeList, getData: fetchCourierTypes } = useCourierTypeReducer((state) => state);
+  const { getServiceById, selectedService } = useServiceReducer();
+
+  const { options: serviceRequestedOptions, loading: serviceLoading } = useServiceOptions(serviceTypeId);
+
+  const {
+    createAttestationApplication,
+    updateAttestationApplication,
+    isCreateAttestationApplicationLoading,
+    isUpdateAttestationApplicationLoading,
+  } = useAttestationApplicationReducer((state) => state);
+
+  // ================= INIT LOAD =================
   useEffect(() => {
     fetchAppointmentTypes();
   }, [fetchAppointmentTypes]);
@@ -189,10 +236,7 @@ export function AddEditModal({ showModal, closeModal, onRefreshAttestationApplic
       })),
     [appointmentTypeData]
   );
-  // End Dropdown
 
-  // Start Dropdown
-  const { applicationModeData, getData: fetchApplicationModes, } = useApplicationModeReducer((state) => state);
   useEffect(() => {
     fetchApplicationModes();
   }, [fetchApplicationModes]);
@@ -202,11 +246,7 @@ export function AddEditModal({ showModal, closeModal, onRefreshAttestationApplic
       label: item.application_mode,
     }));
   }, [applicationModeData]);
-  // End Dropdown
 
-
-  // Start Country Dropdown
-  const { countryList, getCountries, isLoadingCountries } = useUserReducer((state) => state);
   useEffect(() => {
     getCountries();
   }, [getCountries]);
@@ -216,10 +256,7 @@ export function AddEditModal({ showModal, closeModal, onRefreshAttestationApplic
       label: item.country_name,
     }));
   }, [countryList]);
-  // End Country Dropdown
 
-  // Start Country Dropdown
-  const { courierTypeList, getData: fetchCourierTypes } = useCourierTypeReducer((state) => state);
   useEffect(() => {
     fetchCourierTypes();
   }, [fetchCourierTypes]);
@@ -229,41 +266,46 @@ export function AddEditModal({ showModal, closeModal, onRefreshAttestationApplic
       label: item.courier_type,
     }));
   }, [courierTypeList]);
-  // End Country Dropdown
 
-  const { createAttestationApplication, patchData, isLoading } = useAttestationApplicationReducer((state) => state);
-  const { options: serviceRequestedOptions, loading: serviceLoading } = useServiceOptions(serviceTypeId);
+  // ================= FORM =================
+
   const defaultValues = useMemo(
     () => ({
       appointmentPostalRefNo: '',
       applicationType: '',
       applicationBy: '',
-
       serviceRequested: '',
       token: '',
 
       firstName: '',
       surname: '',
-
       dob: '',
       gender: '',
-
       mobileNumber: '',
       email: '',
-
       nationality: '',
       fatherMotherSpouseName: '',
 
       passportNo: '',
-      passportPlaceOfIssue:'',
-      passportDateOfIssue:'',
+      passportPlaceOfIssue: '',
+      passportDateOfIssue: '',
       passportExpiryDate: '',
 
       returnCourierAddress: '',
 
       courierRequired: false,
-      
+
+      courierRequired: false,
+      residenceCountry: '',
+      addressLine1: '',
+      addressLine2: '',
+      state: '',
+      city: '',
+      postalCode: '',
+      courierType: '',
+
       afs: [],
+      photocopyCounts: 1,
 
       paymentMode: '',
       cardType: '',
@@ -290,58 +332,54 @@ export function AddEditModal({ showModal, closeModal, onRefreshAttestationApplic
   const selectedAfs = watch('afs') || [];
   const paymentMode = watch('paymentMode');
 
-  // Prefill form when editing
-  function getServiceFees(serviceId) {
-    const feeMap = {
-      8: { serviceFees: 100, govtFees: 50, icwfFees: 20, onlinePaid: 10 },
-      9: { serviceFees: 200, govtFees: 80, icwfFees: 30, onlinePaid: 20 },
-    };
+  // Card mode detection based on ID (2)
+  const isCardPayment = String(paymentMode) === String(CARD_PAYMENT_MODE_ID);
 
-    const data = feeMap[serviceId] || {
-      serviceFees: 0,
-      govtFees: 0,
-      icwfFees: 0,
-      onlinePaid: 0,
-    };
-
-    return {
-      ...data,
-      totalFees:
-        data.serviceFees +
-        data.govtFees +
-        data.icwfFees +
-        data.onlinePaid,
-    };
-  }
-
-  const feeValues = useMemo(() => {
-    if (!serviceRequested) return null;
-    return getServiceFees(serviceRequested);
-  }, [serviceRequested]);
-
-  // const [feeValues, setFeeValues] = React.useState(null);
-
-  // useEffect(() => {
-  //   if (!serviceRequested) {
-  //     setFeeValues(null);
-  //     return;
-  //   }
-
-  //   const data = getServiceFees(serviceRequested); // static for now
-  //   setFeeValues(data);
-  // }, [serviceRequested]);
+  // Clear card fields if switching away from Card
+  useEffect(() => {
+    if (!isCardPayment) {
+      setValue('cardType', '', { shouldValidate: true });
+      setValue('transactionId', '', { shouldValidate: true });
+    }
+  }, [isCardPayment, setValue]);
 
   useEffect(() => {
-    if (!onFeeValuesChange) return;
+    if (serviceRequested) {
+      getServiceById(serviceRequested);
+    }
+  }, [serviceRequested, getServiceById]);
 
-    onFeeValuesChange(feeValues);
-  }, [feeValues, onFeeValuesChange]);
+  // Dynamic fee calculation
+  const feeValues = useMemo(() => {
+    const govtFees = Number(selectedService?.govt_fee || 0);
+    const icwfFees = Number(selectedService?.icwf_fee || 0);
+    const serviceFees = Number(selectedService?.service_fee || 0);
+
+    const totalFees = govtFees + icwfFees + serviceFees;
+
+    return {
+      govtFees,
+      icwfFees,
+      serviceFees,
+      totalFees,
+      onlinePaid: 0,
+    };
+  }, [selectedService]);
+
+  // Notify parent of fee values when Service Requested is selected (for FeeCalculator outside modal)
+  useEffect(() => {
+    if (typeof onFeeValuesChange !== 'function') return;
+    if (serviceRequested) onFeeValuesChange(feeValues);
+    else onFeeValuesChange(null);
+  }, [serviceRequested, feeValues, onFeeValuesChange]);
+
+  // ================= EDIT PREFILL =================
 
   // Prefill form when editing
   useEffect(() => {
     if (!showModal) return;
 
-    if (showModal?.oci_application_id) {
+    if (showModal?.attestation_application_id) {
       reset({
         appointmentPostalRefNo: showModal.appointment_reference_no || '',
         applicationType: showModal.appointment_type_id || '',
@@ -368,29 +406,13 @@ export function AddEditModal({ showModal, closeModal, onRefreshAttestationApplic
     }
   }, [showModal,]);
 
-  const toggleAfsItem = (value) => {
-    const current = new Set(selectedAfs);
-    if (current.has(value)) current.delete(value);
-    else current.add(value);
-    setValue('afs', Array.from(current), { shouldValidate: true });
-  };
-
-
-  const onToggleCourier = (e) => {
-    const checked = e.target.checked;
-    if (checked) {
-      setValue('courierRequired', true, { shouldValidate: true });
-      return;
-    }
-
-    setValue('courierRequired', false, { shouldValidate: true });
-    setValue('returnCourierAddress', '', { shouldValidate: true });
-  };
-
   const onSubmit = (data) => {
-    const payload = {
-      center_id: 1,
-      appointment_reference_no:data.appointmentPostalRefNo,
+    const employeeId = getEmployeeIdFromStorage();
+    const centerId = getCenterIdFromStorage();
+
+    const attestationApplication = {
+      center_id: centerId,
+      appointment_reference_no: data.appointmentPostalRefNo,
       appointment_type_id: Number(data.applicationType),
       application_mode_id: Number(data.applicationBy),
 
@@ -400,9 +422,10 @@ export function AddEditModal({ showModal, closeModal, onRefreshAttestationApplic
       surname: data.surname,
       dob: data.dob,
       gender: data.gender,
+
       mobile_number: data.mobileNumber,
       email: data.email,
-      nationality: data.nationality,
+      nationality_id: data.nationality,
       father_name: data.fatherMotherSpouseName,
 
       passport_no: data.passportNo,
@@ -411,47 +434,104 @@ export function AddEditModal({ showModal, closeModal, onRefreshAttestationApplic
       passport_date_of_expiry: data.passportExpiryDate,
 
       return_courier_address: data.returnCourierAddress,
-      
-      courier_required: data.courierRequired ? 1 : 0,
-      // courierRequired: data.courierRequired
-      //   ? `${data.addressLine1}, ${data.addressLine2 || ''}, ${data.city}, ${data.state}, ${data.postalCode}`
-      //   : "",
 
-      // Fees (you already calculated)
-      govt_fee: feeValues?.govtFees || 0,
-      icwf_fee: feeValues?.icwfFees || 0,
-      sgv_service_fee: feeValues?.serviceFees || 0,
-      //urgent_fee: 0,
-      vat_percent: 5,
-      vat_amount: feeValues?.onlinePaid || 0,
-      grand_total: feeValues?.totalFees || 0,
+      courier: data.courierRequired ? 1 : 0,
 
-      // AFS mapping
-      vas: (data.afs || []).reduce((acc, item) => {
-        acc[item] = 1;
-        return acc;
-      }, {}),
-
-      payment_mode_id: Number(data.paymentMode),
-      card_type: data.cardType || '',
-      transaction_id: data.transactionId || '',
+      status: 14,
+      created_by: employeeId,
     };
 
-    if (showModal?.attestation_application_id) {
-      patchData({ id: showModal.attestation_application_id, ...payload }, callback);
+    // ✅ ONLY ADD courier fields when required
+    let courier_details = null;
+
+    if (data.courierRequired) {
+      courier_details = {
+        country_id: data.residenceCountry,
+        address_1: data.addressLine1,
+        address_2: data.addressLine2,
+        state: data.state,
+        city: data.city,
+        postal_code: data.postalCode,
+        courier_type_id: Number(data.courierType),
+      };
     }
-    else {
+    const vas_services = (data.afs || []).map((id) => {
+      const item = {
+        vas_service_id: Number(id),
+      };
+
+      // ONLY Photocopy gets quantity
+      if (id === '1') {
+        item.quantity = Number(data.photocopyCounts || 1);
+      }
+
+      return item;
+    });
+
+    const payload = {
+      attestation_application: attestationApplication,
+
+      fees: {
+        govt_fee: feeValues?.govtFees || 0,
+        icwf_fee: feeValues?.icwfFees || 0,
+        sgv_service_fee: feeValues?.serviceFees || 0,
+        grand_total: feeValues?.totalFees || 0,
+      },
+
+      ...(courier_details ? { courier_details } : {}),
+
+      payment: {
+        payment_mode_id: Number(data.paymentMode),
+        card_type: Number(data.cardType),
+        transaction_id: data.transactionId || "",
+      },
+      vas_services,
+    };
+
+
+    if (showModal?.attestation_application_id) {
+      updateAttestationApplication(showModal.attestation_application_id, payload, () => {
+        onRefreshAttestationApplications?.();
+        closeModal?.();
+      });
+    } else {
       createAttestationApplication(payload, () => {
         onRefreshAttestationApplications?.();
         closeModal?.();
       });
     }
+  };
 
+  const onToggleCourier = (e) => {
+    const checked = e.target.checked;
+    setValue('courierRequired', checked, { shouldValidate: true });
+
+    if (!checked) {
+      setValue('returnCourierAddress', '');
+      setValue('residenceCountry', '');
+      setValue('addressLine1', '');
+      setValue('addressLine2', '');
+      setValue('state', '');
+      setValue('city', '');
+      setValue('postalCode', '');
+      setValue('courierType', '');
+    }
+  };
+
+  const toggleAfsItem = (value) => {
+    const current = new Set(selectedAfs);
+    if (current.has(value)) {
+      current.delete(value);
+      if (value === '1') setValue('photocopyCounts', '1', { shouldValidate: true });
+    } else {
+      current.add(value);
+    }
+    setValue('afs', Array.from(current), { shouldValidate: true });
   };
 
   const renderHeader = () => (
     <>
-      <h4 className="modal-title">{showModal?.id ? 'Edit Attestation Application' : 'Add Attestation Application'}</h4>
+      <h4 className="modal-title">{showModal?.id ? 'Edit Attesttaion Application' : 'Add Attesttaion Application'}</h4>
       <button
         type="button"
         className="btn-close"
@@ -508,7 +588,7 @@ export function AddEditModal({ showModal, closeModal, onRefreshAttestationApplic
         </div>
       </div>
 
-      <div className="row">        
+      <div className="row">
         <div className="col-md-6">
           <div className="form-group">
             <label className="form-label">
@@ -726,7 +806,6 @@ export function AddEditModal({ showModal, closeModal, onRefreshAttestationApplic
               className="form-control"
               rows={5}
               style={{ resize: 'vertical', minHeight: '120px' }}
-              disabled
               {...register('returnCourierAddress')}
             />
             {errors.returnCourierAddress && (
@@ -850,6 +929,25 @@ export function AddEditModal({ showModal, closeModal, onRefreshAttestationApplic
                 </div>
               ))}
             </div>
+
+            {selectedAfs.includes('1') && (
+              <div className="mt-3">
+                <label className="form-label">Photocopy Counts</label>
+                <input
+                  type="number"
+                  className="form-control"
+                  min={1}
+                  {...register('photocopyCounts', {
+                    valueAsNumber: true,
+                    setValueAs: (v) => (v === '' ? 1 : Number(v)),
+                  })}
+                />
+                {errors.photocopyCounts && (
+                  <span className="error">{errors.photocopyCounts.message}</span>
+                )}
+              </div>
+            )}
+
             {errors.afs && <span className="error">{errors.afs.message}</span>}
           </div>
         </div>
@@ -860,7 +958,7 @@ export function AddEditModal({ showModal, closeModal, onRefreshAttestationApplic
         <div className="col-md-6">
           <div className="form-group">
             <label className="form-label">
-              Payment mode <span className="text-danger">*</span>
+              Payment Mode <span className="text-danger">*</span>
             </label>
             <select className="form-control" {...register('paymentMode')}>
               <option value="">Select</option>
@@ -874,7 +972,6 @@ export function AddEditModal({ showModal, closeModal, onRefreshAttestationApplic
           </div>
         </div>
       </div>
-
       {paymentMode === '2' && (
         <>
           <div className="row">
@@ -917,6 +1014,8 @@ export function AddEditModal({ showModal, closeModal, onRefreshAttestationApplic
       )}
     </div>
   );
+
+  const isLoading = isCreateAttestationApplicationLoading || isUpdateAttestationApplicationLoading;
 
   const renderFooter = () => (
     <div className="modal-footer bottom-btn-sec">

@@ -3,24 +3,21 @@ import useAlertReducer from './AlertReducer';
 import attestationDeletedApplicationService from '../services/attestationDeletedApplicationService';
 
 const useAttestationDeleteApplicationReducer = create((set) => ({
-    isLoading: false, isLoadingGet: false, isLoadingRestore: false,
-    errorMessage: '', successMessage: '',
-    deletedAttesttaionApplicationData: null,
+    isLoadingGet: false, 
+    errorMessage: '', 
+    successMessage: '',
+    deletedAttestationApplicationData: null,
+    isLoadingRestore: false,
+    pagination:null,
 
     getData: async (payload) => {
         try {
             set({ isLoadingGet: true });
-
-            const res =
-                await attestationDeletedApplicationService.getDeletedAttestationApplications(payload);
-
-            const apiData = res?.data;
-
+            const response = await attestationDeletedApplicationService.getDeletedAttestationApplications(payload);
+            const list = response?.data;
             set({
-                deletedAttesationApplicationData: {
-                    data: apiData?.data || [],
-                    total: apiData?.pagination?.total_records || 0,
-                },
+                deletedAttestationApplicationData: list?.data ?? [],
+                pagination: list?.pagination ?? null,
                 isLoadingGet: false,
             });
         } catch (err) {

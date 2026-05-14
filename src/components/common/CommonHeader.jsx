@@ -83,17 +83,17 @@ const CommonHeader = ({
 
   const currentPath = location.pathname;
 
-  const headerInfo = headerConfig?.find(
-    (item) =>
-      currentPath === item.path ||
-      (currentPath !== '/' &&
-        currentPath?.startsWith(item.path) &&
-        item.path !== '/')
-  ) ||
-    headerConfig.find((item) => currentPath?.startsWith(item.path)) || {
-    title: 'Page Not Found',
-    icon: EZIcon,
-  };
+  const headerInfo =
+    headerConfig?.find((item) => currentPath === item.path) ||
+    headerConfig?.find(
+      (item) =>
+        item.path !== '/' &&
+        currentPath.startsWith(item.path) &&
+        currentPath[item.path.length] === '/'
+    ) || {
+      title: 'Page Not Found',
+      icon: EZIcon,
+    };
 
   const renderAddButton = (type) => {
     switch (type) {
@@ -207,7 +207,7 @@ const CommonHeader = ({
                 <button
                   type="button"
                   className="btn export"
-                  onClick={exportExcel}
+                  onClick={exportExcel?.action}
                   disabled={exportLoading}
                 >
                   {!exportLoading && (
@@ -224,7 +224,7 @@ const CommonHeader = ({
                         className="custom-spinner"
                       />
                     ) : (
-                      'Export as Excel'
+                      exportExcel?.name || 'Export as Excel'
                     )}
                   </span>
                 </button>

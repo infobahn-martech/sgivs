@@ -1,5 +1,9 @@
 import Gateway from '../config/gateway';
 
-const getData = (params) => Gateway.get('/attestation-ots', { params });
+const getData = (payload) => Gateway.post('/attestation/outscan-to-spoke-list', payload);
+const bulkOTS = (payload) => Gateway.post('/attestation/bulk-outscan-to-spoke', payload);
 
-export default { getData };
+export default { 
+    getData,
+    bulkOTS,
+ };

@@ -3,17 +3,16 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import CustomModal from '../../components/common/CustomModal';
-import useOTMReducer from '../../stores/OTMReducer';
+import useAttestationOTSReducer from '../../stores/AttestationOTSReducer';
 
 // Updated schema with isEZPass as a boolean
 const nameSchema = z.object({
-    applicationNumber: z
+    applicationNumbers: z
         .string()
-        .nonempty('Application Number is required')
-        .max(20, 'Application Number must be 10 characters or less'),
+        .nonempty('At least one Application Number is required'),
 });
 
-export default function AddEditModal({ showModal, closeModal, onRefreshOTS }) {
+export default function AddEditModal({ showModal, closeModal, onRefreshAttestationOTS }) {
     const {
         register,
         handleSubmit,
@@ -23,44 +22,37 @@ export default function AddEditModal({ showModal, closeModal, onRefreshOTS }) {
     } = useForm({
         resolver: zodResolver(nameSchema),
         defaultValues: {
-            applicationNumber: '',
+            applicationNumbers: '',
         },
     });
 
-    const { postData, patchData, isLoading } = useOTMReducer(
-        (state) => state
-    );
-
-    // Prefill form when editing
-    useEffect(() => {
-        if (showModal?.id) {
-            setValue('applicationNumber', showModal?.applicationNumber || '');
-        } else {
-            reset();
-        }
-    }, [showModal?.id]);
+    const { bulkOTS, isLoadingPost } = useAttestationOTSReducer((state) => state);
 
     const onSubmit = (data) => {
-        if (showModal?.id) {
-            patchData({ id: showModal.id, ...data }, () => {
-                onRefreshOTS();
-            });
-        } else {
-            postData(data, () => {
-                onRefreshOTS();
-            });
-        }
-        closeModal();
+        const reference_numbers = data.applicationNumbers
+            .split('\n')
+            .map(v => v.trim())
+            .filter(Boolean);
+        const employeeId = localStorage.getItem('employee_id');
+        const payload = {
+            reference_numbers,
+            employee_id: employeeId,
+        };
+        
+        bulkOTS(payload, (res) => {
+            if (!res) return;
+
+            onRefreshAttestationOTS();
+            closeModal();
+        });
     };
 
     const renderHeader = () => (
         <>
-            <h4 className="modal-title">
-                {showModal?.id ? 'Edit Out Scan to Spoke' : 'Add Out Scan to Spoke'}
-            </h4>
+            <h4 className="modal-title">Add Attestation OutScan to Spoke</h4>
             <button
                 type="button"
-                class="btn-close"
+                className="btn-close"
                 data-bs-dismiss="modal"
                 aria-label="Close"
                 onClick={closeModal}
@@ -74,19 +66,19 @@ export default function AddEditModal({ showModal, closeModal, onRefreshOTS }) {
                 <div className="row">
                     <div className="col-12">
                         <div className="form-group">
-                            <label htmlFor="applicationNumber" className="form-label">
-                                Application Number<span className="text-danger">*</span>
+                            <label htmlFor="applicationNumbers" className="form-label">
+                                Application Numbers [ Each Number should be in new line ]<span className="text-danger">*</span>
                             </label>
-                            <input
-                                type="text"
-                                id="applicationNumber"
+                            <textarea
+                                id="applicationNumbers"
                                 className="form-control"
+                                placeholder="Enter one Application Number per line"
                                 autoComplete="off"
-                                maxLength={20}
-                                {...register('applicationNumber')}
+                                {...register('applicationNumbers')}
+                                style={{minHeight:'120px'}}
                             />
-                            {errors.applicationNumber && (
-                                <span className="error">{errors.applicationNumber.message}</span>
+                            {errors.applicationNumbers && (
+                                <span className="error">{errors.applicationNumbers.message}</span>
                             )}
                         </div>
                     </div>
@@ -104,10 +96,10 @@ export default function AddEditModal({ showModal, closeModal, onRefreshOTS }) {
                 <button
                     type="submit"
                     className="btn btn-submit"
-                    disabled={isLoading}
+                    disabled={isLoadingPost}
                     onClick={handleSubmit(onSubmit)}
                 >
-                    {isLoading ? 'Loading...' : 'Save'}
+                    {isLoadingPost ? 'Loading...' : 'Save'}
                 </button>
             </div>
         </>

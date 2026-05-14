@@ -1,6 +1,6 @@
 import Gateway from '../config/gateway';
 
-const getData = (params) => Gateway.get('finance/charge_and_refunds', { params });
+const getData = (payload) => Gateway.post('finance/charge_and_refunds', payload);
 
 export default {
     getData,

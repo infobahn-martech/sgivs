@@ -1,5 +1,9 @@
 import Gateway from '../config/gateway';
 
-const getData = (params) => Gateway.get('/attestation-counter-delivery', { params });
+const getData = (payload) => Gateway.post('/attestation/counter_delivery_list', payload);
+const bulkCounterDelivery = (payload) => Gateway.post('/attestation/bulk_counter_delivery', payload);
 
-export default { getData };
+export default {
+    getData,
+    bulkCounterDelivery,
+};

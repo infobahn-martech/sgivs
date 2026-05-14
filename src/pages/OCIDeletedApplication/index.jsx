@@ -264,7 +264,7 @@ const OCIDeletedApplication = () => {
 
       <CustomTable
         pagination={{ currentPage: params.page, limit: params.limit }}
-        count={pagination?.total_count || 0}
+        count={pagination?.total_records || 0}
         columns={columns}
         data={tableData}
         isLoading={loading}

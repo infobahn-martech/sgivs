@@ -30,56 +30,97 @@ const useOCIOTMReducer = create((set) => ({
     },
 
     bulkOutscanToMission: async (payload, callback) => {
-    
-            const { success, error } = useAlertReducer.getState();
-    
-            try {
-                set({ isLoadingPost: true, errorMessage: '', successMessage: '', });
-    
-                const response = await ociOTMService.bulkOutscanToMission(payload);
-                const data = response?.data;
-    
-                // Full error from backend
-                if (data?.status === 'error') {
-                    error(data?.message || 'Something went wrong');
-                    if (callback) callback(data);
-                    return;
-                }
-    
-                const updated = data?.updated_count || 0;
-                const missing = data?.missing_references || [];
-    
-                // PARTIAL SUCCESS
-                if (missing.length > 0) {
-                    success(
-                        `${updated} updated, ${missing.length} not found: ${missing.join(', ')}`
-                    );
-                }
-                // FULL SUCCESS
-                else {
-                    success(`${updated} record(s) successfully updated`);
-                }
-    
-                set({
-                    successMessage: data?.message || 'Success',
-                });
-    
-                callback?.(data);
-    
-            } catch (err) {
-                const msg =
-                    err?.response?.data?.message ||
-                    err?.message ||
-                    'Something went wrong';
-    
-                set({ errorMessage: msg });
-    
-                error(msg);
+
+        const { success, error } = useAlertReducer.getState();
+
+        try {
+            set({
+                isLoadingPost: true,
+                errorMessage: '',
+                successMessage: '',
+            });
+
+            const response = await ociOTMService.bulkOutscanToMission(payload);
+            const data = response?.data;
+
+            const status = data?.status;
+            const backendMessage = data?.message || '';
+
+            // Arrays
+            const updated = data?.updated_references || [];
+            const deleted = data?.deleted_references || [];
+            const missing = data?.missing_references || [];
+            const already = data?.already_in_same_status || [];
+
+            // 🔥 BUILD MULTI-LINE TOAST
+            let lines = [];
+
+            // 1st line → backend message
+            if (backendMessage) {
+                lines.push(backendMessage);
             }
-            finally {
-                set({ isLoadingPost: false });
+
+            // 2nd line → updated
+            if (updated.length) {
+                lines.push(`Updated (${updated.length}): ${updated.join(', ')}`);
             }
-        },
+
+            // 3rd line → deleted
+            if (deleted.length) {
+                lines.push(`Deleted (${deleted.length}): ${deleted.join(', ')}`);
+            }
+
+            // 4th line → missing
+            if (missing.length) {
+                lines.push(`Missing (${missing.length}): ${missing.join(', ')}`);
+            }
+
+            // 5th line → already same status (optional but useful)
+            if (already.length) {
+                lines.push(`Already same (${already.length}): ${already.join(', ')}`);
+            }
+
+            const message = lines.join(' | ');
+
+            // 🔥 TOAST HANDLING (ALL CASES SAME STRUCTURE)
+            if (status === 'error') {
+                error(message);
+            } else if (status === 'info') {
+                success(message);
+            } else if (status === 'partial success') {
+                success(message);
+            } else {
+                success(message);
+            }
+
+            set({
+                successMessage: status === 'error' ? '' : message,
+                errorMessage: status === 'error' ? message : '',
+            });
+
+            callback?.(data);
+
+        } catch (err) {
+
+            const msg =
+                err?.response?.data?.message ||
+                err?.message ||
+                'Something went wrong';
+
+            error(msg);
+
+            set({
+                errorMessage: msg,
+                successMessage: '',
+            });
+
+        } finally {
+
+            set({
+                isLoadingPost: false,
+            });
+        }
+    },
 }));
 
 export default useOCIOTMReducer;

@@ -1,5 +1,9 @@
 import Gateway from '../config/gateway';
 
-const getData = (params) => Gateway.get('/attestation-in-scan', { params });
+const getData = (payload) => Gateway.post('/attestation/inscan-hub-list',  payload );
+const bulkInscan = (payload) => Gateway.post('/attestation/bulk-inscan-hub', payload);
 
-export default { getData };
+export default { 
+    getData, 
+    bulkInscan,
+};

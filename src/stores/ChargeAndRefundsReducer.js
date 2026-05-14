@@ -12,10 +12,10 @@ const useChargeAndRefundsReducer = create((set) => ({
     getData: async (params) => {
         try {
             set({ isLoadingGet: true });
-            const { data } = await chargeAndRefundsService.getData(params);
-            const datas = data;
+            const response = await chargeAndRefundsService.getData(params);
+            const list = response.data;
             set({
-               chargeAndRefundsData: datas?.data,
+               chargeAndRefundsData: list?.data,
                 // successMessage: data?.response?.data?.message ?? data?.message,
                 isLoadingGet: false,
             });

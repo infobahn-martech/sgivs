@@ -11,26 +11,77 @@ import CustomTable from '../../components/common/CustomTable';
 import useOCICounterDeliveryReducer from '../../stores/OCICounterDeliveryReducer';
 import { formatDate } from '../../config/config';
 import AddEditModal from './AddEditModal';
+import useUserReducer from '../../stores/UserReducer';
 
 const OCICounterDelivery = () => {
 
-  const { getData, ociCounterDeliveryData, isLoadingOCICounterDeliveryGet } = useOCICounterDeliveryReducer((state) => state);
+  const { getData, ociCounterDeliveryData, isLoadingOCICounterDeliveryGet, pagination } = useOCICounterDeliveryReducer((state) => state);
   
   const initialParams = {
     page: 1,
     limit: 10,
-    from_date: '',
-    to_date: '',
-    sortBy: 'date',
-    sortOrder: 'DESC',
-    country_id: '',
-    mission_id: '',
-    center_id: ''
+    sort_by: 'created_at',
+    sort_order: 'DESC',
+    status_id: 13,
   };
 
   const [params, setParams] = useState(initialParams);
   const [addEditModal, setAddEditModal] = useState(false);
   const [selectedCounterDelivery, setSelectedCounterDelivery] = useState(null);
+
+  const {
+      countryList,
+      missionList,
+      centerList,
+      isLoadingCountries,
+      isLoadingMissions,
+      isLoadingCenters,
+      getCountries,
+      getMissionsByCountry,
+      getCentersByMission
+    } = useUserReducer();
+  
+    useEffect(() => {
+      getCountries();
+    }, []);
+  
+    const countryOptions = useMemo(
+      () =>
+        (countryList || []).map((item) => ({
+          value: item.country_id,
+          label: item.country_name,
+        })),
+      [countryList]
+    );
+    const missionOptions = useMemo(
+      () =>
+        (missionList || []).map((item) => ({
+          value: item.mission_id,
+          label: item.mission_name,
+        })),
+      [missionList]
+    );
+  
+    const centerOptions = useMemo(
+      () =>
+        (centerList || []).map((item) => ({
+          value: item.center_id,
+          label: item.center_name,
+        })),
+      [centerList]
+    );
+  
+    const onCountryChange = (countryId) => {
+      if (countryId) {
+        getMissionsByCountry(countryId);
+      }
+    };
+  
+    const onMissionChange = (missionId) => {
+      if (missionId) {
+        getCentersByMission(missionId);
+      }
+    };
 
   useEffect(() => {
     getData(params);
@@ -39,66 +90,31 @@ const OCICounterDelivery = () => {
   const handleSortChange = (selector) => {
     setParams((prev) => ({
       ...prev,
-      sortBy: selector,
-      sortOrder: prev.sortOrder === 'ASC' ? 'DESC' : 'ASC',
+      sort_by: selector,
+      sort_order: prev.sort_order === 'ASC' ? 'DESC' : 'ASC',
     }));
-  };
-
-  const onClickEdit = (row) => {
-    setSelectedCounterDelivery(row);
-    setAddEditModal(true);
-  };
-
-  const renderAction = (row) => {
-    return (
-      <div className="d-flex gap-2 align-items-center">
-        <Tooltip
-          id={`counter-delivery-edit-${row?.id}`}
-          place="bottom"
-          content="Edit"
-          style={{ backgroundColor: '#051a53' }}
-        />
-
-        <button
-          type="button"
-          className="btn btn-link p-0"
-          data-tooltip-id={`counter-delivery-edit-${row?.id}`}
-          onClick={() => onClickEdit(row)}
-          style={{ textDecoration: 'none' }}
-        >
-          <img src={editIcon} alt="edit" />
-        </button>
-      </div>
-    );
   };
 
   const columns = [
     {
       name: 'Date',
       selector: 'date',
-      sortable: true,
+      sort: true,
       sortField: 'date',
       cell: (row) => <span>{row?.date ? formatDate(row?.date) : '-'}</span>,
     },
     {
       name: 'By',
       selector: 'by',
-      sortable: true,
+      sort: true,
       sortField: 'by',
     },
     {
       name: 'Total Application',
       selector: 'totalApplication',
-      sortable: true,
+      sort: true,
       sortField: 'totalApplication',
       cell: (row) => <span>{row?.totalApplication ?? 0}</span>,
-    },
-    {
-      name: 'Action',
-      contentClass: 'action-wrap',
-      disableViewClick: true,
-      thclass: 'actions-edit employee-actn-edit',
-      cell: (row) => renderAction(row),
     },
   ];
 
@@ -118,7 +134,39 @@ const OCICounterDelivery = () => {
     return () => debouncedSearch.cancel();
   }, [debouncedSearch]);
 
-  const tableData = ociCounterDeliveryData;
+  const filterOptions = [
+    {
+      fieldName: 'Country',
+      BE_keyName: 'country_id',
+      fieldType: 'select',
+      Options: countryOptions,
+      callBack: onCountryChange,
+      isLoading: isLoadingCountries,
+    },
+    {
+      fieldName: 'Mission',
+      BE_keyName: 'mission_id',
+      fieldType: 'select',
+      Options: missionOptions,
+      callBack: onMissionChange,
+      isLoading: isLoadingMissions,
+    },
+    {
+      fieldName: 'Center',
+      BE_keyName: 'center_id',
+      fieldType: 'select',
+      Options: centerOptions,
+      isLoading: isLoadingCenters,
+    },
+    {
+      fieldName: 'Joined Date',
+      fieldType: 'dateRangeCombined',
+      fromKey: 'from_date',
+      toKey: 'to_date',
+    },
+  ];
+
+  const tableData = ociCounterDeliveryData || [];
   const loading = isLoadingOCICounterDeliveryGet;
 
   return (
@@ -132,17 +180,14 @@ const OCICounterDelivery = () => {
             setSelectedCounterDelivery(null);
           },
         }}
-        hideFilter
+        //hideFilter
         onSearch={debouncedSearch}
+        filterOptions={filterOptions}
         submitFilter={(filters) => {
-          const { from_date, to_date, ...rest } = filters;
-
           setParams({
             ...params,
-            ...rest,
-            from_date: from_date ? moment(from_date).format('YYYY-MM-DD') : null,
-            to_date: to_date ? moment(to_date).format('YYYY-MM-DD') : null,
-            page: 1,
+            ...filters,
+            page: 1
           });
         }}
         clearOptions={() => setParams(initialParams)}
@@ -150,9 +195,9 @@ const OCICounterDelivery = () => {
 
       <CustomTable
         pagination={{ currentPage: params.page, limit: params.limit }}
-        count={tableData?.total || 0}
+        count={pagination?.total_count || 0}
         columns={columns}
-        data={tableData?.data || []}
+        data={tableData}
         isLoading={loading}
         onPageChange={(page) => setParams({ ...params, page })}
         setLimit={(limit) => setParams({ ...params, limit })}

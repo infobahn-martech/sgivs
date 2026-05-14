@@ -10,29 +10,80 @@ import CustomTable from '../../components/common/CustomTable';
 import useAttestationDeleteApplicationReducer from '../../stores/AttestationDeletedApplicationReducer';
 import { formatDate } from '../../config/config';
 import CustomActionModal from '../../components/common/CustomActionModal';
+import useUserReducer from '../../stores/UserReducer';
 
 const AttestationDeletedApplication = () => {
 
-  const { getData, deletedAttestationApplicationData, isLoadingGet,
-    deleteData, isLoadingDelete
+  const { getData, deletedAttestationApplicationData, isLoadingGet, pagination,
+    restoreApplication, isLoadingRestore
   } = useAttestationDeleteApplicationReducer((state) => state);
 
   const [retrieveModalOpen, setRetrieveModalOpen] = useState(false);
 
   const initialParams = {
-    search: '',
     page: 1,
     limit: 10,
-    fromDate: null,
-    toDate: null,
-    sortBy: 'createdAt',
-    sortOrder: 'DESC',
-    isExcelExport: 'false',
+    sort_by: 'created_at',
+    sort_order: 'DESC',
   };
 
   const [params, setParams] = useState(initialParams);
 
-  const onRefreshAttestationDeletedApplication = () => {
+  const {
+    countryList,
+    missionList,
+    centerList,
+    isLoadingCountries,
+    isLoadingMissions,
+    isLoadingCenters,
+    getCountries,
+    getMissionsByCountry,
+    getCentersByMission
+  } = useUserReducer();
+
+  useEffect(() => {
+    getCountries();
+  }, []);
+
+  const countryOptions = useMemo(
+    () =>
+      (countryList || []).map((item) => ({
+        value: item.country_id,
+        label: item.country_name,
+      })),
+    [countryList]
+  );
+  const missionOptions = useMemo(
+    () =>
+      (missionList || []).map((item) => ({
+        value: item.mission_id,
+        label: item.mission_name,
+      })),
+    [missionList]
+  );
+
+  const centerOptions = useMemo(
+    () =>
+      (centerList || []).map((item) => ({
+        value: item.center_id,
+        label: item.center_name,
+      })),
+    [centerList]
+  );
+
+  const onCountryChange = (countryId) => {
+    if (countryId) {
+      getMissionsByCountry(countryId);
+    }
+  };
+
+  const onMissionChange = (missionId) => {
+    if (missionId) {
+      getCentersByMission(missionId);
+    }
+  };
+
+  const onRefreshDeletedAttestationApplications = () => {
     getData(params);
     setRetrieveModalOpen(false);
   };
@@ -44,8 +95,8 @@ const AttestationDeletedApplication = () => {
   const handleSortChange = (selector) => {
     setParams((prev) => ({
       ...prev,
-      sortBy: selector,
-      sortOrder: prev.sortOrder === 'ASC' ? 'DESC' : 'ASC',
+      sort_by: selector,
+      sort_order: prev.sort_order === 'ASC' ? 'DESC' : 'ASC',
     }));
   };
 
@@ -76,48 +127,49 @@ const AttestationDeletedApplication = () => {
   const columns = [
     {
       name: 'Reference No',
-      selector: 'referenceNo',
-      sortable: true,
-      sortField: 'referenceNo',
+      selector: 'appointment_reference_no',
+      sort: true,
+      sortField: 'appointment_reference_no',
     },
     {
       name: 'Name',
-      selector: 'name',
-      sortable: true,
+      selector: 'first_name',
+      cell: (row) => `${row.first_name || ''} ${row.surname || ''}`,
+      sort: true,
       sortField: 'name',
     },
     {
       name: 'Gender',
       selector: 'gender',
-      sortable: true,
+      sort: true,
       sortField: 'gender',
     },
     {
       name: 'Date of Birth',
       selector: 'dob',
-      sortable: true,
+      sort: true,
       sortField: 'dob',
       cell: (row) => <span>{row?.dob ? formatDate(row?.dob) : '-'}</span>,
     },
     {
       name: 'Passport No',
-      selector: 'passportNo',
-      sortable: true,
-      sortField: 'passportNo',
+      selector: 'passport_no',
+      sort: true,
+      sortField: 'passport_no',
     },
     {
       name: 'Status / By, On',
-      selector: 'status',
-      sortable: true,
-      sortField: 'status',
+      selector: 'previous_status',
+      sort: true,
+      sortField: 'previous_status',
       cell: (row) => (
         <div className="d-flex flex-column">
           <span>
-            <b>{row?.status || '-'}</b>
+            <b>{row?.previous_status || '-'}</b>
           </span>
           <small className="text-muted">
-            {row?.actionBy ? `By: ${row.actionBy}` : 'By: -'}{' '}
-            {row?.actionOn ? `• On: ${formatDate(row.actionOn)}` : ''}
+            {row?.deleted_by || '-'}
+            {row?.deleted_on ? `, ${formatDate(row.deleted_on)}` : ''}
           </small>
         </div>
       ),
@@ -147,12 +199,14 @@ const AttestationDeletedApplication = () => {
     return () => debouncedSearch.cancel();
   }, [debouncedSearch]);
 
-  const handleRetrieve = () => {
+  const handleRetrieve = (comment) => {
     if (retrieveModalOpen?.attestation_application_id) {
+      const employeeId = localStorage.getItem('employee_id');
       restoreApplication(
         {
           attestation_application_id: retrieveModalOpen.attestation_application_id,
-          comment: comment
+          comment: comment,
+          comment_by: employeeId,
         },
         () => {
           onRefreshDeletedAttestationApplications();
@@ -161,23 +215,53 @@ const AttestationDeletedApplication = () => {
     }
   };
 
+  const filterOptions = [
+    {
+      fieldName: 'Country',
+      BE_keyName: 'country_id',
+      fieldType: 'select',
+      Options: countryOptions,
+      callBack: onCountryChange,
+      isLoading: isLoadingCountries,
+    },
+    {
+      fieldName: 'Mission',
+      BE_keyName: 'mission_id',
+      fieldType: 'select',
+      Options: missionOptions,
+      callBack: onMissionChange,
+      isLoading: isLoadingMissions,
+    },
+    {
+      fieldName: 'Center',
+      BE_keyName: 'center_id',
+      fieldType: 'select',
+      Options: centerOptions,
+      isLoading: isLoadingCenters,
+    },
+    {
+      fieldName: 'Joined Date',
+      fieldType: 'dateRangeCombined',
+      fromKey: 'from_date',
+      toKey: 'to_date',
+    },
+  ];
+
   // ✅ dataset
-  const tableData = deletedAttestationApplicationData;
+  const tableData = deletedAttestationApplicationData || [];
   const loading = isLoadingGet;
 
   return (
     <>
       <CommonHeader
-        hideFilter
+        //hideFilter
         onSearch={debouncedSearch}
+        filterOptions={filterOptions}
         submitFilter={(filters) => {
-          const { fromDate, toDate, ...rest } = filters;
           setParams({
             ...params,
-            ...rest,
-            fromDate: fromDate ? moment(fromDate).format('YYYY-MM-DD') : null,
-            toDate: toDate ? moment(toDate).format('YYYY-MM-DD') : null,
-            page: 1,
+            ...filters,
+            page: 1
           });
         }}
         clearOptions={() => setParams(initialParams)}
@@ -185,9 +269,9 @@ const AttestationDeletedApplication = () => {
 
       <CustomTable
         pagination={{ currentPage: params.page, limit: params.limit }}
-        count={tableData?.total || 0}
+        count={pagination?.total_records || 0}
         columns={columns}
-        data={tableData?.data || []}
+        data={tableData}
         isLoading={loading}
         onPageChange={(page) => setParams({ ...params, page })}
         setLimit={(limit) => setParams({ ...params, limit })}
@@ -200,7 +284,7 @@ const AttestationDeletedApplication = () => {
           showCommentBox
           showModal={retrieveModalOpen}
           closeModal={() => setRetrieveModalOpen(false)}
-          isLoading={isLoadingDelete}
+          isLoading={isLoadingRestore}
           message={
             <>
               Are you sure you want to restore{" "}

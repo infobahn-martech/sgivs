@@ -94,6 +94,29 @@ const OCIOTM = () => {
     }));
   };
 
+  const handleExportMissionData = async () => {
+    try {
+      // api call here
+      console.log('Export Mission Data');
+
+      // Example:
+      // const response = await api.get('/export-mission-data', {
+      //   params,
+      //   responseType: 'blob',
+      // });
+
+      // const url = window.URL.createObjectURL(new Blob([response.data]));
+      // const link = document.createElement('a');
+      // link.href = url;
+      // link.setAttribute('download', 'mission-data.xlsx');
+      // document.body.appendChild(link);
+      // link.click();
+
+    } catch (error) {
+      console.error('Export failed:', error);
+    }
+  };
+
   const columns = [
     {
       name: 'Date',
@@ -186,6 +209,12 @@ const OCIOTM = () => {
             setSelectedOTM(null);
           },
         }}
+
+        exportExcel={{
+          name: 'Export Mission Data',
+          action: handleExportMissionData,
+        }}
+        
         //hideFilter
         filterOptions={filterOptions}
         onSearch={debouncedSearch}

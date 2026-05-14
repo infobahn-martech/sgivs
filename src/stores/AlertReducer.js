@@ -8,6 +8,15 @@ const useAlertReducer = create((set) => ({
   error: (message) => {
     set({ value: { type: 'error', message } });
   },
+
+  warning: (message) => {
+    set({ value: { type: 'warning', message } });
+  },
+
+  info: (message) => {
+    set({ value: { type: 'info', message } });
+  },
+  
   clear: () => {
     set({ value: null });
   },

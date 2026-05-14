@@ -16,7 +16,7 @@ import CustomActionModal from '../../components/common/CustomActionModal';
 
 const OCIVasApplications = () => {
   // ✅ Toggle this (VERY useful for large admin projects)
-  const USE_MOCK = true;
+  const USE_MOCK = false;
 
   const { getData, ociVasApplicationsData, isLoadingGet, deleteData, isLoadingDelete } =
     useOCIVasApplicationsReducer((state) => state);
@@ -24,14 +24,10 @@ const OCIVasApplications = () => {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
 
   const initialParams = {
-    search: '',
     page: 1,
     limit: 10,
-    fromDate: null,
-    toDate: null,
-    sortBy: 'createdAt',
-    sortOrder: 'DESC',
-    isExcelExport: 'false',
+    sort_by: 'created_at',
+    sort_order: 'DESC',
   };
 
   const [params, setParams] = useState(initialParams);
