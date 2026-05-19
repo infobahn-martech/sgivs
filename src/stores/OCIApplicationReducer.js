@@ -80,7 +80,7 @@ const useOCIApplicationReducer = create((set) => ({
         }
     },
 
-    updateOCIApplication: async (updatePayload,cb) => {
+    updateOCIApplication: async (updatePayload, callback) => {
         try {
             set({ isUpdateOCIApplicationLoading: true });
             const { data } = await ociApplicationService.updateOCIApplication(updatePayload);
@@ -90,7 +90,7 @@ const useOCIApplicationReducer = create((set) => ({
                 successMessage: data?.response?.data?.message ?? data?.message,
                 isUpdateOCIApplicationLoading: false,
             });
-            cb?.(data);
+            if (typeof callback === 'function') callback();
         } catch (err) {
             const { error } = useAlertReducer.getState();
             set({

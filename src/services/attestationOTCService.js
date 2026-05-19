@@ -1,5 +1,9 @@
 import Gateway from '../config/gateway';
 
-const getData = (params) => Gateway.get('/visa-otc', { params });
+const getData = (payload) => Gateway.post('/attestation/outscan_to_courier_list', payload);
+const bulkOTC = (payload) => Gateway.post('/attestation/bulk-courier-dispatch', payload);
 
-export default { getData };
+export default {
+     getData, 
+     bulkOTC,
+ };

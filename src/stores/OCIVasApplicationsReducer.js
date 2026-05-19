@@ -3,8 +3,9 @@ import useAlertReducer from './AlertReducer';
 import ociVasApplicationsService from '../services/ociVasApplicationsService';
 
 const useOCIVasApplicationsReducer = create((set) => ({
-    ociVasApplicationsData: null,
-    isLoadingGet: false,
+    isLoadingGet: false, ociVasApplicationsData: null,
+
+    isLoadingDelete: false,
 
     getData: async (params) => {
         try {
@@ -26,6 +27,20 @@ const useOCIVasApplicationsReducer = create((set) => ({
         }
     },
 
+    deleteData: async (payload, cb) => {
+        try {
+            set({ isLoadingDelete: true });
+            const res = await ociVasApplicationsService.deleteOCIVasApplication(payload);
+            const { success } = useAlertReducer.getState();
+            success(res?.data?.status || 'Deleted successfully');
+            set({ isLoadingDelete: false });
+            cb?.(res?.data);
+        } catch (err) {
+            set({ isLoadingDelete: false });
+            const { error } = useAlertReducer.getState();
+            error(err?.response?.data?.message ?? err.message);
+        }
+    },
 }));
 
 export default useOCIVasApplicationsReducer;

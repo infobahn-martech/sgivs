@@ -5,90 +5,36 @@ import { debounce } from 'lodash';
 
 import '../../assets/scss/usermanagement.scss';
 
-import deleteIcon from '../../assets/images/delete.svg';
-import editIcon from '../../assets/images/edit.svg';
-
 import CommonHeader from '../../components/common/CommonHeader';
 import CustomTable from '../../components/common/CustomTable';
-import useVisaTrackingReducer from '../../stores/VisaTrackingReducer';
+import useAttestationTrackingReducer from '../../stores/AttestationTrackingReducer';
 import { formatDate } from '../../config/config';
 import { AddEditModal } from './AddEditModal';
-import CustomActionModal from '../../components/common/CustomActionModal';
 
 const VisaTracking = () => {
-  const USE_MOCK = true;
 
-  const {
-    getData,
-    visaTrackingData,
-    isLoadingVisaTracking,
-  } = useVisaTrackingReducer((state) => state);
+  const { getData, attestationTrackingData, isLoadingGet, } = useAttestationTrackingReducer((state) => state);
 
   const [modal, setModal] = useState(false);
 
   const initialParams = {
-    search: '',
     page: 1,
     limit: 10,
-    fromDate: null,
-    toDate: null,
-    sortBy: 'statusOn',
-    sortOrder: 'DESC',
-    isExcelExport: 'false',
+    sort_by: 'created_at',
+    sort_order: 'DESC',
+    passport_no:'',
   };
 
   const [params, setParams] = useState(initialParams);
 
-  // ✅ Mock Data (Required fields)
-  const mockVisaTrackingData = {
-    total: 5,
-    data: [
-      {
-        id: 1,
-        status: 'Submitted',
-        statusComments: 'Application submitted successfully',
-        statusBy: 'Admin',
-        statusOn: '2025-01-10T09:30:00Z',
-      },
-      {
-        id: 2,
-        status: 'In Review',
-        statusComments: 'Document verification in progress',
-        statusBy: 'Operator',
-        statusOn: '2025-02-14T12:15:00Z',
-      },
-      {
-        id: 3,
-        status: 'Approved',
-        statusComments: 'Approved by supervisor',
-        statusBy: 'Supervisor',
-        statusOn: '2025-03-05T08:45:00Z',
-      },
-      {
-        id: 4,
-        status: 'Printed',
-        statusComments: 'Passport printed and ready',
-        statusBy: 'Admin',
-        statusOn: '2025-03-20T10:00:00Z',
-      },
-      {
-        id: 5,
-        status: 'Delivered',
-        statusComments: 'Delivered to customer',
-        statusBy: 'Courier',
-        statusOn: '2025-04-02T11:20:00Z',
-      },
-    ],
-  };
-
   const onRefreshVisaTracking = () => {
-    if (!USE_MOCK) getData(params);
+    getData(params);
     setModal(false);
   };
 
   useEffect(() => {
-    if (!USE_MOCK) getData(params);
-  }, [params, USE_MOCK, getData]);
+    getData(params);
+  }, [params, getData]);
 
   const handleSortChange = (selector) => {
     setParams((prev) => ({
@@ -134,7 +80,7 @@ const VisaTracking = () => {
       debounce((searchValue) => {
         setParams((prev) => ({
           ...prev,
-          search: searchValue,
+          passport_no: searchValue,
           page: 1,
         }));
       }, 500),
@@ -145,8 +91,8 @@ const VisaTracking = () => {
     return () => debouncedSearch.cancel();
   }, [debouncedSearch]);
 
-  const tableData = USE_MOCK ? mockVisaTrackingData : visaTrackingData;
-  const loading = USE_MOCK ? false : isLoadingVisaTracking;
+  const tableData = attestationTrackingData || [];
+  const loading = isLoadingGet;
 
   return (
     <>

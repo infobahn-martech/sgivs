@@ -50,16 +50,17 @@ const useAttestationApplicationReducer = create((set) => ({
     }
   },
 
-  updateAttestationApplication: async (id, data) => {
+  updateAttestationApplication: async (updatePayload, callback) => {
     try {
       set({ isUpdateAttestationApplicationLoading: true });
-      const { data } = await attestationApplicationService.updateAttestationApplication(id, data);
+      const { data } = await attestationApplicationService.updateAttestationApplication(updatePayload);
       const { success } = useAlertReducer.getState();
       success(data?.response?.data?.message ?? data?.message);
       set({
         successMessage: data?.response?.data?.message ?? data?.message,
         isUpdateAttestationApplicationLoading: false,
       });
+      if (typeof callback === 'function') callback();
     } catch (err) {
       const { error } = useAlertReducer.getState();
       set({

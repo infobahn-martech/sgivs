@@ -164,7 +164,7 @@ const AttestationIFM = () => {
       isLoading: isLoadingCenters,
     },
     {
-      fieldName: 'Joined Date',
+      fieldName: 'Date Range',
       fieldType: 'dateRangeCombined',
       fromKey: 'from_date',
       toKey: 'to_date',
@@ -185,15 +185,18 @@ const AttestationIFM = () => {
             setSelectedAttestationIFM(null);
           },
         }}
-        //hideFilter
         onSearch={debouncedSearch}
         filterOptions={filterOptions}
         submitFilter={(filters) => {
-          setParams({
-            ...params,
-            ...filters,
-            page: 1
-          });
+          const { from_date, to_date, ...rest } = filters;
+          const formattedFromDate = from_date ? moment(from_date).format('YYYY-MM-DD') : null;
+          setParams((prev) => ({
+            ...prev,
+            ...rest,
+            from_date: formattedFromDate,
+            to_date: to_date ? moment(to_date).format('YYYY-MM-DD') : formattedFromDate,
+            page: 1,
+          }));
         }}
         clearOptions={() => setParams(initialParams)}
       />

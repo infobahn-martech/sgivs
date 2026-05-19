@@ -9,7 +9,6 @@ import CommonHeader from '../../components/common/CommonHeader';
 import CustomTable from '../../components/common/CustomTable';
 import useOCITrackingReducer from '../../stores/OCITrackingReducer';
 import { formatDate } from '../../config/config';
-import useUserReducer from '../../stores/UserReducer';
 
 const OCITracking = () => {
 
@@ -20,64 +19,10 @@ const OCITracking = () => {
     limit: 10,
     sort_by: 'created_at',
     sort_order: 'DESC',
-    q: '',
+     q: '',
   };
 
   const [params, setParams] = useState(initialParams);
-
-  const {
-      countryList,
-      missionList,
-      centerList,
-      isLoadingCountries,
-      isLoadingMissions,
-      isLoadingCenters,
-      getCountries,
-      getMissionsByCountry,
-      getCentersByMission
-    } = useUserReducer();
-  
-    useEffect(() => {
-      getCountries();
-    }, []);
-  
-    const countryOptions = useMemo(
-      () =>
-        (countryList || []).map((item) => ({
-          value: item.country_id,
-          label: item.country_name,
-        })),
-      [countryList]
-    );
-    const missionOptions = useMemo(
-      () =>
-        (missionList || []).map((item) => ({
-          value: item.mission_id,
-          label: item.mission_name,
-        })),
-      [missionList]
-    );
-  
-    const centerOptions = useMemo(
-      () =>
-        (centerList || []).map((item) => ({
-          value: item.center_id,
-          label: item.center_name,
-        })),
-      [centerList]
-    );
-  
-    const onCountryChange = (countryId) => {
-      if (countryId) {
-        getMissionsByCountry(countryId);
-      }
-    };
-  
-    const onMissionChange = (missionId) => {
-      if (missionId) {
-        getCentersByMission(missionId);
-      }
-    };
 
   useEffect(() => {
      getData(params);
@@ -127,7 +72,7 @@ const OCITracking = () => {
       debounce((searchValue) => {
         setParams((prev) => ({
           ...prev,
-          search: searchValue,
+          q: searchValue,
           page: 1,
         }));
       }, 500),
@@ -138,55 +83,14 @@ const OCITracking = () => {
     return () => debouncedSearch.cancel();
   }, [debouncedSearch]);
 
-  const filterOptions = [
-    {
-      fieldName: 'Country',
-      BE_keyName: 'country_id',
-      fieldType: 'select',
-      Options: countryOptions,
-      callBack: onCountryChange,
-      isLoading: isLoadingCountries,
-    },
-    {
-      fieldName: 'Mission',
-      BE_keyName: 'mission_id',
-      fieldType: 'select',
-      Options: missionOptions,
-      callBack: onMissionChange,
-      isLoading: isLoadingMissions,
-    },
-    {
-      fieldName: 'Center',
-      BE_keyName: 'center_id',
-      fieldType: 'select',
-      Options: centerOptions,
-      isLoading: isLoadingCenters,
-    },
-    {
-      fieldName: 'Joined Date',
-      fieldType: 'dateRangeCombined',
-      fromKey: 'from_date',
-      toKey: 'to_date',
-    },
-  ];
-
   const tableData = ociTrackingData || [];
   const loading = isLoadingGet;
 
   return (
     <>
       <CommonHeader
-        //hideFilter
+        hideFilter
         onSearch={debouncedSearch}
-        filterOptions={filterOptions}
-        submitFilter={(filters) => {
-          setParams({
-            ...params,
-            ...filters,
-            page: 1
-          });
-        }}
-        clearOptions={() => setParams(initialParams)}
       />
 
       <CustomTable

@@ -4,12 +4,14 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 
 import CustomModal from '../../components/common/CustomModal';
+import useOCIApplicationReducer from '../../stores/OCIApplicationReducer';
 import useServiceOptions from '../../hooks/useServiceOptions';
+import useServiceReducer from '../../stores/ServiceReducer';
 
-// ✅ Schema (numbers from inputs come as string -> use preprocess)
+// Schema (numbers from inputs come as string -> use preprocess)
 const changeServicesSchema = z
     .object({
-        ociServiceId: z.string().nonempty('OCI Service is required'),
+        serviceId: z.string().nonempty('Service is required'),
         referenceNo: z.string().nonempty('Reference No is required'),
         applicantName: z.string().nonempty('Applicant Name is required'),
 
@@ -46,9 +48,13 @@ const changeServicesSchema = z
     });
 
 export default function ChangeServicesModal({ showModal, closeModal, onRefreshOCIApplications, }) {
-    
+
     const serviceTypeId = 3;
     const { options: ociServiceOptions, loading: serviceLoading } = useServiceOptions(serviceTypeId);
+
+    const { getOCIApplicationById, editORviewOCIApplicationData, isLoadingEditOrViewOCIApplication, } = useOCIApplicationReducer();
+
+    const { getServiceById, selectedService } = useServiceReducer();
 
     const cancelReasonOptions = [
         { value: 'Applicant wishes to withdraw', label: 'Applicant wishes to withdraw' },
@@ -65,7 +71,7 @@ export default function ChangeServicesModal({ showModal, closeModal, onRefreshOC
     } = useForm({
         resolver: zodResolver(changeServicesSchema),
         defaultValues: {
-            ociServiceId: '',
+            serviceId: '',
             referenceNo: '',
             applicantName: '',
 
@@ -82,20 +88,31 @@ export default function ChangeServicesModal({ showModal, closeModal, onRefreshOC
         mode: 'onSubmit',
     });
 
+    const serviceId = watch('serviceId');
     const cancelApplication = watch('cancelApplication');
 
-    // ✅ Prefill when opening (from row)
     useEffect(() => {
-        if (!showModal) return;
+        if (!showModal?.oci_application_id) return;
+
+        getOCIApplicationById(showModal.oci_application_id);
+
+    }, [showModal?.oci_application_id]);
+
+    useEffect(() => {
+        if (!editORviewOCIApplicationData) return;
+        if (!showModal?.oci_application_id) return;
+
+        const app = editORviewOCIApplicationData.oci_application || {};
+        const fees = editORviewOCIApplicationData.fees || {};
 
         reset({
-            ociServiceId: '',
-            referenceNo: showModal?.appointment_reference_no ?? '',
-            applicantName: `${showModal?.first_name ?? ''} ${showModal?.surname ?? ''}`.trim(),
+            serviceId: String(app.service_id || ''),
+            referenceNo: app.appointment_reference_no || '',
+            applicantName: `${app.first_name || ''} ${app.surname || ''}`.trim(),
 
-            govtFee: '',
-            icwfFee: '',
-            sgivsServiceFee: '',
+            govtFee: String(fees.govt_fee ?? 0),
+            icwfFee: String(fees.icwf_fee ?? 0),
+            sgivsServiceFee: String(fees.sgv_service_fee ?? 0),
 
             cancelApplication: false,
             govtFeeCancel: false,
@@ -103,18 +120,39 @@ export default function ChangeServicesModal({ showModal, closeModal, onRefreshOC
             cancelReason: '',
             remark: '',
         });
-    }, [showModal, reset]);
+    }, [editORviewOCIApplicationData, showModal?.oci_application_id]);
 
+    /* -------------------------
+       2. SERVICE CHANGE (FIXED)
+    --------------------------*/
+    const handleServiceChange = (serviceId) => {
+        setValue('serviceId', serviceId, {
+            shouldDirty: true,
+        });
+
+        if (!serviceId) return;
+
+        // clear UI instantly
+        setValue('govtFee', '');
+        setValue('icwfFee', '');
+        setValue('sgivsServiceFee', '');
+
+        // CALL STORE ACTION (it updates selectedService internally)
+        getServiceById(serviceId);
+    };
+
+    /* -------------------------
+       3. APPLY selectedService → FORM
+    --------------------------*/
     useEffect(() => {
-        if (!showModal) return;
-        if (ociServiceOptions.length === 0) return;
+        if (!selectedService) return;
 
-        setValue('ociServiceId', String(showModal?.service_id || ''));
-    }, [showModal, ociServiceOptions, setValue]);
+        setValue('govtFee', String(selectedService.govt_fee || 0));
+        setValue('icwfFee', String(selectedService.icwf_fee || 0));
+        setValue('sgivsServiceFee', String(selectedService.service_fee || 0));
+    }, [selectedService]);
 
     const onSubmit = (data) => {
-        console.log('Change Service/Fee Payload:', data);
-
         // ✅ call API here (post/patch)
         // patchData(showModal.id, data, () => onRefreshOCIApplications?.());
 
@@ -124,7 +162,7 @@ export default function ChangeServicesModal({ showModal, closeModal, onRefreshOC
 
     const renderHeader = () => (
         <>
-            <h4 className="modal-title">Change OCI Service</h4>
+            <h4 className="modal-title">Change OCI Service / Fees</h4>
             <button type="button" className="btn-close" aria-label="Close" onClick={closeModal} />
         </>
     );
@@ -132,15 +170,16 @@ export default function ChangeServicesModal({ showModal, closeModal, onRefreshOC
     const renderBody = () => (
         <div className="modal-body custom-scroll">
             <div className="row g-3">
-                {/* OCI Service dropdown */}
+                {/* Service dropdown */}
                 <div className="col-md-12">
                     <div className="form-group">
                         <label className="form-label">OCI Service</label>
                         <select
-                            className="form-control"
-                            {...register('ociServiceId')}
-                            disabled={serviceLoading}
-                        >
+                                className="form-control"
+                                disabled={serviceLoading}
+                                value={serviceId}
+                                onChange={(e) => handleServiceChange(e.target.value)}
+                            >
                             <option value="">
                                 {serviceLoading ? 'Loading services...' : 'Select Service'}
                             </option>
@@ -151,8 +190,8 @@ export default function ChangeServicesModal({ showModal, closeModal, onRefreshOC
                                 </option>
                             ))}
                         </select>
-                        {errors?.ociServiceId && (
-                            <p className="text-danger mt-1">{errors.ociServiceId.message}</p>
+                        {errors?.serviceId && (
+                            <p className="text-danger mt-1">{errors.serviceId.message}</p>
                         )}
                     </div>
                 </div>
@@ -330,3 +369,5 @@ export default function ChangeServicesModal({ showModal, closeModal, onRefreshOC
         />
     );
 }
+
+

@@ -1464,6 +1464,35 @@
                         }
                     }
 
+                    .view-modal-app-card {
+                        padding: 14px 16px;
+                        background: #fff;
+                        border: 1px solid #d9e2ef;
+                        border-radius: 10px;
+                        box-shadow: 0px -2px 5px 0px rgb(9, 40, 55);
+
+                        display: flex;
+                        flex-direction: column;
+                        gap: 6px;
+
+                        min-height: 90px;
+                        justify-content: center;
+                        margin-bottom: 12px;
+                    }
+
+                    .view-modal-app-label {
+                        font-size: 13px;
+                        font-weight: 600;
+                        color: #5a6c7d;
+                    }
+
+                    .view-modal-app-value {
+                        font-size: 15px;
+                        color: #092837;
+                        font-weight: 600;
+                        line-height: 1.4;
+                    }
+
                     .view-modal-section-header {
                         display: flex;
                         align-items: center;
@@ -1472,6 +1501,8 @@
                         background: #E8EEF3;
                         border-radius: 6px;
                         margin-bottom: 12px;
+
+                        box-shadow: 0px -2px 5px 0px rgb(9, 40, 55)
                     }
 
                     .view-modal-section-icon {
@@ -1503,16 +1534,24 @@
                             margin-bottom: 0;
                         }
 
-                        &--two-cols {
-                            grid-template-columns: 1fr 1fr;
-                        }
-
                         &--full {
                             grid-template-columns: 1fr;
                         }
 
+                        &--two-cols {
+                            grid-template-columns: 1fr 1fr;
+                        }
+
+                        &--three-cols {
+                            grid-template-columns: 1fr 1fr 1fr;
+                        }
+
                         @media (max-width: 767px) {
                             &--two-cols {
+                                grid-template-columns: 1fr;
+                            }
+
+                            &--three-cols {
                                 grid-template-columns: 1fr;
                             }
                         }
@@ -1520,19 +1559,25 @@
 
                     .view-modal-field {
                         display: flex;
-                        flex-direction: column;
-                        gap: 2px;
+                        justify-content: space-between;
+                        align-items: flex-start;
+                        padding: 8px 0;
+                        gap: 10px;
+                        border-bottom: 1px solid #eef2f6; // optional but looks clean
                     }
-
+                    
                     .view-modal-label {
                         font-weight: 600;
                         font-size: 14px;
                         color: #5a6c7d;
+                        flex: 0 0 180px;
                     }
 
                     .view-modal-value {
-                        font-size: 16px;
+                        font-size: 15px;
                         color: #092837;
+                        flex: 1;
+                        text-align: right;
                     }
 
                     .view-modal-sms {
@@ -2948,7 +2993,6 @@
         }
     }
 }
-
 
 .note-modal {
     .modal-dialog {
@@ -4929,8 +4973,13 @@
             border-color: #E8EFF8;
         }
 
-        .col-sn { width: 70px; }
-        .col-datetime { width: 140px; }
+        .col-sn {
+            width: 70px;
+        }
+
+        .col-datetime {
+            width: 140px;
+        }
     }
 
     .comment-empty-state {

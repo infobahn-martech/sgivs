@@ -3,8 +3,9 @@ import useAlertReducer from './AlertReducer';
 import attestationVasApplicationsService from '../services/attestationVasApplicationsService';
 
 const useAttestationVasApplicationsReducer = create((set) => ({
-    attestationVasApplicationsData: null,
-    isLoadingGet: false,
+    isLoadingGet: false, attestationVasApplicationsData: null,
+    
+    isLoadingDelete: false,
 
     getData: async (params) => {
         try {
@@ -26,6 +27,20 @@ const useAttestationVasApplicationsReducer = create((set) => ({
         }
     },
 
+    deleteData: async (payload, cb) => {
+        try {
+            set({ isLoadingDelete: true });
+            const res = await attestationVasApplicationsService.deleteAttestationVasApplication(payload);
+            const { success } = useAlertReducer.getState();
+            success(res?.data?.status || 'Deleted successfully');
+            set({ isLoadingDelete: false });
+            cb?.(res?.data);
+        } catch (err) {
+            set({ isLoadingDelete: false });
+            const { error } = useAlertReducer.getState();
+            error(err?.response?.data?.message ?? err.message);
+        }
+    },
 }));
 
 export default useAttestationVasApplicationsReducer;

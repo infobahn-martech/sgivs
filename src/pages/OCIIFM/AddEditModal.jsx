@@ -12,7 +12,7 @@ const nameSchema = z.object({
         .nonempty('At least one Application Number is required'),
 });
 
-export default function AddEditModal({ showModal, closeModal, onRefreshOTM }) {
+export default function AddEditModal({ showModal, closeModal, onRefreshIFM }) {
     const {
         register,
         handleSubmit,

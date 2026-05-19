@@ -4,12 +4,14 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 
 import CustomModal from '../../components/common/CustomModal';
+import useAttestationApplicationReducer from '../../stores/AttestationApplicationReducer';
 import useServiceOptions from '../../hooks/useServiceOptions';
+import useServiceReducer from '../../stores/ServiceReducer';
 
 // ✅ Schema (numbers from inputs come as string -> use preprocess)
 const changeServicesSchema = z
     .object({
-        attestationServiceId: z.string().nonempty('Attestation Service is required'),
+        serviceId: z.string().nonempty('Attestation Service is required'),
         referenceNo: z.string().nonempty('Reference No is required'),
         applicantName: z.string().nonempty('Applicant Name is required'),
 
@@ -45,10 +47,14 @@ const changeServicesSchema = z
         }
     });
 
-export default function ChangeServicesModal({ showModal, closeModal, onRefreshPassportApplications, }) {
+export default function ChangeServicesModal({ showModal, closeModal, onRefreshAttestationApplications, }) {
 
     const serviceTypeId = 4;
     const { options: attestationServiceOptions, loading: serviceLoading } = useServiceOptions(serviceTypeId);
+
+    const { getAttestationApplicationById, editORviewAttestationApplicationData, isLoadingEditOrViewAttestationApplication, } = useAttestationApplicationReducer();
+
+    const { getServiceById, selectedService } = useServiceReducer();
 
     const cancelReasonOptions = [
         { value: 'Applicant wishes to withdraw', label: 'Applicant wishes to withdraw' },
@@ -65,7 +71,7 @@ export default function ChangeServicesModal({ showModal, closeModal, onRefreshPa
     } = useForm({
         resolver: zodResolver(changeServicesSchema),
         defaultValues: {
-            attestationServiceId: '',
+            serviceId: '',
             referenceNo: '',
             applicantName: '',
 
@@ -82,20 +88,32 @@ export default function ChangeServicesModal({ showModal, closeModal, onRefreshPa
         mode: 'onSubmit',
     });
 
+    const serviceId = watch('serviceId');
     const cancelApplication = watch('cancelApplication');
 
-    // ✅ Prefill when opening (from row)
     useEffect(() => {
-        if (!showModal) return;
+        if (!showModal?.attestation_application_id) return;
+
+        getAttestationApplicationById(showModal.attestation_application_id);
+
+    }, [showModal?.attestation_application_id]);
+
+    useEffect(() => {
+        if (!editORviewAttestationApplicationData) return;
+        if (!showModal?.attestation_application_id) return;
+
+        const app = editORviewAttestationApplicationData || {};
+
+        
 
         reset({
-            attestationServiceId: '',
-            referenceNo: showModal?.appointment_reference_no ?? '',
-            applicantName: `${showModal?.first_name ?? ''} ${showModal?.surname ?? ''}`.trim(),
+            serviceId: String(app.service_id || ''),
+            referenceNo: app.appointment_reference_no || '',
+            applicantName: `${app.first_name || ''} ${app.surname || ''}`.trim(),
 
-            govtFee: '',
-            icwfFee: '',
-            sgivsServiceFee: '',
+            govtFee: String(app.govt_fee ?? 0),
+            icwfFee: String(app.icwf_fee ?? 0),
+            sgivsServiceFee: String(app.sgv_service_fee ?? 0),
 
             cancelApplication: false,
             govtFeeCancel: false,
@@ -103,22 +121,45 @@ export default function ChangeServicesModal({ showModal, closeModal, onRefreshPa
             cancelReason: '',
             remark: '',
         });
-    }, [showModal, reset]);
+    }, [editORviewAttestationApplicationData, showModal?.attestation_application_id]);
 
+    /* -------------------------
+          2. SERVICE CHANGE (FIXED)
+       --------------------------*/
+    const handleServiceChange = (serviceId) => {
+        setValue('serviceId', serviceId, {
+            shouldDirty: true,
+        });
+
+        if (!serviceId) return;
+
+        // clear UI instantly
+        setValue('govtFee', '');
+        setValue('icwfFee', '');
+        setValue('sgivsServiceFee', '');
+
+        // CALL STORE ACTION (it updates selectedService internally)
+        getServiceById(serviceId);
+    };
+
+    /* -------------------------
+       3. APPLY selectedService → FORM
+    --------------------------*/
     useEffect(() => {
-        if (!showModal) return;
-        if (attestationServiceOptions.length === 0) return;
+        if (!selectedService) return;
 
-        setValue('attestationServiceId', String(showModal?.service_id || ''));
-    }, [showModal, attestationServiceOptions, setValue]);
+        setValue('govtFee', String(selectedService.govt_fee || 0));
+        setValue('icwfFee', String(selectedService.icwf_fee || 0));
+        setValue('sgivsServiceFee', String(selectedService.service_fee || 0));
+    }, [selectedService]);
 
     const onSubmit = (data) => {
         console.log('Change Service/Fee Payload:', data);
 
         // ✅ call API here (post/patch)
-        // patchData(showModal.id, data, () => onRefreshPassportApplications?.());
+        // patchData(showModal.id, data, () => onRefreshAttestationApplications?.());
 
-        onRefreshPassportApplications?.();
+        onRefreshAttestationApplications?.();
         closeModal?.();
     };
 
@@ -137,10 +178,11 @@ export default function ChangeServicesModal({ showModal, closeModal, onRefreshPa
                     <div className="form-group">
                         <label className="form-label">Attestation Service</label>
                         <select
-                            className="form-control"
-                            {...register('attestationServiceId')}
-                            disabled={serviceLoading}
-                        >
+                                className="form-control"
+                                disabled={serviceLoading}
+                                value={serviceId}
+                                onChange={(e) => handleServiceChange(e.target.value)}
+                            >
                             <option value="">
                                 {serviceLoading ? 'Loading services...' : 'Select Service'}
                             </option>
@@ -151,8 +193,8 @@ export default function ChangeServicesModal({ showModal, closeModal, onRefreshPa
                                 </option>
                             ))}
                         </select>
-                        {errors?.attestationServiceId && (
-                            <p className="text-danger mt-1">{errors.attestationServiceId.message}</p>
+                        {errors?.serviceId && (
+                            <p className="text-danger mt-1">{errors.serviceId.message}</p>
                         )}
                     </div>
                 </div>

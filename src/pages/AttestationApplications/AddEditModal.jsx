@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -14,6 +14,9 @@ import useUserReducer from '../../stores/UserReducer';
 import useServiceReducer from '../../stores/ServiceReducer';
 import useServiceOptions from '../../hooks/useServiceOptions';
 import useCourierTypeReducer from '../../stores/CourierTypeReducer';
+
+const ATTESTATION_SERVICE_TYPE_ID = 4;
+const CARD_PAYMENT_MODE_ID = '2';
 
 // ===================== OPTIONS =====================
 
@@ -44,9 +47,6 @@ const cardTypeOptions = [
   { value: '2', label: 'Local Bank Credit Card' },
   { value: '3', label: 'International Bank Card' },
 ];
-
-const ATTESTATION_SERVICE_TYPE_ID = 4;
-const CARD_PAYMENT_MODE_ID = '2';
 
 function getEmployeeIdFromStorage() {
   try {
@@ -218,10 +218,9 @@ export function AddEditModal({ showModal, closeModal, onRefreshAttestationApplic
   const { options: serviceRequestedOptions, loading: serviceLoading } = useServiceOptions(serviceTypeId);
 
   const {
-    createAttestationApplication,
-    updateAttestationApplication,
-    isCreateAttestationApplicationLoading,
-    isUpdateAttestationApplicationLoading,
+    createAttestationApplication, isCreateAttestationApplicationLoading,
+    getAttestationApplicationById, editORviewAttestationApplicationData,
+    updateAttestationApplication, isUpdateAttestationApplicationLoading,
   } = useAttestationApplicationReducer((state) => state);
 
   // ================= INIT LOAD =================
@@ -332,16 +331,9 @@ export function AddEditModal({ showModal, closeModal, onRefreshAttestationApplic
   const selectedAfs = watch('afs') || [];
   const paymentMode = watch('paymentMode');
 
-  // Card mode detection based on ID (2)
-  const isCardPayment = String(paymentMode) === String(CARD_PAYMENT_MODE_ID);
+  const [serviceManuallyChanged, setServiceManuallyChanged] = useState(false);
 
-  // Clear card fields if switching away from Card
-  useEffect(() => {
-    if (!isCardPayment) {
-      setValue('cardType', '', { shouldValidate: true });
-      setValue('transactionId', '', { shouldValidate: true });
-    }
-  }, [isCardPayment, setValue]);
+  const isEditMode = !!showModal?.attestation_application_id;
 
   useEffect(() => {
     if (serviceRequested) {
@@ -349,62 +341,123 @@ export function AddEditModal({ showModal, closeModal, onRefreshAttestationApplic
     }
   }, [serviceRequested, getServiceById]);
 
+  const onServiceChange = (e) => {
+    const value = e.target.value;
+
+    setValue('serviceRequested', value, {
+      shouldValidate: true,
+    });
+
+    if (isEditMode) {
+      setServiceManuallyChanged(true);
+    }
+  };
+
+  // Card mode detection based on ID (2)
+  const isCardPayment = String(paymentMode) === CARD_PAYMENT_MODE_ID;
+
+  // Clear card fields if switching away from Card
+  useEffect(() => {
+    if (!isCardPayment && !isEditMode) { 
+      setValue('cardType', '', { shouldValidate: true });
+      setValue('transactionId', '', { shouldValidate: true });
+    }
+  }, [isCardPayment, setValue]);
+
   // Dynamic fee calculation
-  const feeValues = useMemo(() => {
-    const govtFees = Number(selectedService?.govt_fee || 0);
-    const icwfFees = Number(selectedService?.icwf_fee || 0);
-    const serviceFees = Number(selectedService?.service_fee || 0);
-
-    const totalFees = govtFees + icwfFees + serviceFees;
-
-    return {
-      govtFees,
-      icwfFees,
-      serviceFees,
-      totalFees,
-      onlinePaid: 0,
-    };
-  }, [selectedService]);
+    const feeValues = useMemo(() => {
+      // ✅ EDIT MODE + NOT CHANGED → keep API fees (don’t override)
+      if (isEditMode && !serviceManuallyChanged) {
+        return null; // or keep previous API fee state externally
+      }
+  
+      const govtFees = Number(selectedService?.govt_fee || 0);
+      const icwfFees = Number(selectedService?.icwf_fee || 0);
+      const serviceFees = Number(selectedService?.service_fee || 0);
+  
+      return {
+        govtFees,
+        icwfFees,
+        serviceFees,
+        totalFees: govtFees + icwfFees + serviceFees,
+        onlinePaid: 0,
+      };
+    }, [selectedService, showModal?.attestation_application_id, serviceManuallyChanged]);
 
   // Notify parent of fee values when Service Requested is selected (for FeeCalculator outside modal)
   useEffect(() => {
     if (typeof onFeeValuesChange !== 'function') return;
-    if (serviceRequested) onFeeValuesChange(feeValues);
-    else onFeeValuesChange(null);
-  }, [serviceRequested, feeValues, onFeeValuesChange]);
+
+    // EDIT MODE + not touched → keep API fees (already sent in prefill)
+    if (showModal?.attestation_application_id && !serviceManuallyChanged) return;
+
+
+    if (serviceRequested) 
+      onFeeValuesChange(feeValues);
+    else
+       onFeeValuesChange(null);
+  }, [ serviceRequested, feeValues, onFeeValuesChange, showModal?.attestation_application_id, serviceManuallyChanged, ]);
 
   // ================= EDIT PREFILL =================
 
+  useEffect(() => {
+      if (!showModal?.attestation_application_id) return;
+  
+      getAttestationApplicationById(showModal.attestation_application_id);
+    }, [showModal?.attestation_application_id, getAttestationApplicationById]);
+
   // Prefill form when editing
   useEffect(() => {
-    if (!showModal) return;
+    if (!showModal?.attestation_application_id) return;
+    if (!editORviewAttestationApplicationData) return;
 
-    if (showModal?.attestation_application_id) {
-      reset({
-        appointmentPostalRefNo: showModal.appointment_reference_no || '',
-        applicationType: showModal.appointment_type_id || '',
-        applicationBy: showModal.application_mode_id || '',
-        ociFileNo: showModal.oci_file_number || '',
-        serviceRequested: showModal.service_id || '',
+    const data = editORviewAttestationApplicationData;
+    onFeeValuesChange({ govtFees: data.govt_fee, icwfFees: data.icwf_fee, serviceFees: data.sgv_service_fee, totalFees: data.grand_total, onlinePaid: data.online_paid })
+    reset({
+      appointmentPostalRefNo: data.appointment_reference_no || '',
+      applicationType: data.appointment_type_id || '',
+      applicationBy: data.application_mode_id || '',
+      serviceRequested: data.service_id || '',
 
-        firstName: showModal.first_name || '',
-        surname: showModal.surname || '',
-        dob: showModal.dob ? showModal.dob.split(' ')[0] : '',
-        gender: showModal.gender || '',
+      firstName: data.first_name || '',
+      surname: data.surname || '',
+      dob: data.dob ? data.dob.split(' ')[0] : '',
+      gender: data.gender || '',
 
-        mobileNumber: showModal.mobile_number || '',
+      mobileNumber: data.mobile_number || '',
+      email: data.email || '',
+      nationality: data.nationality_id || '',
+      fatherMotherSpouseName: data.father_husband_name || '',
 
-        email: showModal.email || '',
-        passportNo: showModal.passport_no || '',
-        fatherMotherSpouseName: showModal.father_husband_name || '',
+      passportNo: data.passport_no || '',
+      passportPlaceOfIssue: data.passport_place_of_issue || '',
+      passportDateOfIssue: data.passport_date_of_issue
+        ? data.passport_date_of_issue.split(' ')[0]
+        : '',
+      passportExpiryDate: data.passport_date_of_expiry
+        ? data.passport_date_of_expiry.split(' ')[0]
+        : '',
 
-        courierRequired: showModal.courier === "1",
-        paymentMode: '', // ⚠️ API not returning → handle separately
-      });
-    } else {
-      reset(defaultValues);
-    }
-  }, [showModal,]);
+      courierRequired: data.courier === '1',
+
+      returnCourierAddress: data.return_courier_address || '',
+
+      afs: (data?.vas_services || []).map((item) =>
+        String(item.vas_service_id)
+      ),
+
+      photocopyCounts:
+        Number(
+          data?.vas_services?.find(
+            (item) => String(item.vas_service_id) === '1'
+          )?.quantity || 1
+        ),
+
+      paymentMode: data.payment_mode_id || '',
+      cardType: String(data.card_type || ''),
+      transactionId: data.transaction_id || '',
+    });
+  }, [editORviewAttestationApplicationData]);
 
   const onSubmit = (data) => {
     const employeeId = getEmployeeIdFromStorage();
@@ -482,15 +535,21 @@ export function AddEditModal({ showModal, closeModal, onRefreshAttestationApplic
 
       payment: {
         payment_mode_id: Number(data.paymentMode),
-        card_type: Number(data.cardType),
+        card_type: data.cardType
+          ? Number(data.cardType)
+          : null,
         transaction_id: data.transactionId || "",
       },
       vas_services,
     };
 
+    if (isEditMode) {
+      const updatePayload = {
+        ...payload,
+        attestation_application_id: showModal.attestation_application_id,
+      };
 
-    if (showModal?.attestation_application_id) {
-      updateAttestationApplication(showModal.attestation_application_id, payload, () => {
+      updateAttestationApplication(updatePayload, () => {
         onRefreshAttestationApplications?.();
         closeModal?.();
       });
@@ -506,7 +565,7 @@ export function AddEditModal({ showModal, closeModal, onRefreshAttestationApplic
     const checked = e.target.checked;
     setValue('courierRequired', checked, { shouldValidate: true });
 
-    if (!checked) {
+    if (!checked && !isEditMode) {
       setValue('returnCourierAddress', '');
       setValue('residenceCountry', '');
       setValue('addressLine1', '');
@@ -522,7 +581,7 @@ export function AddEditModal({ showModal, closeModal, onRefreshAttestationApplic
     const current = new Set(selectedAfs);
     if (current.has(value)) {
       current.delete(value);
-      if (value === '1') setValue('photocopyCounts', '1', { shouldValidate: true });
+      if (value === '1') setValue('photocopyCounts', 1, { shouldValidate: true });
     } else {
       current.add(value);
     }
@@ -594,7 +653,7 @@ export function AddEditModal({ showModal, closeModal, onRefreshAttestationApplic
             <label className="form-label">
               Service Requested <span className="text-danger">*</span>
             </label>
-            <select className="form-control" {...register('serviceRequested')}>
+            <select className="form-control" {...register('serviceRequested')} onChange={onServiceChange}>
               <option value="">
                 {serviceLoading ? 'Loading services...' : 'Select'}
               </option>
@@ -972,7 +1031,7 @@ export function AddEditModal({ showModal, closeModal, onRefreshAttestationApplic
           </div>
         </div>
       </div>
-      {paymentMode === '2' && (
+      {paymentMode === CARD_PAYMENT_MODE_ID && (
         <>
           <div className="row">
             <div className="col-md-6">

@@ -24,9 +24,9 @@ import useUserReducer from '../../stores/UserReducer';
 
 const OCIApplications = () => {
 
-  const { getOCIApplications, ociApplicationsData, isLoadingGet, pagination,
+  const { 
+    getOCIApplications, ociApplicationsData, isLoadingGet, pagination,
     deleteOCIApplication, isDeleteOCIApplicationLoading,
-    getOCIApplicationById, editORviewOCIApplicationData, isLoadingEditOrViewOCIApplication,
     getOCIStatusList, ociStatusList, isLoadingStatusList,
   } = useOCIApplicationReducer((state) => state);
 
@@ -149,14 +149,8 @@ const OCIApplications = () => {
     setPrintBarcodeModal(row);
   };
 
-  const handleViewApplication = async (row) => {
-    const id = row?.oci_application_id;
-
-    if (!id) {
-      return;
-    }
-    await getOCIApplicationById(id);
-    setViewModal(true);
+  const handleViewApplication = (row) => {
+    setViewModal(row);
   };
 
   const handleComment = (row) => {
@@ -168,16 +162,14 @@ const OCIApplications = () => {
   };
 
   const handleEditApplication = (row) => {
-    setModal(row); // if you want to open modal in edit mode, you can store editRow state
+    setModal(row);
   };
 
   const handleChangeServiceFee = (row) => {
-    console.log('Change Services / FeeS:', row);
     setChangeServicesModal(row);
   };
 
   const handleAddRemoveBiometric = (row) => {
-    console.log('Add/Remove Biometric:', row);
     setAddRemoveBiometricModal(row);
   };
 
@@ -324,7 +316,7 @@ const OCIApplications = () => {
       isLoading: isLoadingStatusList,
     },
     {
-      fieldName: 'Joined Date',
+      fieldName: 'Date Range',
       fieldType: 'dateRangeCombined',
       fromKey: 'from_date',
       toKey: 'to_date',
@@ -343,14 +335,17 @@ const OCIApplications = () => {
           action: () => setModal(true),
         }}
         onSearch={debouncedSearch}
-        // hideFilter
         filterOptions={filterOptions}
         submitFilter={(filters) => {
-          setParams({
-            ...params,
-            ...filters,
-            page: 1
-          });
+          const { from_date, to_date, ...rest } = filters;
+          const formattedFromDate = from_date ? moment(from_date).format('YYYY-MM-DD') : null;
+          setParams((prev) => ({
+            ...prev,
+            ...rest,
+            from_date: formattedFromDate,
+            to_date: to_date ? moment(to_date).format('YYYY-MM-DD') : formattedFromDate,
+            page: 1,
+          }));
         }}
         clearOptions={() => setParams(initialParams)}
       />
@@ -442,8 +437,6 @@ const OCIApplications = () => {
       {viewModal && (
         <ViewModal
           showModal={viewModal}
-          data={editORviewOCIApplicationData}
-          loading={isLoadingEditOrViewOCIApplication}
           closeModal={() => setViewModal(false)}
         />
       )}

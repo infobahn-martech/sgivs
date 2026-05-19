@@ -210,7 +210,7 @@ export function AddEditModal({ showModal, closeModal, onRefreshOCIApplications, 
 
   const {
     createOCIApplication, isCreateOCIApplicationLoading,
-    getOCIApplicationById, editORviewOCIApplicationData,
+    getOCIApplicationById, isLoadingEditOrViewOCIApplication, editORviewOCIApplicationData,
     updateOCIApplication, isUpdateOCIApplicationLoading,
   } = useOCIApplicationReducer((state) => state);
 
@@ -381,13 +381,7 @@ export function AddEditModal({ showModal, closeModal, onRefreshOCIApplications, 
     } else {
       onFeeValuesChange(null);
     }
-  }, [
-    serviceRequested,
-    feeValues,
-    onFeeValuesChange,
-    showModal?.oci_application_id,
-    serviceManuallyChanged,
-  ]);
+  }, [serviceRequested, feeValues, onFeeValuesChange, showModal?.oci_application_id, serviceManuallyChanged,]);
 
   // ================= EDIT PREFILL =================
 
@@ -600,7 +594,6 @@ export function AddEditModal({ showModal, closeModal, onRefreshOCIApplications, 
 
   const renderBody = () => (
     <div className="modal-body custom-scroll">
-      {/* ========== Row 1 ========== */}
       <div className="row">
         <div className="col-md-6">
           <div className="form-group">
@@ -629,7 +622,6 @@ export function AddEditModal({ showModal, closeModal, onRefreshOCIApplications, 
         </div>
       </div>
 
-      {/* ========== Row 2 ========== */}
       <div className="row">
         <div className="col-md-6">
           <div className="form-group">
@@ -658,7 +650,6 @@ export function AddEditModal({ showModal, closeModal, onRefreshOCIApplications, 
         </div>
       </div>
 
-      {/* ========== Row 4 ========== */}
       <div className="row">
         <div className="col-md-6">
           <div className="form-group">
@@ -831,7 +822,6 @@ export function AddEditModal({ showModal, closeModal, onRefreshOCIApplications, 
 
       {courierRequired && (
         <>
-          {/* ROW 1 */}
           <div className="row">
             <div className="col-md-4">
               <div className="form-group">
@@ -865,7 +855,6 @@ export function AddEditModal({ showModal, closeModal, onRefreshOCIApplications, 
             </div>
           </div>
 
-          {/* ROW 2 */}
           <div className="row">
             <div className="col-md-4">
               <div className="form-group">
@@ -890,7 +879,6 @@ export function AddEditModal({ showModal, closeModal, onRefreshOCIApplications, 
             </div>
           </div>
 
-          {/* ROW 3 */}
           <div className="row">
             <div className="col-md-4">
               <div className="form-group">
@@ -1017,7 +1005,7 @@ export function AddEditModal({ showModal, closeModal, onRefreshOCIApplications, 
     </div>
   );
 
-  const isLoading = isCreateOCIApplicationLoading || isUpdateOCIApplicationLoading;
+  const isLoading = isCreateOCIApplicationLoading || isUpdateOCIApplicationLoading || isLoadingEditOrViewOCIApplication;
   const renderFooter = () => (
     <div className="modal-footer bottom-btn-sec">
       <button type="button" className="btn btn-cancel" onClick={closeModal}>

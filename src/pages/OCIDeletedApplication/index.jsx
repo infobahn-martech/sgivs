@@ -11,12 +11,18 @@ import useOCIDeletedApplicationReducer from '../../stores/OCIDeletedApplicationR
 import { formatDate } from '../../config/config';
 import CustomActionModal from '../../components/common/CustomActionModal';
 import useUserReducer from '../../stores/UserReducer';
+import useOCIApplicationReducer from '../../stores/OCIApplicationReducer';
 
 const OCIDeletedApplication = () => {
 
-  const { getData, deletedOCIApplicationData, isLoadingGet, pagination,
-    restoreApplication, isLoadingRestore
+  const { 
+    getData, deletedOCIApplicationData, isLoadingGet, pagination,
+    restoreApplication, isLoadingRestore,
   } = useOCIDeletedApplicationReducer((state) => state);
+
+  const { 
+    getOCIStatusList, ociStatusList, isLoadingStatusList,
+  } = useOCIApplicationReducer((state) => state);
 
   const [retrieveModalOpen, setRetrieveModalOpen] = useState(false);
 
@@ -43,6 +49,7 @@ const OCIDeletedApplication = () => {
 
   useEffect(() => {
     getCountries();
+    getOCIStatusList();
   }, []);
 
   const countryOptions = useMemo(
@@ -53,6 +60,16 @@ const OCIDeletedApplication = () => {
       })),
     [countryList]
   );
+
+  const statusOptions = useMemo(
+    () =>
+      (ociStatusList || []).map((item) => ({
+        label: item.status,
+        value: item.status_id,
+      })),
+    [ociStatusList]
+  );
+
   const missionOptions = useMemo(
     () =>
       (missionList || []).map((item) => ({
@@ -234,8 +251,15 @@ const OCIDeletedApplication = () => {
       Options: centerOptions,
       isLoading: isLoadingCenters,
     },
+     {
+      fieldName: 'Status',
+      BE_keyName: 'status_id',
+      fieldType: 'select',
+      Options: statusOptions,
+      isLoading: isLoadingStatusList,
+    },
     {
-      fieldName: 'Joined Date',
+      fieldName: 'Date Range',
       fieldType: 'dateRangeCombined',
       fromKey: 'from_date',
       toKey: 'to_date',
@@ -249,15 +273,18 @@ const OCIDeletedApplication = () => {
   return (
     <>
       <CommonHeader
-        //hideFilter
         filterOptions={filterOptions}
         onSearch={debouncedSearch}
         submitFilter={(filters) => {
-          setParams({
-            ...params,
-            ...filters,
-            page: 1
-          });
+          const { from_date, to_date, ...rest } = filters;
+          const formattedFromDate = from_date ? moment(from_date).format('YYYY-MM-DD') : null;
+          setParams((prev) => ({
+            ...prev,
+            ...rest,
+            from_date: formattedFromDate,
+            to_date: to_date ? moment(to_date).format('YYYY-MM-DD') : formattedFromDate,
+            page: 1,
+          }));
         }}
         clearOptions={() => setParams(initialParams)}
       />

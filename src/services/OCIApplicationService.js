@@ -11,6 +11,8 @@ const getBarcode = (oci_application_id) => Gateway.post('oci/barcode', { oci_app
 
 const getOCIStatusList = () => Gateway.post('oci/status-list');
 
+const updateChangeServiceFees = (payload) => Gateway.post('oci/update_change_service', payload);
+
 export default {
   createOCIApplication,
   getOCIApplications,
@@ -22,4 +24,6 @@ export default {
   getBarcode,
 
   getOCIStatusList,
+
+  updateChangeServiceFees,
 };

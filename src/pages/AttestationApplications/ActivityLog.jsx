@@ -1,35 +1,44 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import CustomModal from '../../components/common/CustomModal';
+import attestationApplicationService from '../../services/attestationApplicationService';
+import moment from 'moment';
 
 export function ActivityLog({ showModal, closeModal }) {
 
-    // ✅ Dummy Activity Data (Replace with API later)
-    const activityData = [
-        {
-            id: 1,
-            user: 'Admin',
-            action: 'Created Passport Application',
-            date: '11 Feb 2026',
-            time: '10:30 AM',
-            status: 'Success',
-        },
-        {
-            id: 2,
-            user: 'Dany',
-            action: 'Updated Applicant Details',
-            date: '10 Feb 2026',
-            time: '02:15 PM',
-            status: 'Success',
-        },
-        {
-            id: 3,
-            user: 'Supervisor',
-            action: 'Deleted Duplicate Entry',
-            date: '09 Feb 2026',
-            time: '12:05 PM',
-            status: 'Warning',
-        },
-    ];
+    const [activityData, setActivityData] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+
+    const applicationId = showModal?.attestation_application_id;
+
+    const fetchActivityLogs = async () => {
+        try {
+            setLoading(true);
+            setError(null);
+
+            const res =
+                await attestationApplicationService.getAttestationActivityLogs(
+                    applicationId
+                );
+
+            if (res.data?.status === 'success') {
+                setActivityData(res.data.data || []);
+            } else {
+                setError(res.data?.message || 'Failed to load activity logs');
+            }
+
+        } catch (err) {
+            setError(err.response?.data?.message || 'Something went wrong');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (applicationId) {
+            fetchActivityLogs();
+        }
+    }, [applicationId]);
 
     const renderHeader = () => (
         <>
@@ -63,18 +72,27 @@ export function ActivityLog({ showModal, closeModal }) {
                             activityData.map((log, index) => (
                                 <tr key={log.id}>
                                     <td>{index + 1}</td>
-                                    <td>{log.user}</td>
-                                    <td>{log.action}</td>
-                                    <td>{log.date}</td>
-                                    <td>{log.time}</td>
+                                    <td>{log.employee_name}</td>
+                                    <td>{log.comment}</td>
+                                    <td>
+                                        {log.comment_at
+                                            ? moment(log.comment_at).format('DD MMM YYYY')
+                                            : '—'}
+                                    </td>
+
+                                    <td>
+                                        {log.comment_at
+                                            ? moment(log.comment_at).format('hh:mm A')
+                                            : '—'}
+                                    </td>
                                     <td>
                                         <span
-                                            className={`badge ${log.status === 'Success'
+                                            className={`badge ${log.comment === 'Success'
                                                 ? 'bg-success'
                                                 : 'bg-warning text-dark'
                                                 }`}
                                         >
-                                            {log.status}
+                                            {log.comment}
                                         </span>
                                     </td>
                                 </tr>

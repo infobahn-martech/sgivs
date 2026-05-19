@@ -14,12 +14,17 @@ export function ViewModal({ showModal, closeModal }) {
     } = useAttestationApplicationReducer();
 
     useEffect(() => {
-        if (showModal.attestation_application_id) {
+        if (showModal?.attestation_application_id) {
             getAttestationApplicationById(showModal.attestation_application_id);
         }
-    }, [showModal]);
+    }, [showModal?.attestation_application_id]);
 
-    const application = editORviewAttestationApplicationData?.application || {};
+    const application = editORviewAttestationApplicationData || {};
+
+    const applicationType = emptyVal(application.appointment_type);
+    const applicationBy = emptyVal(application.application_mode_id);
+    const serviceRequested = emptyVal(application.service_id);
+
     const referenceNo = emptyVal(application.appointment_reference_no);
     const appliedOn = application.created_at
         ? moment(application.created_at).format('YYYY-MM-DD HH:mm:ss')
@@ -27,18 +32,32 @@ export function ViewModal({ showModal, closeModal }) {
 
     const firstName = emptyVal(application.first_name);
     const lastName = emptyVal(application.surname);
-    const dob = emptyVal(application.dob);
+    const dob = application.dob
+        ? moment(application.dob).format('DD/MM/YYYY')
+        : '—';
+
+    const gender = emptyVal(application.gender);
+    const contact = emptyVal(application.mobile_number);
+    const email = emptyVal(application.email);
+    const nationality=emptyVal(application.nationality_id);
+
     const passportNumber = emptyVal(application.passport_no);
-    const email = '—'; // not in API
-    const contact = '—'; // not in API
+    const passportPlaceIsssue = emptyVal(application.passport_place_of_issue);
+    const passportIssueDate = application.passport_date_of_issue
+        ? moment(application.passport_date_of_issue).format('DD/MM/YYYY')
+        : '—';
+    const passportExpiryDate = application.passport_date_of_expiry
+        ? moment(application.passport_date_of_expiry).format('DD/MM/YYYY')
+        : '—';
     const passportType = emptyVal(application.service_name);
 
     const homeAddressLine1 = '—';
     const homeAddressLine2 = '—';
     const state = '—';
     const city = '—';
-    const country = emptyVal(application.nationality);
+    const country = '—';
     const postalCode = '—';
+    const courierType='—'
 
     const smsTimestamp = application.created_at;
 
@@ -49,7 +68,7 @@ export function ViewModal({ showModal, closeModal }) {
                 : '—'
             }`
             : '—';
-    
+
 
     const renderHeader = () => (
         <>
@@ -63,6 +82,35 @@ export function ViewModal({ showModal, closeModal }) {
             />
         </>
     );
+
+    // This section Only for Loading
+    if (isLoadingEditOrViewAttestationApplication) {
+        return (
+            <CustomModal
+                className="modal fade passport-application-modal show"
+                dialgName="modal-dialog-scrollable"
+                show={!!showModal}
+                closeModal={closeModal}
+                header={renderHeader()}
+                body={
+                    <div
+                        className="modal-body d-flex justify-content-center align-items-center"
+                        style={{ minHeight: '300px' }}
+                    >
+                        <div className="text-center">
+                            <div className="spinner-border text-primary mb-3" role="status">
+                                <span className="visually-hidden">Loading...</span>
+                            </div>
+
+                            <p className="mb-0">
+                                Loading application details...
+                            </p>
+                        </div>
+                    </div>
+                }
+            />
+        );
+    }
 
     const Field = ({ label, value }) => (
         <div className="view-modal-field">
@@ -87,6 +135,36 @@ export function ViewModal({ showModal, closeModal }) {
 
     const renderBody = () => (
         <div className="modal-body custom-scroll view-modal-body">
+            
+            <div className="view-modal-grid view-modal-grid--three-cols">
+                <div className="view-modal-app-card">
+                    <span className="view-modal-app-label">
+                        Application Type
+                    </span>
+                    <span className="view-modal-app-value">
+                        {applicationType}
+                    </span>
+                </div>
+
+                <div className="view-modal-app-card">
+                    <span className="view-modal-app-label">
+                        Application By
+                    </span>
+                    <span className="view-modal-app-value">
+                        {applicationBy}
+                    </span>
+                </div>
+
+                <div className="view-modal-app-card">
+                    <span className="view-modal-app-label">
+                        Service Requested
+                    </span>
+                    <span className="view-modal-app-value">
+                        {serviceRequested}
+                    </span>
+                </div>
+            </div>
+
             <Section
                 title="Personal Details"
                 icon={
@@ -102,12 +180,14 @@ export function ViewModal({ showModal, closeModal }) {
                     <Field label="First Name:" value={firstName} />
                     <Field label="Last Name:" value={lastName} />
                     <Field label="Date Of Birth:" value={dob} />
+                    <Field label="Gender:" value={gender} />
+                    <Field label="Mobile Number:" value={contact} />
                     <Field label="Email:" value={email} />
+                    <Field label="Nationality:" value={nationality} />
                     <Field label="Passport Number:" value={passportNumber} />
-                    <Field label="Contact:" value={contact} />
-                </div>
-                <div className="view-modal-grid view-modal-grid--full">
-                    <Field label="Passport Type:" value={passportType} />
+                    <Field label="Place of Issue:" value={passportPlaceIsssue} />
+                    <Field label="Date of Issue:" value={passportIssueDate} />
+                    <Field label="Date of Expiry:" value={passportExpiryDate} />
                 </div>
             </Section>
 
@@ -121,12 +201,13 @@ export function ViewModal({ showModal, closeModal }) {
                 }
             >
                 <div className="view-modal-grid view-modal-grid--two-cols">
-                    <Field label="Home Address Line1:" value={homeAddressLine1} />
-                    <Field label="Home Address Line2:" value={homeAddressLine2} />
+                    <Field label="Address Line 1:" value={homeAddressLine1} />
+                    <Field label="Address Line 2:" value={homeAddressLine2} />
                     <Field label="State:" value={state} />
                     <Field label="City:" value={city} />
                     <Field label="Country:" value={country} />
                     <Field label="Postal Code:" value={postalCode} />
+                    <Field label="Courier Type:" value={courierType} />
                 </div>
             </Section>
 

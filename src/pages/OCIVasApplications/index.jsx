@@ -5,7 +5,7 @@ import moment from 'moment';
 import '../../assets/scss/usermanagement.scss';
 
 import deleteIcon from '../../assets/images/delete.svg';
-import editIcon from '../../assets/images/edit.svg';
+import printIcon from '../../assets/images/print.svg';
 
 import CommonHeader from '../../components/common/CommonHeader';
 import CustomTable from '../../components/common/CustomTable';
@@ -13,14 +13,25 @@ import useOCIVasApplicationsReducer from '../../stores/OCIVasApplicationsReducer
 import { formatDate } from '../../config/config';
 import { debounce } from 'lodash';
 import CustomActionModal from '../../components/common/CustomActionModal';
+import PrintReceiptModal from './PrintReceipt';
+import useUserReducer from '../../stores/UserReducer';
 
 const OCIVasApplications = () => {
   // ✅ Toggle this (VERY useful for large admin projects)
-  const USE_MOCK = false;
+  const USE_MOCK = true;
 
-  const { getData, ociVasApplicationsData, isLoadingGet, deleteData, isLoadingDelete } =
-    useOCIVasApplicationsReducer((state) => state);
+  const { 
+    getData, ociVasApplicationsData, isLoadingGet,
+    deleteData, isLoadingDelete
+  } = useOCIVasApplicationsReducer((state) => state);
 
+  const {
+    countryList, missionList, centerList,
+    isLoadingCountries, isLoadingMissions, isLoadingCenters,
+    getCountries, getMissionsByCountry, getCentersByMission
+  } = useUserReducer();
+
+  const [printReceiptModal, setPrintReceiptModal] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
 
   const initialParams = {
@@ -32,12 +43,55 @@ const OCIVasApplications = () => {
 
   const [params, setParams] = useState(initialParams);
 
+  useEffect(() => {
+    getCountries();
+  }, []);
+
+  const countryOptions = useMemo(
+    () =>
+      (countryList || []).map((item) => ({
+        value: item.country_id,
+        label: item.country_name,
+      })),
+    [countryList]
+  );
+
+  const missionOptions = useMemo(
+    () =>
+      (missionList || []).map((item) => ({
+        value: item.mission_id,
+        label: item.mission_name,
+      })),
+    [missionList]
+  );
+
+  const centerOptions = useMemo(
+    () =>
+      (centerList || []).map((item) => ({
+        value: item.center_id,
+        label: item.center_name,
+      })),
+    [centerList]
+  );
+
+  const onCountryChange = (countryId) => {
+    if (countryId) {
+      getMissionsByCountry(countryId);
+    }
+  };
+
+  const onMissionChange = (missionId) => {
+    if (missionId) {
+      getCentersByMission(missionId);
+    }
+  };
+
   // ✅ Dummy Data (UPDATED as per table header image)
   const mockOCIVasApplicationsData = {
     total: 6,
     data: [
       {
-        id: 1,
+        id: 24,
         apptPostalNumber: 'APT-10001',
         applicationRefNo: 'APP-REF-90001',
         name: 'Akhil Thomas',
@@ -121,37 +175,36 @@ const OCIVasApplications = () => {
     if (!USE_MOCK) {
       getData(params);
     }
+    setPrintReceiptModal(false);
     setDeleteModalOpen(false);
   };
 
-  // ✅ Call API only if not mock
   useEffect(() => {
     if (!USE_MOCK) {
       getData(params);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params]);
 
   const handleSortChange = (selector) => {
-    setParams((prevParams) => ({
-      ...prevParams,
-      sortBy: selector,
-      sortOrder: prevParams.sortOrder === 'ASC' ? 'DESC' : 'ASC',
+    setParams((prev) => ({
+      ...prev,
+      sort_by: selector,
+      sort_order: prev.sort_order === 'ASC' ? 'DESC' : 'ASC',
     }));
   };
 
   const renderAction = (row) => {
     return (
       <>
-        <Tooltip id="edit" place="bottom" content="Edit" style={{ backgroundColor: '#051a53' }} />
+        <Tooltip id="print" place="bottom" content="Print" style={{ backgroundColor: '#051a53' }} />
         <Tooltip id="delete" place="bottom" content="Delete" style={{ backgroundColor: '#051a53' }} />
 
         <img
-          src={editIcon}
-          alt="edit"
-          data-tooltip-id="edit"
+          src={printIcon}
+          alt="print"
+          data-tooltip-id="print"
           style={{ cursor: 'pointer' }}
-          onClick={() => console.log('Edit:', row?.id)}
+          onClick={(e) => handlePrint(row)}
         />
 
         <img
@@ -231,18 +284,69 @@ const OCIVasApplications = () => {
     []
   );
 
-  const handleDelete = () => {
-    if (USE_MOCK) {
-      setDeleteModalOpen(false);
-      return;
-    }
-
-    if (deleteModalOpen?.id) {
-      deleteData(deleteModalOpen?.id, () => {
-        onRefreshOCIVasApplications();
-      });
-    }
+  const handlePrint = (row) => {
+    setPrintReceiptModal(row);
   };
+
+  // const handleDelete = () => {
+  //   if (USE_MOCK) {
+  //     setDeleteModalOpen(false);
+  //     return;
+  //   }
+
+  //   if (deleteModalOpen?.id) {
+  //     deleteData(deleteModalOpen?.id, () => {
+  //       onRefreshOCIVasApplications();
+  //     });
+  //   }
+  // };
+  const handleDelete = (comment) => {
+    if (!deleteModalOpen?.id) return;
+
+    const employeeId = localStorage.getItem('employee_id');
+
+    const payload = {
+      oci_application_id: deleteModalOpen.id,
+      comment: comment,
+      comment_by:employeeId,
+    };
+
+    deleteData(payload, () => {
+      onRefreshOCIVasApplications();
+    });
+  };
+
+  const filterOptions = [
+    {
+      fieldName: 'Country',
+      BE_keyName: 'country_id',
+      fieldType: 'select',
+      Options: countryOptions,
+      callBack: onCountryChange,
+      isLoading: isLoadingCountries,
+    },
+    {
+      fieldName: 'Mission',
+      BE_keyName: 'mission_id',
+      fieldType: 'select',
+      Options: missionOptions,
+      callBack: onMissionChange,
+      isLoading: isLoadingMissions,
+    },
+    {
+      fieldName: 'Center',
+      BE_keyName: 'center_id',
+      fieldType: 'select',
+      Options: centerOptions,
+      isLoading: isLoadingCenters,
+    },
+    {
+      fieldName: 'Joined Date',
+      fieldType: 'dateRangeCombined',
+      fromKey: 'from_date',
+      toKey: 'to_date',
+    },
+  ];
 
   // ✅ Decide dataset
   const tableData = USE_MOCK ? mockOCIVasApplicationsData : ociVasApplicationsData;
@@ -251,22 +355,17 @@ const OCIVasApplications = () => {
   return (
     <>
       <CommonHeader
-        hideFilter
+        //hideFilter
         onSearch={debouncedSearch}
+        filterOptions={filterOptions}
         submitFilter={(filters) => {
-          const { fromDate, toDate, ...rest } = filters;
-
           setParams({
             ...params,
-            ...rest,
-            fromDate: fromDate ? moment(fromDate).format('YYYY-MM-DD') : null,
-            toDate: toDate ? moment(toDate).format('YYYY-MM-DD') : null,
-            page: 1,
+            ...filters,
+            page: 1
           });
         }}
-        clearOptions={() => {
-          setParams(initialParams);
-        }}
+        clearOptions={() => { setParams(initialParams); }}
       />
 
       <CustomTable
@@ -281,14 +380,27 @@ const OCIVasApplications = () => {
         wrapClasses="inventory-table-wrap"
       />
 
+      {printReceiptModal && (
+        <PrintReceiptModal
+          showModal={printReceiptModal}
+          closeModal={() => setPrintReceiptModal(false)}
+        />
+      )}
+
       {deleteModalOpen && (
         <CustomActionModal
           isDelete
+          showCommentBox
           isLoading={USE_MOCK ? false : isLoadingDelete}
           showModal={deleteModalOpen}
           closeModal={() => setDeleteModalOpen(false)}
-          message={`Are you sure you want to delete this ${deleteModalOpen?.applicationRefNo || deleteModalOpen?.apptPostalNumber || ''
-            }?`}
+          message={
+            <>
+              Are you sure you want to delete <b>{deleteModalOpen?.name}</b>?
+              <br />
+              <span>[ Ref: {deleteModalOpen?.reference_no || '-'} ]</span>
+            </>
+          }
           onCancel={() => setDeleteModalOpen(false)}
           onSubmit={handleDelete}
         />
