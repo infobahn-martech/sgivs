@@ -10,6 +10,7 @@ const useDeleteApplicationReducer = create((set) => ({
     errorMessage: '',
     successMessage: '',
     deleteApplicationData: null,
+    pagination: null,
 
     getData: async (params) => {
         try {
@@ -17,7 +18,8 @@ const useDeleteApplicationReducer = create((set) => ({
             const { data } = await deleteApplicationService.getData(params);
             const datas = data;
             set({
-                deleteApplicationData: { data: datas?.data ?? [], total: datas?.total ?? 0 },
+                deleteApplicationData: data?.data ?? [],
+                pagination: data?.pagination ?? null,
                 // successMessage: data?.response?.data?.message ?? data?.message,
                 isLoadingGet: false,
             });

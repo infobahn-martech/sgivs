@@ -160,7 +160,7 @@ function ReceiptContentOCI({ data }) {
             {/* HEADER */}
             <div className="receipt-header">
                 <h2>{centerName}</h2>
-                 VATIN: OM1100477993
+                <div className="vatin">VATIN: OM1100477993</div>
             </div>
 
             {/* BARCODE */}

@@ -1,5 +1,7 @@
+import React, { useEffect } from 'react';
 import moment from 'moment';
 import CustomModal from '../../components/common/CustomModal';
+import usePassportApplicationReducer from '../../stores/PassportApplicationReducer';
 
 const hasValue = (v) => {
     if (v == null) return false;
@@ -19,46 +21,59 @@ function splitApplicantName(full) {
 }
 
 export function ViewModal({ showModal, closeModal }) {
-    const row = showModal || {};
 
-    // List API shape (snake_case) + form / mock (camelCase)
-    const fullName =
-        row.applicant_name ?? row.name ?? [row.firstName, row.lastName].filter(Boolean).join(' ').trim();
-    const { first: splitFirst, last: splitLast } = splitApplicantName(fullName);
+    const { getPassportApplicationDetails, selectedPassportApplicationData, isLoadingGetDetails } = usePassportApplicationReducer();
 
-    const refRaw = row.appointment_ref_no ?? row.referenceNo;
-    const referenceNo = displayStr(refRaw);
-    const appliedAt = row.comment_at ?? row.createdAt;
+    useEffect(() => {
+        if (showModal?.passport_app_id) {
+            getPassportApplicationDetails(showModal.passport_app_id);
+        }
+    }, [showModal?.passport_app_id]);
+
+    const data = selectedPassportApplicationData || {};
+
+    const passport = data?.passport_application || {};
+    const courier = data?.courier || {};
+    const payment = data?.payment || {};
+    const vasServices = data?.vas_services || [];
+
+    const referenceNo = displayStr(passport.appointment_ref_no);
+    const appliedAt = passport.created_on;
     const appliedOn = appliedAt ? moment(appliedAt).format('YYYY-MM-DD HH:mm:ss') : null;
-    const firstName = displayStr(row.firstName ?? splitFirst);
-    const lastName = displayStr(row.lastName ?? splitLast);
-    const dob = displayStr(row.date_of_birth ?? row.dob);
-    const passportNumber = displayStr(row.old_passport_no ?? row.oldPassportNo ?? row.ppNo);
-    const email = displayStr(row.email);
-    const contact = displayStr(
-        row.mobileNumber
-            ? [row.mobileCode, row.mobileNumber].filter(Boolean).join(' ')
-            : row.contact ?? row.phone
-    );
-    const passportType = displayStr(
-        row.service_name ?? row.passportType ?? [row.applicationType, row.serviceName].filter(Boolean).join(' ')
-    );
 
-    const homeAddressLine1 = displayStr(row.address_line1 ?? row.addressLine1);
-    const homeAddressLine2 = displayStr(row.address_line2 ?? row.addressLine2);
-    const state = displayStr(row.state);
-    const city = displayStr(row.city);
-    const country = displayStr(row.country ?? row.residenceCountry);
-    const postalCode = displayStr(row.postal_code ?? row.postalCode);
+    const firstName = displayStr(passport.first_name);
+    const lastName = displayStr(passport.last_name);
+    const gender = displayStr(passport.gender);
+    const dob =displayStr(passport.date_of_birth);
+    const email = displayStr(passport.email_address);
+    const contact =
+            displayStr(
+                passport.contact_no
+                    ? `+${passport.contact_code} ${passport.contact_no}`
+                    : null
+            );
+    const passportNumber = displayStr(passport.old_passport_no);
+    const passportType = displayStr(passport.passport_service_id);
 
-    const arn = row.arn_number ?? row.arn;
-    const smsTimestamp = row.comment_at ?? row.smsTimestamp ?? row.createdAt;
-    const smsMessage =
-        row.smsMessage ??
-        row.status_comment ??
-        (hasValue(refRaw) && hasValue(arn)
-            ? `Your passport application (Ref #: ${refRaw}) / (ARN #: ${arn}) is received at SGIVS ICAC, Salalah on ${appliedAt ? moment(appliedAt).format('DD-MM-YYYY') : '—'}`
-            : null);
+    const homeAddressLine1 = displayStr(courier.address_1);
+    const homeAddressLine2 = displayStr(courier.address_2);
+    const country = '-';
+    const state = displayStr(courier.state);
+    const city = displayStr(courier.city);
+    const postalCode = displayStr(courier.postal_code);
+
+    
+
+    
+
+    // const arn = passport.arn_number;
+    // const smsTimestamp = appliedAt;
+    // const smsMessage =
+    //     row.smsMessage ??
+    //     row.status_comment ??
+    //     (hasValue(refRaw) && hasValue(arn)
+    //         ? `Your passport application (Ref #: ${refRaw}) / (ARN #: ${arn}) is received at SGIVS ICAC, Salalah on ${appliedAt ? moment(appliedAt).format('DD-MM-YYYY') : '—'}`
+    //         : null);
 
     const hasAddressContent =
         hasValue(homeAddressLine1) ||
@@ -68,7 +83,7 @@ export function ViewModal({ showModal, closeModal }) {
         hasValue(country) ||
         hasValue(postalCode);
 
-    const showSmsSection = !!smsTimestamp || hasValue(smsMessage);
+    //const showSmsSection = !!smsTimestamp || hasValue(smsMessage);
 
     const hasPersonalContent =
         hasValue(referenceNo) ||
@@ -93,6 +108,35 @@ export function ViewModal({ showModal, closeModal }) {
             />
         </>
     );
+
+    // This section Only for Loading
+    if (isLoadingGetDetails) {
+        return (
+            <CustomModal
+                className="modal fade passport-application-modal show"
+                dialgName="modal-dialog-scrollable"
+                show={!!showModal}
+                closeModal={closeModal}
+                header={renderHeader()}
+                body={
+                    <div
+                        className="modal-body d-flex justify-content-center align-items-center"
+                        style={{ minHeight: '300px' }}
+                    >
+                        <div className="text-center">
+                            <div className="spinner-border text-primary mb-3" role="status">
+                                <span className="visually-hidden">Loading...</span>
+                            </div>
+
+                            <p className="mb-0">
+                                Loading application details...
+                            </p>
+                        </div>
+                    </div>
+                }
+            />
+        );
+    }
 
     const Field = ({ label, value }) => {
         if (!hasValue(value)) return null;
@@ -135,16 +179,13 @@ export function ViewModal({ showModal, closeModal }) {
                     <Field label="Applied On:" value={appliedOn} />
                     <Field label="First Name:" value={firstName} />
                     <Field label="Last Name:" value={lastName} />
+                    <Field label="Gender:" value={gender} />
                     <Field label="Date Of Birth:" value={dob} />
                     <Field label="Email:" value={email} />
-                    <Field label="Passport Number:" value={passportNumber} />
                     <Field label="Contact:" value={contact} />
+                    <Field label="Passport Number:" value={passportNumber} />
+                    <Field label="Passport Type:" value={passportType} />
                 </div>
-                {passportType && (
-                    <div className="view-modal-grid view-modal-grid--full">
-                        <Field label="Passport Type:" value={passportType} />
-                    </div>
-                )}
             </Section>
             )}
 
@@ -169,6 +210,7 @@ export function ViewModal({ showModal, closeModal }) {
             </Section>
             )}
 
+{/* 
             {showSmsSection && (
             <Section
                 title="SMS Details"
@@ -193,7 +235,7 @@ export function ViewModal({ showModal, closeModal }) {
                     )}
                 </div>
             </Section>
-            )}
+            )} */}
         </div>
     );
 

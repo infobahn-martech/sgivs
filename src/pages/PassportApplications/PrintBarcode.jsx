@@ -32,10 +32,8 @@ function BarcodeContent({ data }) {
     const arn = data.arn_number || data.appointment_ref || data.barcode_value || '—';
     const applicantName = data.applicant_name || '—';
     const applicationDate = data.application_date
-        ? moment(data.application_date).format('DD/MM/YYYY')
-        : data.created_on
-            ? moment(data.created_on).format('DD/MM/YYYY')
-            : '—';
+        ? moment(data.application_date, 'DD/MM/YYYY').format('DD/MM/YYYY')
+        : '—';
     const deliveryMode = data.delivery_mode || data.delivery_type || '—';
     const icacCenter = data.icac_center || data.center_name || data.mission_name || '—';
 

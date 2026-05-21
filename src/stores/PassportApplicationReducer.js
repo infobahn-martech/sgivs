@@ -9,7 +9,7 @@ const usePassportApplicationReducer = create((set) => ({
   isLoading: false,
   isDeletePassportApplicationLoading: false,
   isLoadingDelete: false,
-  isLoadingGetDetails: false,
+  isLoadingGetDetails: false, selectedPassportApplicationData: [],
   errorMessage: '',
   successMessage: '',
   passportApplicationsData: [],
@@ -182,11 +182,11 @@ const usePassportApplicationReducer = create((set) => ({
       set({ isLoadingGetDetails: true });
       const { data } = await passportApplicationService.getPassportApplicationDetails(passport_app_id);
       const details = data?.data;
-      set({ isLoadingGetDetails: false });
+      set({ selectedPassportApplicationData: data?.data, isLoadingGetDetails: false });
       typeof cb === 'function' && cb(null, details);
     } catch (err) {
       const { error } = useAlertReducer.getState();
-      set({ isLoadingGetDetails: false });
+      set({ selectedPassportApplicationData: [], isLoadingGetDetails: false });
       error(err?.response?.data?.message ?? err.message);
       typeof cb === 'function' && cb(err, null);
     }

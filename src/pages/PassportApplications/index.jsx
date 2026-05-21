@@ -21,8 +21,10 @@ import PrintReceiptModal from './PrintReceipt';
 import PrintBarcodeModal from './PrintBarcode';
 
 const PassportApplications = () => {
-  const { getPassportApplications, passportApplicationsData, isLoadingGet, deleteData, isLoadingDelete } =
-    usePassportApplicationReducer((state) => state);
+  const {
+    getPassportApplications, passportApplicationsData, isLoadingGet,
+    deleteData, isLoadingDelete
+  } = usePassportApplicationReducer((state) => state);
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [modal, setModal] = useState(false);
@@ -35,15 +37,10 @@ const PassportApplications = () => {
   const [feeValues, setFeeValues] = useState(null);
 
   const initialParams = {
-    search: '',
     page: 1,
     limit: 10,
-    fromDate: null,
-    toDate: null,
-    sortBy: 'createdAt',
-    sortOrder: 'DESC',
-    isExcelExport: 'false',
-    // status: 1,
+    sort_by: 'created_on',
+    sort_order: 'DESC',
   };
 
   const [params, setParams] = useState(initialParams);
@@ -76,8 +73,7 @@ const PassportApplications = () => {
 
   const openDeleteModal = (row) => {
     setDeleteModalOpen({
-      id: row?.passport_app_id ?? row?.id ?? row?._id,
-      name: row?.applicant_name ?? row?.name,
+      id: row?.passport_app_id, name: row?.applicant_name ?? row?.name, appointment_ref_no: row?.appointment_ref_no,
     });
   };
 
@@ -98,22 +94,31 @@ const PassportApplications = () => {
   const handleChangeServiceFee = (row) => setChangeServicesModal(row);
 
   const columns = [
-    { name: 'Reference No', selector: 'appointment_ref_no' },
-    { name: 'Name', selector: 'applicant_name' },
-    { name: 'Center', selector: 'center_name' },
-    { name: 'ARN', selector: 'arn_number' },
-    { name: 'PP No / Old PP No', selector: 'old_passport_no' },
+    { name: 'Reference No', selector: 'appointment_ref_no', sort: true, },
+    { name: 'Name', selector: 'applicant_name', sort: true, },
+    { name: 'Center', selector: 'center_name', sort: true, },
+    { name: 'ARN', selector: 'arn_number', sort: true, },
+    { name: 'PP No / Old PP No', selector: 'old_passport_no', sort: true, },
+    { name: 'Date of Birth', selector: 'date_of_birth', sort: true, },
+    { name: 'Application Type', selector: 'appointment_type', sort: true, },
+    { name: 'Service Name', selector: 'service_name', sort: true, },
+    { name: 'Delivery Type', selector: 'delivery_type', sort: true, },
     {
-      name: 'Date of Birth',
-      selector: 'date_of_birth',
-    },
-    { name: 'Application Type', selector: 'appointment_type' },
-    { name: 'Service Name', selector: 'service_name' },
-    { name: 'Delivery Type', selector: 'delivery_type' },
-    {
-      name: 'Status / By, On',
-      selector: 'status_comment',
-    },
+          name: 'Status / By, On',
+          selector: 'status_comment',
+          cell: (row) => (
+            <div className="d-flex flex-column">
+              <span>
+                <b>{row?.status_comment || '-'}</b>
+              </span>
+              <small className="text-muted">
+                {row?.comment_by_name || '-'}
+                {row?.comment_at ? `, ${formatDate(row.comment_at)}` : ''}
+              </small>
+            </div>
+          ),
+          sort: true,
+        },
     {
       name: 'Action',
       selector: 'action',
@@ -192,7 +197,6 @@ const PassportApplications = () => {
           type: 'button',
           action: () => setModal(true),
         }}
-        // hideFilter
         filterOptions={filterOptions}
         onSearch={debouncedSearch}
         submitFilter={(filters) => {
@@ -261,10 +265,17 @@ const PassportApplications = () => {
       {deleteModalOpen && (
         <CustomActionModal
           isDelete
+          showCommentBox
           isLoading={isLoadingDelete}
           showModal={deleteModalOpen}
           closeModal={() => setDeleteModalOpen(false)}
-          message={`Are you sure you want to delete this ${deleteModalOpen?.name}?`}
+          message={
+            <>
+              Are you sure you want to delete <b>{deleteModalOpen?.name}</b>?
+              <br />
+              <span>[ Ref: {deleteModalOpen?.appointment_ref_no || '-'} ]</span>
+            </>
+          }
           onCancel={() => setDeleteModalOpen(false)}
           onSubmit={handleDelete}
         />

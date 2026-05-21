@@ -2,28 +2,29 @@ import React, { useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+
 import CustomModal from '../../components/common/CustomModal';
-import { CARD_VERIFICATION_CONTENT } from './NotificationModal';
 import Phonenumber from '../../components/common/Phonenumber';
+
+import { CARD_VERIFICATION_CONTENT } from './NotificationModal';
+
 import usePassportApplicationReducer from '../../stores/PassportApplicationReducer';
 import useAppointmentTypeReducer from '../../stores/AppointmentTypeReducer';
 import useApplicationModeReducer from '../../stores/ApplicationModeReducer';
+import useUserReducer from '../../stores/UserReducer';
+
 import useCourierTypeReducer from '../../stores/CourierTypeReducer';
 import serviceService from '../../services/serviceService';
 
-// ✅ Helpers
+const PASSPORT_SERVICE_TYPE_ID = 1;
+const CARD_PAYMENT_MODE_ID = '2';
+
+// ===================== OPTIONS =====================
+
 const yesNoOptions = [
   { value: 'Yes', label: 'Yes' },
   { value: 'No', label: 'No' },
 ];
-
-const cardTypeOptions = [
-  { value: 'Local Bank Debit Card', label: 'Local Bank Debit Card' },
-  { value: 'Local Bank Credit Card', label: 'Local Bank Credit Card' },
-  { value: 'Other POS Transaction', label: 'Other POS Transaction' },
-];
-
-// Service Requested options are loaded dynamically from service/service_by_service_type/{service_type_id}
 
 const tokenOptions = [
   { value: 'A', label: 'A' },
@@ -37,33 +38,21 @@ const genderOptions = [
   { value: 'Other', label: 'Other' },
 ];
 
-// ✅ AFS multiple checkbox options
-const afsOptions = [
-  { value: 'Photocopy', label: 'Photocopy' },
-  { value: 'Photograph', label: 'Photograph' },
-  { value: 'FormFilling', label: 'Form Filling' },
-  { value: 'SMS', label: 'SMS' },
+const cardTypeOptions = [
+  { value: '1', label: 'Local Bank Debit Card' },
+  { value: '2', label: 'Local Bank Credit Card' },
+  { value: '3', label: 'International Bank Card' },
 ];
 
-// ✅ If your API uses "2" as Card (as per your sample)
-const CARD_PAYMENT_MODE_ID = '2';
+// Application Facilitation Services (multiple checkbox)
+const afsOptions = [
+  { value: '1', label: 'Photocopy' },
+  { value: '2', label: 'Photograph' },
+  { value: '3', label: 'Form Filling' },
+  { value: '4', label: 'SMS' },
+];
 
-// Map form AFS options to vas_service_id (adjust IDs per your backend)
-const AFS_TO_VAS_SERVICE_ID = {
-  Photocopy: 1,
-  Photograph: 2,
-  FormFilling: 3,
-  SMS: 4,
-};
-const VAS_SERVICE_ID_TO_AFS = {
-  1: 'Photocopy',
-  2: 'Photograph',
-  3: 'FormFilling',
-  4: 'SMS',
-};
-
-// Passport service type id used to fetch services via service/service_by_service_type/{service_type_id}
-const PASSPORT_SERVICE_TYPE_ID = 1;
+// Service Requested options are loaded dynamically from service/service_by_service_type/{service_type_id}
 
 function parseIntSafe(val, fallback = 0) {
   const n = parseInt(val, 10);
@@ -119,13 +108,19 @@ function buildUpdatePayload(data, passportAppId) {
 function buildCreateFullApplicationPayload(data, totalFees = 0) {
   const employeeId = getEmployeeIdFromStorage();
   const centerId = getCenterIdFromStorage();
-  console.log('centerId', centerId);
-  const vas_services = (data.afs || [])
-    .filter(Boolean)
-    .map((name) => ({
-      vas_service_id: AFS_TO_VAS_SERVICE_ID[name] ?? 0,
-      quantity: 1,
-    }));
+
+  const vas_services = (data.afs || []).map((id) => {
+    const item = {
+      vas_service_id: Number(id),
+    };
+
+    // ONLY Photocopy gets quantity
+    if (id === '1') {
+      item.quantity = Number(data.photocopyCounts || 1);
+    }
+
+    return item;
+  });
 
   const contactCodeDigits = (data.mobileCode || '').replace(/\D/g, '');
   const contactCode = contactCodeDigits ? parseInt(contactCodeDigits, 10) : 0;
@@ -149,10 +144,15 @@ function buildCreateFullApplicationPayload(data, totalFees = 0) {
     contact_no: contactNo,
     email_address: data.email ?? '',
     old_passport_no: data.oldPassportNo ?? '',
+
+    return_courier_address: data.returnCourierAddress,
+    courier_type: data.courierRequired ? 1 : 0,
     tatkal_status: data.tatkalService ? 1 : 0,
+    
     vas_service_status: (data.afs || []).length > 0 ? 1 : 0,
     payment_mode: parseIntSafe(data.paymentMode, 2),
     created_by: employeeId,
+    status:1,
   };
 
   const courier = {
@@ -189,7 +189,7 @@ const schema = z
     token: z.string().nonempty('Token is required'),
 
     firstName: z.string().nonempty('First Name is required').max(50),
-    lastName: z.string().nonempty('Last Name is required').max(50),
+    lastName: z.string().optional(),
     dob: z.string().nonempty('Date of Birth is required'),
     gender: z.string().nonempty('Gender is required'),
 
@@ -202,38 +202,37 @@ const schema = z
 
     email: z.string().nonempty('Email is required').email('Invalid email format'),
     oldPassportNo: z.string().nonempty('Old Passport Number is required').max(30),
+    fatherMotherSpouseName: z.string().optional(),
 
-    parentSpouseName: z
-      .string()
-      .nonempty('Father/Mother/Spouse name is required')
-      .max(80),
-    returnCourierAddress: z
-      .string()
-      .nonempty('Return courier address is required')
-      .max(400),
+    returnCourierAddress: z.string().optional(),
 
     courierRequired: z.boolean().optional(),
+
     residenceCountry: z.string().optional(),
     addressLine1: z.string().optional(),
     addressLine2: z.string().optional(),
-    postalCode: z.union([z.string(), z.number()]).optional(),
-    courier_type_id: z.union([z.string(), z.number()]).optional(),
     state: z.string().optional(),
     city: z.string().optional(),
+    postalCode: z.union([z.string(), z.number()]).optional(),
+    courier_type_id: z.union([z.string(), z.number()]).optional(),
+
 
     tatkalService: z.boolean().optional(),
 
     // multiple checkbox list
     afs: z.array(z.string()).optional(),
-    photocopyNotes: z.string().optional(),
+    photocopyCounts: z
+      .number()
+      .min(1, 'Minimum 1 photocopy required')
+      .optional(),
 
-    // ✅ payment fields (paymentMode required always)
+    // payment fields (paymentMode required always)
     paymentMode: z.string().nonempty('Payment Mode is required'),
     cardType: z.string().optional(),
     transactionId: z.string().optional(),
   })
   .superRefine((val, ctx) => {
-    // ✅ If courier required => these fields become required
+    // If courier required => these fields become required
     if (val.courierRequired) {
       if (!val.residenceCountry) {
         ctx.addIssue({
@@ -249,6 +248,13 @@ const schema = z
           message: 'Address line 1 is required',
         });
       }
+      if (!val.addressLine2?.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['addressLine2'],
+          message: 'Address Line 2 is required',
+        });
+      }
       if (!val.state) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
@@ -261,6 +267,22 @@ const schema = z
           code: z.ZodIssueCode.custom,
           path: ['city'],
           message: 'City is required',
+        });
+      }
+
+      if (!val.postalCode?.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['postalCode'],
+          message: 'Postal Code is required',
+        });
+      }
+
+      if (!val.courier_type_id) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['courier_type_id'],
+          message: 'Courier Type is required',
         });
       }
     }
@@ -303,8 +325,10 @@ export function AddEditModal({
   const { getDataPaymentMode, paymentModeData } = usePassportApplicationReducer((state) => state);
 
   const { getData: getDataCourierTypes, courierTypeList } = useCourierTypeReducer((state) => state);
-
   const courierTypeData = Array.isArray(courierTypeList) ? courierTypeList : courierTypeList?.data ?? [];
+
+  const { countryList, getCountries } = useUserReducer();
+  const countries = countryList ?? [];
 
   const [serviceRequestedOptions, setServiceRequestedOptions] = React.useState([]);
 
@@ -313,6 +337,7 @@ export function AddEditModal({
     getDataApplicationMode({});
     getDataPaymentMode();
     if (typeof getDataCourierTypes === 'function') getDataCourierTypes();
+    getCountries?.();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -353,7 +378,7 @@ export function AddEditModal({
       email: '',
       oldPassportNo: '',
 
-      parentSpouseName: '',
+      fatherMotherSpouseName: '',
       returnCourierAddress: '',
 
       courierRequired: false,
@@ -367,7 +392,7 @@ export function AddEditModal({
 
       tatkalService: false,
       afs: [],
-      photocopyNotes: '',
+      photocopyCounts: 1,
 
       // ✅ payment
       paymentMode: '',
@@ -442,13 +467,20 @@ export function AddEditModal({
     }
     getPassportApplicationDetails(editId, (err, details) => {
       if (err || !details) return;
+
       const pa = details?.passport_application ?? {};
       const courier = details?.courier ?? {};
       const payment = details?.payment ?? {};
       const vasServices = details?.vas_services ?? [];
+
       const contactCode = pa.contact_code != null ? pa.contact_code : '';
       const mobileCode = contactCode ? `+${contactCode}` : '+971';
-      const afsFromVas = [...new Set(vasServices.map((v) => VAS_SERVICE_ID_TO_AFS[v.vas_service_id]).filter(Boolean))];
+
+      const afsFromVas = vasServices.map((v) => String(v.vas_service_id));
+      const photocopyItem = vasServices.find(
+        (v) => String(v.vas_service_id) === '1'
+      );
+
       const hasCourier = !!(courier.address_1 || courier.address_2 || courier.state || courier.city || courier.courier_type_id);
       reset({
         ...defaultValues,
@@ -467,6 +499,7 @@ export function AddEditModal({
         mobileNumber: pa.contact_no != null ? String(pa.contact_no) : '',
         email: pa.email_address ?? '',
         oldPassportNo: pa.old_passport_no ?? '',
+        returnCourierAddress:pa.return_courier_address?? '',
         courierRequired: hasCourier,
         residenceCountry: '',
         addressLine1: courier.address_1 ?? '',
@@ -476,8 +509,10 @@ export function AddEditModal({
         state: courier.state ?? '',
         city: courier.city ?? '',
         tatkalService: !!pa.tatkal_status,
+
         afs: afsFromVas,
-        photocopyNotes: '',
+        photocopyCounts: Number(photocopyItem?.quantity) || 1,
+
         paymentMode: payment.payment_mode_id != null ? String(payment.payment_mode_id) : (pa.payment_mode != null ? String(pa.payment_mode) : ''),
         cardType: payment.card_type ?? '',
         transactionId: payment.transactionID ?? '',
@@ -498,10 +533,10 @@ export function AddEditModal({
         residenceCountry: '',
         addressLine1: '',
         addressLine2: '',
-        postalCode: '',
-        courier_type_id: '',
         state: '',
         city: '',
+        postalCode: '',
+        courier_type_id: '',
       }),
       ...(!isCardPayment && {
         cardType: '',
@@ -548,7 +583,7 @@ export function AddEditModal({
     const current = new Set(selectedAfs);
     if (current.has(value)) {
       current.delete(value);
-      if (value === 'Photocopy') setValue('photocopyNotes', '', { shouldValidate: true });
+      if (value === '1') setValue('photocopyCounts', 1, { shouldValidate: true });
     } else {
       current.add(value);
     }
@@ -730,9 +765,7 @@ export function AddEditModal({
 
         <div className="col-md-6">
           <div className="form-group">
-            <label className="form-label">
-              Last Name <span className="text-danger">*</span>
-            </label>
+            <label className="form-label">Last Name </label>
             <input
               type="text"
               className="form-control"
@@ -740,13 +773,12 @@ export function AddEditModal({
               maxLength={50}
               {...register('lastName')}
             />
-            {errors.lastName && <span className="error">{errors.lastName.message}</span>}
           </div>
         </div>
       </div>
 
       <div className="row">
-        <div className="col-md-4">
+        <div className="col-md-6">
           <div className="form-group">
             <label className="form-label">
               Date of Birth <span className="text-danger">*</span>
@@ -756,7 +788,7 @@ export function AddEditModal({
           </div>
         </div>
 
-        <div className="col-md-4">
+        <div className="col-md-6">
           <div className="form-group">
             <label className="form-label">
               Gender <span className="text-danger">*</span>
@@ -773,23 +805,7 @@ export function AddEditModal({
           </div>
         </div>
 
-        <div className="col-md-4">
-          <div className="form-group">
-            <label className="form-label">
-              Old Passport Number <span className="text-danger">*</span>
-            </label>
-            <input
-              type="text"
-              className="form-control"
-              autoComplete="off"
-              maxLength={30}
-              {...register('oldPassportNo')}
-            />
-            {errors.oldPassportNo && (
-              <span className="error">{errors.oldPassportNo.message}</span>
-            )}
-          </div>
-        </div>
+
       </div>
 
       {/* ===== Contact ===== */}
@@ -824,18 +840,32 @@ export function AddEditModal({
         <div className="col-md-6">
           <div className="form-group">
             <label className="form-label">
-              Father/Mother/Spouse name (For courier delivery){' '}
-              <span className="text-danger">*</span>
+              Old Passport Number <span className="text-danger">*</span>
             </label>
             <input
               type="text"
               className="form-control"
               autoComplete="off"
-              maxLength={80}
-              {...register('parentSpouseName')}
+              maxLength={30}
+              {...register('oldPassportNo')}
             />
-            {errors.parentSpouseName && (
-              <span className="error">{errors.parentSpouseName.message}</span>
+            {errors.oldPassportNo && (
+              <span className="error">{errors.oldPassportNo.message}</span>
+            )}
+          </div>
+        </div>
+        <div className="col-md-6">
+          <div className="form-group">
+            <label className="form-label">Father/Mother/Spouse Name (For courier delivery)</label>
+            <input
+              type="text"
+              className="form-control"
+              autoComplete="off"
+              maxLength={80}
+              {...register('fatherMotherSpouseName')}
+            />
+            {errors.fatherMotherSpouseName && (
+              <span className="error">{errors.fatherMotherSpouseName.message}</span>
             )}
           </div>
         </div>
@@ -844,10 +874,13 @@ export function AddEditModal({
       <div className="row">
         <div className="col-12">
           <div className="form-group">
-            <label className="form-label">
-              Return courier address filled by applicant <span className="text-danger">*</span>
-            </label>
-            <textarea className="form-control" rows={3} {...register('returnCourierAddress')} />
+            <label className="form-label">Return Courier Address Filled by Applicant</label>
+            <textarea
+              className="form-control"
+              rows={5}
+              style={{ resize: 'vertical', minHeight: '120px' }}
+              {...register('returnCourierAddress')}
+            />
             {errors.returnCourierAddress && (
               <span className="error">{errors.returnCourierAddress.message}</span>
             )}
@@ -866,7 +899,7 @@ export function AddEditModal({
               onChange={onToggleCourier}
             />
             <label htmlFor="courierRequired" className="form-label mb-0">
-              Courier required
+              Courier Required
             </label>
           </div>
         </div>
@@ -876,33 +909,37 @@ export function AddEditModal({
       {courierRequired && (
         <>
           <div className="row">
-            <div className="col-md-6">
+            <div className="col-md-4">
               <div className="form-group">
                 <label className="form-label">
                   Residence Country <span className="text-danger">*</span>
                 </label>
-                <input
-                  type="text"
-                  className="form-control"
-                  autoComplete="off"
-                  {...register('residenceCountry')}
-                />
+                <select className="form-control" {...register('residenceCountry')}>
+                  <option value="">Select Country</option>
+                  {countries.map((c) => (
+                    <option
+                      key={c.country_id ?? c.id ?? c.code}
+                      value={c.country_name ?? c.name}
+                    >
+                      {c.country_name ?? c.name}
+                    </option>
+                  ))}
+                </select>
                 {errors.residenceCountry && (
                   <span className="error">{errors.residenceCountry.message}</span>
                 )}
               </div>
             </div>
 
-            <div className="col-md-6">
+            <div className="col-md-4">
               <div className="form-group">
                 <label className="form-label">
-                  Address line 1 <span className="text-danger">*</span>
+                  Address Line 1 <span className="text-danger">*</span>
                 </label>
                 <input
                   type="text"
                   className="form-control"
                   autoComplete="off"
-                  placeholder="e.g. Al Khuwair"
                   {...register('addressLine1')}
                 />
                 {errors.addressLine1 && (
@@ -910,38 +947,60 @@ export function AddEditModal({
                 )}
               </div>
             </div>
-          </div>
 
-          <div className="row">
-            <div className="col-md-6">
+            <div className="col-md-4">
               <div className="form-group">
-                <label className="form-label">Address line 2</label>
+                <label className="form-label">Address Line 2 <span className="text-danger">*</span></label>
                 <input
                   type="text"
                   className="form-control"
                   autoComplete="off"
-                  placeholder="e.g. Flat 12"
                   {...register('addressLine2')}
                 />
-              </div>
-            </div>
-
-            <div className="col-md-6">
-              <div className="form-group">
-                <label className="form-label">Postal Code</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  autoComplete="off"
-                  placeholder="e.g. 112"
-                  {...register('postalCode')}
-                />
+                {errors.addressLine2 && (
+                  <span className="error">{errors.addressLine2.message}</span>
+                )}
               </div>
             </div>
           </div>
 
           <div className="row">
-            <div className="col-md-6">
+            <div className="col-md-4">
+              <div className="form-group">
+                <label className="form-label">
+                  State <span className="text-danger">*</span>
+                </label>
+                <input type="text" className="form-control" autoComplete="off" {...register('state')} />
+                {errors.state && <span className="error">{errors.state.message}</span>}
+              </div>
+            </div>
+
+            <div className="col-md-4">
+              <div className="form-group">
+                <label className="form-label">
+                  City <span className="text-danger">*</span>
+                </label>
+                <input type="text" className="form-control" autoComplete="off" {...register('city')} />
+                {errors.city && <span className="error">{errors.city.message}</span>}
+              </div>
+            </div>
+
+            <div className="col-md-4">
+              <div className="form-group">
+                <label className="form-label">Postal Code <span className="text-danger">*</span></label>
+                <input
+                  type="text"
+                  className="form-control"
+                  autoComplete="off"
+                  {...register('postalCode')}
+                />
+                {errors.postalCode && <span className="error">{errors.postalCode.message}</span>}
+              </div>
+            </div>
+          </div>
+
+          <div className="row">
+            <div className="col-md-4">
               <div className="form-group">
                 <label className="form-label">Courier Type</label>
                 <select className="form-control" {...register('courier_type_id')}>
@@ -955,28 +1014,7 @@ export function AddEditModal({
                     </option>
                   ))}
                 </select>
-              </div>
-            </div>
-          </div>
-
-          <div className="row">
-            <div className="col-md-6">
-              <div className="form-group">
-                <label className="form-label">
-                  State <span className="text-danger">*</span>
-                </label>
-                <input type="text" className="form-control" autoComplete="off" {...register('state')} />
-                {errors.state && <span className="error">{errors.state.message}</span>}
-              </div>
-            </div>
-
-            <div className="col-md-6">
-              <div className="form-group">
-                <label className="form-label">
-                  City <span className="text-danger">*</span>
-                </label>
-                <input type="text" className="form-control" autoComplete="off" {...register('city')} />
-                {errors.city && <span className="error">{errors.city.message}</span>}
+                {errors.courier_type_id && <span className="error">{errors.courier_type_id.message}</span>}
               </div>
             </div>
           </div>
@@ -1019,21 +1057,23 @@ export function AddEditModal({
               ))}
             </div>
 
-            {selectedAfs.includes('Photocopy') && (
+            {selectedAfs.includes('1') && (
               <div className="mt-3">
-                <label className="form-label">Photocopy notes</label>
-                <textarea
+                <label className="form-label">Photocopy Counts</label>
+                <input
+                  type="number"
                   className="form-control"
-                  rows={3}
-                  placeholder="Enter photocopy details..."
-                  {...register('photocopyNotes')}
+                  min={1}
+                  {...register('photocopyCounts', {
+                    valueAsNumber: true,
+                    setValueAs: (v) => (v === '' ? 1 : Number(v)),
+                  })}
                 />
-                {errors.photocopyNotes && (
-                  <span className="error">{errors.photocopyNotes.message}</span>
+                {errors.photocopyCounts && (
+                  <span className="error">{errors.photocopyCounts.message}</span>
                 )}
               </div>
             )}
-
             {errors.afs && <span className="error">{errors.afs.message}</span>}
           </div>
         </div>

@@ -91,6 +91,29 @@
     position: absolute;
 }
 
+.form-group .error{
+    position: absolute;
+    right: 12px;
+    bottom: -18px;
+
+    background: #fff1f0;
+    color: #ff4d4f;
+
+    font-size: 12px;
+    font-weight: 500;
+
+    padding: 4px 10px;
+    border-radius: 20px;
+
+    border: 1px solid rgba(255, 77, 79, 0.2);
+
+    box-shadow: 0 4px 10px rgba(255, 77, 79, 0.08);
+
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
 .form-check-input:checked {
     background-color: #051a53;
     border-color: #051a53;
@@ -383,7 +406,6 @@
         margin-left: -0.9em;
     }
 }
-
 
 .btn-save-trans {
     background-color: $primaryColor;

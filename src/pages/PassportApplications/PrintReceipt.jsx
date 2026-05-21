@@ -33,14 +33,16 @@ function formatOMR(val) {
 function ReceiptContent({ data }) {
     if (!data || typeof data !== 'object') return null;
 
+    const centerName = `India Consular Application Center - ${data.center_name || '-'}`;
+
+    const arnNumber = data.arn_number || '—';
+
     const applicantName =
         data.applicant_name ||
         [data.first_name, data.last_name].filter(Boolean).join(' ') ||
         '—';
-    const centerName = data.center_name || data.mission_name || 'India Consular Application Center';
-    const vatin = data.vatin || data.vat_number || '—';
-    const arnNumber = data.arn_number || data.arn || data.reference_no || '—';
-    const embassyArn = data.embassy_arn || arnNumber;
+
+    
     const counterUser = data.created_by || data.counter_user || '—';
     const printedOn = moment().format('DD/MM/YYYY, HH:mm');
     const applicationDate = data.created_on
@@ -73,8 +75,8 @@ function ReceiptContent({ data }) {
     const trackUrl = data.track_url || 'sgivsglobal-oman.com';
     const email = data.email || data.email_address || 'info@sgivsglobal-oman.com';
 
-    const barcodeValue = data.barcode_value || arnNumber;
-    const sgivsBarcodeValue = data.sgivs_barcode_value || sgivsReceiptNo;
+    const barcodeValue = arnNumber;
+    const sgivsBarcodeValue = sgivsReceiptNo;
 
     return (
         <div className="fee-receipt" id="fee-receipt-print">
@@ -97,7 +99,10 @@ function ReceiptContent({ data }) {
                     font-weight: 600;
                     margin: 0 0 4px 0;
                 }
-                .fee-receipt .receipt-header .vatin { font-size: 12px; color: #444; }
+                .fee-receipt .receipt-header .vatin { 
+                    font-size: 12px; 
+                    color: #444; 
+                }
                 .fee-receipt .receipt-title {
                     font-size: 15px;
                     font-weight: 700;
@@ -108,7 +113,9 @@ function ReceiptContent({ data }) {
                     text-align: center;
                     margin: 12px 0;
                 }
-                .fee-receipt .barcode-section svg { max-width: 100%; }
+                .fee-receipt .barcode-section svg {
+                    max-width: 100%; 
+                 }
                 .fee-receipt .barcode-section .barcode-value {
                     font-size: 14px;
                     font-weight: 600;
@@ -127,8 +134,18 @@ function ReceiptContent({ data }) {
                     color: #333;
                     width: 45%;
                 }
-                .fee-receipt .receipt-table tr { border-bottom: 1px solid #eee; }
-                .fee-receipt .receipt-table .total-row td { font-weight: 600; }
+                .fee-receipt .receipt-table tr {
+                    border-bottom: 1px solid #eee;
+                  }
+                .fee-receipt .receipt-table .total-row td {
+                    font-weight: 600; 
+                 }
+                .counter-user {
+                    text-align: center;
+                    font-weight:bold;
+                    font-size: 16px;
+                    margin: 8px;
+                }
                 .fee-receipt .disclaimer {
                     margin-top: 16px;
                     font-size: 11px;
@@ -141,26 +158,18 @@ function ReceiptContent({ data }) {
                 }
             `}</style>
 
+            {/* HEADER */}
             <div className="receipt-header">
                 <h2>{centerName}</h2>
-                {vatin !== '—' && <div className="vatin">VATIN: {vatin}</div>}
-            </div>
-            <div className="receipt-title">Fee Receipt</div>
-            <div className="receipt-table-wrap">
-                <table className="receipt-table">
-                    <tbody>
-                        <tr>
-                            <td>Embassy ARN</td>
-                            <td>{embassyArn}</td>
-                        </tr>
-                    </tbody>
-                </table>
+                <div className="vatin">VATIN: OM1100477993</div>
             </div>
 
+            <div className="receipt-title">Fee Receipt</div>
+           
             <div className="barcode-section">
                 <Barcode value={barcodeValue} />
                 <div className="barcode-value">{arnNumber}</div>
-                <div>Counter User: {counterUser}</div>
+                <div className="counter-user">Counter User: {counterUser}</div>
             </div>
 
             <table className="receipt-table">
