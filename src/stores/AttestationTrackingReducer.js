@@ -12,9 +12,8 @@ const useAttestationtrackingService = create((set) => ({
     try {
       set({ isLoadingGet: true });
       const { data } = await attestationtrackingService.getData(params);
-      const datas = data;
       set({
-        attestationTrackingData: datas?.data,
+        attestationTrackingData: data,
         // successMessage: data?.response?.data?.message ?? data?.message,
         isLoadingGet: false,
       });

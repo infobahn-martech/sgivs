@@ -4,23 +4,22 @@ import ociTrackingService from '../services/OCITrackingService';
 
 const useOCITrackingReducer = create((set) => ({
   isLoadingGet: false,
+  errorMessage: '',
+  successMessage: '',
   ociTrackingData: null,
-  pagination: null,
 
   getData: async (payload) => {
     try {
       set({ isLoadingGet: true });
-      const response = await ociTrackingService.getData(payload);
-      const list = response?.data;
+      const { data } = await ociTrackingService.getData(payload);
       set({
-        ociTrackingData: list?.data ?? [],
-        pagination: list?.pagination ?? null,
+        ociTrackingData: data?.data,
         isLoadingGet: false,
       });
     } catch (err) {
       const { error } = useAlertReducer.getState();
       const msg = err?.response?.data?.message || err?.message || 'Something went wrong';
-      set({ errorMessage: msg, isLoadingGet: false, });
+      set({ errorMessage: msg, isLoadingGet: false, ociTrackingData: null, });
       error(msg);
     }
   },
