@@ -46,22 +46,22 @@ const InScan = () => {
     {
       name: 'Date',
       selector: 'date',
-      sortable: true,
+      sort: true,
       sortField: 'date',
       cell: (row) => <span>{row?.date ? formatDate(row?.date) : '-'}</span>,
     },
     {
       name: 'By',
-      selector: 'by',
-      sortable: true,
-      sortField: 'by',
+      selector: 'employee_name',
+      sort: true,
+      sortField: 'employee_name',
     },
     {
       name: 'Total Application',
-      selector: 'totalApplication',
-      sortable: true,
-      sortField: 'totalApplication',
-      cell: (row) => <span>{row?.totalApplication ?? 0}</span>,
+      selector: 'total_application',
+      sort: true,
+      sortField: 'total_application',
+      cell: (row) => <span>{row?.total_application ?? 0}</span>,
     },
   ];
 
@@ -112,7 +112,7 @@ const InScan = () => {
         pagination={{ currentPage: params.page, limit: params.limit }}
         count={inScanData?.total || 0}
         columns={columns}
-        data={inScanData?.data || []}
+        data={inScanData || []}
         isLoading={isLoadingGet}
         onPageChange={(page) => setParams({ ...params, page })}
         setLimit={(limit) => setParams({ ...params, limit })}

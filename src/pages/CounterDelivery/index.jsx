@@ -98,22 +98,22 @@ const CounterDelivery = () => {
     {
       name: 'Date',
       selector: 'date',
-      sortable: true,
+      sort: true,
       sortField: 'date',
       cell: (row) => <span>{row?.date ? formatDate(row?.date) : '-'}</span>,
     },
     {
       name: 'By',
-      selector: 'by',
-      sortable: true,
-      sortField: 'by',
+      selector: 'employee_name',
+      sort: true,
+      sortField: 'employee_name',
     },
     {
       name: 'Total Application',
-      selector: 'totalApplication',
-      sortable: true,
-      sortField: 'totalApplication',
-      cell: (row) => <span>{row?.totalApplication ?? 0}</span>,
+      selector: 'total_application',
+      sort: true,
+      sortField: 'total_application',
+      cell: (row) => <span>{row?.total_application ?? 0}</span>,
     },
   ];
 
@@ -158,7 +158,7 @@ const CounterDelivery = () => {
       isLoading: isLoadingCenters,
     },
     {
-      fieldName: 'Joined Date',
+      fieldName: 'Date Range',
       fieldType: 'dateRangeCombined',
       fromKey: 'from_date',
       toKey: 'to_date',

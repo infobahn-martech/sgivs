@@ -11,10 +11,11 @@ const collectedByOptions = [
 ];
 
 const schema = z.object({
-    applicationNumbers: z
+    application_numbers: z
         .string()
-        .nonempty('Application Numbers is required')
-        .max(2000, 'Application Numbers is too long'),
+        .trim()
+        .nonempty('At least one Application Number is required'),
+
     collectedBy: z.enum(['MY_SELF', 'OTHER_PERSON'], {
         required_error: 'Collected By is required',
     }),
@@ -34,43 +35,36 @@ export default function AddEditModal({
     } = useForm({
         resolver: zodResolver(schema),
         defaultValues: {
-            applicationNumbers: '',
+            application_numbers: '',
             collectedBy: 'MY_SELF',
         },
     });
 
-    const { postData, patchData, isLoading } = useCounterDeliveryReducer(
-        (state) => state
-    );
+    const { postData, isLoading } = useCounterDeliveryReducer((state) => state);
 
-    // Prefill when editing
     useEffect(() => {
-        if (showModal?.id) {
-            setValue('applicationNumbers', showModal?.applicationNumbers || '');
-            setValue('collectedBy', showModal?.collectedBy || 'MY_SELF');
-        } else {
-            reset();
+        if (showModal) {
+            reset({ application_numbers: '' });
         }
-    }, [showModal?.id, reset, setValue]);
+    }, [showModal, reset]);
 
-    const onSubmit = (data) => {
-        if (showModal?.id) {
-            patchData({ id: showModal.id, ...data }, () => {
-                onRefreshCounterDelivery();
-            });
-        } else {
-            postData(data, () => {
-                onRefreshCounterDelivery();
-            });
-        }
-        closeModal();
+
+    const onSubmit = (values) => {
+        const application_numbers = values.application_numbers
+            .split('\n')
+            .map((x) => x.trim())
+            .filter(Boolean)
+            .join('\n');
+
+        postData({ application_numbers }, () => {
+            onRefreshCounterDelivery?.();
+            closeModal?.();
+        });
     };
 
     const renderHeader = () => (
         <>
-            <h4 className="modal-title">
-                {showModal?.id ? 'Edit Counter Delivery' : 'Add Counter Delivery'}
-            </h4>
+            <h4 className="modal-title">Add Counter Delivery</h4>
             <button
                 type="button"
                 className="btn-close"
@@ -87,20 +81,19 @@ export default function AddEditModal({
                 {/* Application Numbers */}
                 <div className="col-12">
                     <div className="form-group">
-                        <label htmlFor="applicationNumbers" className="form-label">
-                            Application Numbers <span className="text-danger">*</span>
+                        <label htmlFor="application_numbers" className="form-label">
+                            Application Numbers [ Each Number should be in new line ] <span className="text-danger">*</span>
                         </label>
                         <textarea
-                            id="applicationNumbers"
+                            id="application_numbers"
                             className="form-control"
-                            rows={4}
-                            placeholder={'Enter application numbers (one per line)'}
+                            placeholder="Enter one Application Number per line"
                             autoComplete="off"
-                            maxLength={2000}
-                            {...register('applicationNumbers')}
+                            {...register('application_numbers')}
+                            style={{ minHeight: '120px' }}
                         />
-                        {errors.applicationNumbers && (
-                            <span className="error">{errors.applicationNumbers.message}</span>
+                        {errors.application_numbers && (
+                            <span className="error">{errors.application_numbers.message}</span>
                         )}
 
                     </div>

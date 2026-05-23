@@ -1,8 +1,6 @@
 import Gateway from '../config/gateway';
 
-// const getData = (params) => Gateway.post('/passport/list', { ...params, status: 8 });
-
-const getData = () => Gateway.post('passport/status_list', { status: 19 });
+const getData = () => Gateway.post('passport/status_list', { status: 14 });
 
 
 const bulkStatusChange = ({ status_id, employee_id, application_numbers }) =>
