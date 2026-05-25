@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import moment from 'moment';
 import { debounce } from 'lodash';
 
@@ -9,6 +10,7 @@ import CustomTable from '../../components/common/CustomTable';
 import useVisaApplicationReducer from '../../stores/VisaApplicationReducer';
 import { formatDate } from '../../config/config';
 import { AddEditModal } from './AddEditModal';
+import FeeCalculator from '../../components/common/FeeCalculator';
 import CustomActionModal from '../../components/common/CustomActionModal';
 import ActionsMenu from './ActionsMenu';
 import ViewModal from './ViewModal';
@@ -34,6 +36,7 @@ const VisaApplications = () => {
   const [changeServicesModal, setChangeServicesModal] = useState(false);
   const [addRemoveBiometricModal, setAddRemoveBiometricModal] = useState(false);
   const [activityLogModal, setActivityLogModal] = useState(false);
+  const [feeValues, setFeeValues] = useState(null);
 
   const initialParams = {
     search: '',
@@ -108,9 +111,15 @@ const VisaApplications = () => {
 
   const columns = [
     { name: 'Reference No', selector: 'appointment_reference_no' },
-    { name: 'Name', selector: 'first_name' },
+    {
+      name: 'Name',
+      selector: 'first_name',
+      cell: (row) => {
+        return `${row?.first_name || ''} ${row?.surname || ''}`.trim();
+      },
+    },
     { name: 'Center', selector: 'center_name' },
-    { name: 'ConsproM File No', selector: 'consprom_file_number' },
+    { name: 'Consprom File No', selector: 'consprom_file_number' },
     { name: 'Nationality', selector: 'nationality' },
     { name: 'Passport No', selector: 'passport_no' },
     { name: 'Application Type', selector: 'appointment_type' },
@@ -118,16 +127,19 @@ const VisaApplications = () => {
     { name: 'Delivery Type', selector: 'delivery_type' },
     {
       name: 'Status / By, On',
-      selector: 'status',
-      cell: (row) => {
-        return (
+      selector: 'latest_comment',
+      cell: (row) => (
+        <div className="d-flex flex-column">
           <span>
-            {row?.status || '-'}
-            {row?.status?.by ? ` / ${row.status.by}` : ''}
-            {row?.status?.on ? `, ${formatDate(row.status.on)}` : ''}
+            <b>{row?.latest_comment || '-'}</b>
           </span>
-        );
-      },
+          <small className="text-muted">
+            {row?.comment_by_name || '-'}
+            {row?.latest_comment_at ? `, ${formatDate(row.latest_comment_at)}` : ''}
+          </small>
+        </div>
+      ),
+      sort: true,
     },
     {
       name: 'Action',
@@ -229,8 +241,34 @@ const VisaApplications = () => {
           showModal={modal}
           closeModal={() => setModal(false)}
           onRefreshVisaApplications={onRefreshVisaApplications}
+          onFeeValuesChange={setFeeValues}
         />
       )}
+
+      {/* FeeCalculator outside modal – shows when Service Requested is selected (portaled so it stays above modal) */}
+      {modal &&
+        feeValues &&
+        createPortal(
+          <div
+            className="passport-fee-calculator-outside"
+            style={{
+              position: 'fixed',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              right: '24px',
+              zIndex: 10000,
+            }}
+          >
+            <FeeCalculator
+              govtFees={feeValues.govtFees}
+              icwfFees={feeValues.icwfFees}
+              serviceFees={feeValues.serviceFees}
+              totalFees={feeValues.totalFees}
+              onlinePaid={feeValues.onlinePaid}
+            />
+          </div>,
+          document.body
+        )}
 
       {deleteModalOpen && (
         <CustomActionModal

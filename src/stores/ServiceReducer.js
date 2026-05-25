@@ -8,12 +8,19 @@ const useServiceReducer = create((set) => ({
   isLoading: false,
   isLoadingGet: false,
   isLoadingDelete: false,
+
   errorMessage: '',
   successMessage: '',
+
   serviceData: null,
+
+   // Service Types
   serviceTypes: [],
 
-  serviceMap: {},
+  // Services by service_type_id
+  servicesByType: [],
+
+  selectedService: null,
 
   postData: async (payload, cb) => {
     try {
@@ -35,6 +42,7 @@ const useServiceReducer = create((set) => ({
       error(err?.response?.data?.message ?? err.message);
     }
   },
+
   patchData: async (payload, cb) => {
     try {
       set({ isLoading: true });
@@ -77,6 +85,7 @@ const useServiceReducer = create((set) => ({
       error(err?.response?.data?.message ?? err.message);
     }
   },
+
   getAllServiceType: async () => {
     try {
       set({ isLoadingGet: true });
@@ -93,13 +102,7 @@ const useServiceReducer = create((set) => ({
       });
     }
   },
-  clearServiceData: () => {
-    set({
-      serviceTypes: [],
-      errorMessage: '',
-      successMessage: '',
-    });
-  },
+
   deleteData: async (id, cb) => {
     try {
       set({ isLoadingDelete: true });
@@ -121,14 +124,37 @@ const useServiceReducer = create((set) => ({
     }
   },
 
-  getServiceById: async (service_id, cb) => {
+  getServicesByServiceType: async (service_type_id) => {
+    try {
+      set({ isLoadingGet: true });
+
+      const {
+        data: { data },
+      } = await serviceService.getServicesByServiceType(service_type_id);
+
+      set((state) => ({
+        servicesByType: data || [],
+        isLoadingGet: false,
+      }));
+    } catch (err) {
+      const { error } = useAlertReducer.getState();
+      set({
+        errorMessage: err?.response?.data?.message ?? err?.message,
+        isLoadingGet: false,
+      });
+
+      error(err?.response?.data?.message ?? err.message);
+    }
+  },
+
+   getServiceById: async (service_id, cb) => {
     try {
       set({ isLoadingGet: true });
 
       const { data } = await serviceService.getServiceById(service_id);
 
       set({
-        selectedService: data?.data, // store single service
+        selectedService: data?.data,
         isLoadingGet: false,
       });
 
