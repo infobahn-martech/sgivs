@@ -3,103 +3,130 @@ import useAlertReducer from './AlertReducer';
 import visaInScanService from '../services/VisaInScanService';
 
 const useVisaInScanReducer = create((set) => ({
-    isLoading: false,
     isLoadingGet: false,
     errorMessage: '',
     successMessage: '',
-    visaInScanData: {
-        total: 0,
-        data: [],
-    },
+    visaInScanData: [],
+    isLoadingPost: false,
 
     getData: async (params = {}) => {
         try {
-            set({ isLoadingGet: true, errorMessage: '' });
+            set({ isLoadingGet: true, errorMessage: '', });
 
             const { data } = await visaInScanService.getData(params);
 
-            const apiRows = data?.data ?? [];
-
-            const normalizedRows = apiRows.map((item, index) => ({
-                id: item?.id ?? `${item?.date || 'row'}-${index}`,
-                date: item?.date ?? '',
-                created_by: item?.created_by ?? '',
-                total_application: item?.total_application ?? 0,
-            }));
-
-            const searchText = (params?.search || '').toLowerCase().trim();
-
-            let filteredRows = normalizedRows;
-
-            if (searchText) {
-                filteredRows = normalizedRows.filter((item) => {
-                    return (
-                        String(item?.date || '').toLowerCase().includes(searchText) ||
-                        String(item?.created_by || '').toLowerCase().includes(searchText) ||
-                        String(item?.total_application || '').toLowerCase().includes(searchText)
-                    );
-                });
-            }
-
-            if (params?.fromDate) {
-                filteredRows = filteredRows.filter((item) => item?.date && item.date >= params.fromDate);
-            }
-
-            if (params?.toDate) {
-                filteredRows = filteredRows.filter((item) => item?.date && item.date <= params.toDate);
-            }
-
-            if (params?.sortBy) {
-                const { sortBy, sortOrder = 'DESC' } = params;
-
-                filteredRows = [...filteredRows].sort((a, b) => {
-                    const aVal = a?.[sortBy];
-                    const bVal = b?.[sortBy];
-
-                    if (sortBy === 'date') {
-                        const aTime = aVal ? new Date(aVal).getTime() : 0;
-                        const bTime = bVal ? new Date(bVal).getTime() : 0;
-                        return sortOrder === 'ASC' ? aTime - bTime : bTime - aTime;
-                    }
-
-                    if (typeof aVal === 'number' && typeof bVal === 'number') {
-                        return sortOrder === 'ASC' ? aVal - bVal : bVal - aVal;
-                    }
-
-                    return sortOrder === 'ASC'
-                        ? String(aVal || '').localeCompare(String(bVal || ''))
-                        : String(bVal || '').localeCompare(String(aVal || ''));
-                });
-            }
-
-            const page = Number(params?.page || 1);
-            const limit = Number(params?.limit || 10);
-            const startIndex = (page - 1) * limit;
-            const endIndex = startIndex + limit;
-
-            const paginatedRows = filteredRows.slice(startIndex, endIndex);
-
             set({
-                visaInScanData: {
-                    total: filteredRows.length,
-                    data: paginatedRows,
-                },
+                visaInScanData: data?.data || [],
                 isLoadingGet: false,
             });
         } catch (err) {
-            const message = err?.response?.data?.message ?? err?.message ?? 'Something went wrong';
+            const message =
+                err?.response?.data?.message ??
+                err?.message ??
+                'Something went wrong';
+
             const { error } = useAlertReducer.getState();
 
             set({
                 errorMessage: message,
                 isLoadingGet: false,
-                visaInScanData: {
-                    total: 0,
-                    data: [],
-                },
+                visaInScanData: [],
             });
 
             error(message);
+        }
+    },
+
+    bulkInscan: async (payload, callback) => {
+
+        const { success, error } = useAlertReducer.getState();
+
+        try {
+            set({
+                isLoadingPost: true,
+                errorMessage: '',
+                successMessage: '',
+            });
+
+            const response = await visaInScanService.bulkInscan(payload);
+            const data = response?.data;
+
+            const status = data?.status;
+            const backendMessage = data?.message || '';
+
+            // Arrays
+            const updated = data?.updated_references || [];
+            const deleted = data?.deleted_references || [];
+            const missing = data?.missing_references || [];
+            const already = data?.already_in_same_status || [];
+
+            // 🔥 BUILD MULTI-LINE TOAST
+            let lines = [];
+
+            // 1st line → backend message
+            if (backendMessage) {
+                lines.push(backendMessage);
+            }
+
+            // 2nd line → updated
+            if (updated.length) {
+                lines.push(`Updated (${updated.length}): ${updated.join(', ')}`);
+            }
+
+            // 3rd line → deleted
+            if (deleted.length) {
+                lines.push(`Deleted (${deleted.length}): ${deleted.join(', ')}`);
+            }
+
+            // 4th line → missing
+            if (missing.length) {
+                lines.push(`Missing (${missing.length}): ${missing.join(', ')}`);
+            }
+
+            // 5th line → already same status (optional but useful)
+            if (already.length) {
+                lines.push(`Already same (${already.length}): ${already.join(', ')}`);
+            }
+
+            const message = lines.join(' | ');
+
+            // 🔥 TOAST HANDLING (ALL CASES SAME STRUCTURE)
+            if (status === 'error') {
+                error(message);
+            } else if (status === 'info') {
+                success(message);
+            } else if (status === 'partial success') {
+                success(message);
+            } else {
+                success(message);
+            }
+
+            set({
+                successMessage: status === 'error' ? '' : message,
+                errorMessage: status === 'error' ? message : '',
+            });
+
+            callback?.(data);
+
+        } catch (err) {
+
+            const msg =
+                err?.response?.data?.message ||
+                err?.message ||
+                'Something went wrong';
+
+            error(msg);
+
+            set({
+                errorMessage: msg,
+                successMessage: '',
+            });
+
+        } finally {
+
+            set({
+                isLoadingPost: false,
+            });
         }
     },
 }));

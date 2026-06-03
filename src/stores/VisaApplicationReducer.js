@@ -5,6 +5,7 @@ import useAlertReducer from './AlertReducer';
 const useVisaApplicationReducer = create((set) => ({
   isLoading: false,
   isLoadingGet: false,
+  isLoadingDelete: false,
   isMetaLoading: false,
   errorMessage: '',
   successMessage: '',
@@ -92,40 +93,19 @@ const useVisaApplicationReducer = create((set) => ({
     }
   },
 
-  deleteVisaApplication: async (id) => {
+  deleteVisaApplication: async (id, cb) => {
     try {
-      set({ isLoading: true, errorMessage: '' });
-
-      const response = await visaApplicationService.deleteVisaApplication(id);
-      const responseData = response?.data;
-
+      set({ isLoadingDelete: true });
+      const res = await visaApplicationService.deleteVisaApplication(id);
       const { success } = useAlertReducer.getState();
-      success(
-        responseData?.response?.data?.message ??
-        responseData?.message ??
-        'Visa application deleted successfully'
-      );
-
-      set({
-        isLoading: false,
-        successMessage:
-          responseData?.response?.data?.message ??
-          responseData?.message ??
-          'Visa application deleted successfully',
-      });
-
-      return true;
+      success(res?.data?.status || 'Deleted successfully');
+      set({ isLoadingDelete: false });
+      cb?.(res?.data);
     } catch (err) {
-      const message = err?.response?.data?.message ?? err?.message ?? 'Something went wrong';
+      set({ isLoadingDelete: false });
+
       const { error } = useAlertReducer.getState();
-
-      set({
-        isLoading: false,
-        errorMessage: message,
-      });
-
-      error(message);
-      return false;
+      error(err?.response?.data?.message ?? err.message);
     }
   },
 
@@ -135,13 +115,16 @@ const useVisaApplicationReducer = create((set) => ({
 
       const response = await visaApplicationService.getVisaApplications(params);
       const responseData = response?.data;
-      const visaApplicationsData = responseData?.data ?? [];
-
       set({
-        visaApplicationsData,
-        pagination: responseData?.pagination ?? {},
-        isLoadingGet: false,
-      });
+      visaApplicationsData: responseData?.data ?? [],
+      pagination: {
+        page: responseData?.page ?? 1,
+        limit: responseData?.limit ?? 10,
+        total_records: responseData?.total_records ?? 0,
+        total_pages: responseData?.total_pages ?? 0,
+      },
+      isLoadingGet: false,
+    });
     } catch (err) {
       const message = err?.response?.data?.message ?? err?.message ?? 'Something went wrong';
       const { error } = useAlertReducer.getState();

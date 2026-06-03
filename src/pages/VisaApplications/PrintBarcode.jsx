@@ -28,24 +28,9 @@ function BarcodeSvg({ value, options = {} }) {
 function BarcodeContent({ data }) {
     if (!data || typeof data !== 'object') return null;
 
-    const barcodeValue =
-        data.barcode_text ||
-        data.barcode_value ||
-        data.reference_no ||
-        data.referenceNo ||
-        data.appointment_ref ||
-        data.arn_number ||
-        '—';
-    const arn =
-        data.reference_no ||
-        data.referenceNo ||
-        data.appointment_reference_no ||
-        data.appointment_ref ||
-        data.arn_number ||
-        data.barcode_text ||
-        data.barcode_value ||
-        '—';
-    const applicantName = data.applicant_name || data.name || '—';
+    const barcodeValue = data.barcode_text || '—';
+    const arn = data.reference_no || '—';
+    const applicantName = data.applicant_name || '—';
     const formatApplicationDate = (dateValue) => {
         if (!dateValue) return '—';
         const m = moment(dateValue, ['DD/MM/YYYY', 'YYYY-MM-DD', moment.ISO_8601], true);
@@ -56,8 +41,8 @@ function BarcodeContent({ data }) {
         : data.created_on
             ? formatApplicationDate(data.created_on)
             : '—';
-    const deliveryMode = data.delivery_mode || data.delivery_type || data.deliveryType || '—';
-    const icacCenter = data.icac_center || data.center_name || data.center || data.mission_name || '—';
+    const deliveryMode = data.delivery_mode || '—';
+    const icacCenter = data.icac || '—';
 
     return (
         <div className="visa-barcode" id="visa-barcode-print">

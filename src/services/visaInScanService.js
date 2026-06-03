@@ -1,8 +1,9 @@
 import Gateway from '../config/gateway';
 
-const getData = (params = {}) =>
-    Gateway.post('visa/inscanhublist', {
-        status_id: params?.status_id ?? 2,
-    });
+const getData = (payload) => Gateway.post('visa/status_list', payload);
+const bulkInscan = (payload) => Gateway.post('/visa/scan/bulk_status_change', payload);
 
-export default { getData };
+export default { 
+    getData,
+    bulkInscan
+};

@@ -4,19 +4,22 @@ import Gateway from '../config/gateway';
 const createVisaApplication = (payload) => Gateway.post('visa/create', payload);
 
 // List
-const getVisaApplications = (params) => Gateway.post('visa/list', { params });
+const getVisaApplications = (payload) => Gateway.post('visa/list', payload);
 
 // Update
 const updateVisaApplication = (payload) => Gateway.patch('visa/update', payload);
 
 // Delete
-const deleteVisaApplication = (id) => Gateway.delete(`visa-application/${id}`);
+const deleteVisaApplication = (visa_application_id) => Gateway.post(`visa/delete`, { visa_application_id });
 
 // Receipt
 const getReceipt = (visa_application_id) => Gateway.post('visa/receipt', { visa_application_id });
 
 // Barcode
 const getBarcode = (visa_application_id) => Gateway.post('visa/barcode', { visa_application_id });
+
+// Comments
+const getComments = (visa_application_id) => Gateway.post('visa/get_comments', { visa_application_id });
 
 // Dynamic dropdown APIs
 const getVisaDurations = () => Gateway.post('visa/duration');
@@ -31,6 +34,8 @@ export default {
   deleteVisaApplication,
   getReceipt,
   getBarcode,
+  getComments,
+  
   getVisaDurations,
   getVisaEntries,
   getVisaNationalities,

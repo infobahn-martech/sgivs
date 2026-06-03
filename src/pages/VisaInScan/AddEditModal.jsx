@@ -3,14 +3,14 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import CustomModal from '../../components/common/CustomModal';
-import useInScanReducer from '../../stores/InScanReducer';
+import useVisaInScanReducer from '../../stores/VisaInScanReducer';
 
 // Updated schema with isEZPass as a boolean
 const nameSchema = z.object({
-    applicationNumber: z
+    applicationNumbers: z
         .string()
-        .nonempty('Application Number is required')
-        .max(20, 'Application Number must be 10 characters or less'),
+        .trim()
+        .nonempty('At least one Application Number is required'),
 });
 
 export default function AddEditModal({ showModal, closeModal, onRefreshInScan }) {
@@ -23,44 +23,40 @@ export default function AddEditModal({ showModal, closeModal, onRefreshInScan })
     } = useForm({
         resolver: zodResolver(nameSchema),
         defaultValues: {
-            applicationNumber: '',
+            applicationNumbers: '',
         },
     });
 
-    const { postData, patchData, isLoading } = useInScanReducer(
-        (state) => state
-    );
+    const { bulkInscan, isLoadingPost } = useVisaInScanReducer((state) => state);
 
-    // Prefill form when editing
     useEffect(() => {
-        if (showModal?.id) {
-            setValue('applicationNumber', showModal?.applicationNumber || '');
-        } else {
-            reset();
+        if (showModal) {
+            reset({ applicationNumbers: '' });
         }
-    }, [showModal?.id]);
+    }, [showModal, reset]);
 
     const onSubmit = (data) => {
-        if (showModal?.id) {
-            patchData({ id: showModal.id, ...data }, () => {
-                onRefreshInScan();
-            });
-        } else {
-            postData(data, () => {
-                onRefreshInScan();
-            });
-        }
-        closeModal();
+        const application_numbers = data.applicationNumbers
+            .split('\n')
+            .map((x) => x.trim())
+            .filter(Boolean)
+            .join('\n');
+
+        const employee_id = localStorage.getItem('employee_id');
+
+        bulkInscan({ status_id: 5, employee_id:Number(employee_id), application_numbers }, () => {
+            onRefreshInScan?.();
+            closeModal?.();
+        });
     };
+
 
     const renderHeader = () => (
         <>
-            <h4 className="modal-title">
-                {showModal?.id ? 'Edit In Scan' : 'Add In Scan'}
-            </h4>
+            <h4 className="modal-title">Add Visa InScan At Hub</h4>
             <button
                 type="button"
-                class="btn-close"
+                className="btn-close"
                 data-bs-dismiss="modal"
                 aria-label="Close"
                 onClick={closeModal}
@@ -74,19 +70,19 @@ export default function AddEditModal({ showModal, closeModal, onRefreshInScan })
                 <div className="row">
                     <div className="col-12">
                         <div className="form-group">
-                            <label htmlFor="applicationNumber" className="form-label">
-                                Application Number<span className="text-danger">*</span>
+                            <label htmlFor="applicationNumbers" className="form-label">
+                                Application Numbers [ Each Number should be in new line ] <span className="text-danger">*</span>
                             </label>
-                            <input
-                                type="text"
-                                id="applicationNumber"
+                            <textarea
+                                id="applicationNumbers"
                                 className="form-control"
-                                autoComplete="off"
+                                placeholder="Enter one Application Number per line"
                                 maxLength={20}
-                                {...register('applicationNumber')}
+                                {...register('applicationNumbers')}
+                                style={{ minHeight: '120px' }}
                             />
-                            {errors.applicationNumber && (
-                                <span className="error">{errors.applicationNumber.message}</span>
+                            {errors.applicationNumbers && (
+                                <span className="error">{errors.applicationNumbers.message}</span>
                             )}
                         </div>
                     </div>
@@ -104,10 +100,10 @@ export default function AddEditModal({ showModal, closeModal, onRefreshInScan })
                 <button
                     type="submit"
                     className="btn btn-submit"
-                    disabled={isLoading}
+                    disabled={isLoadingPost}
                     onClick={handleSubmit(onSubmit)}
                 >
-                    {isLoading ? 'Loading...' : 'Save'}
+                    {isLoadingPost ? 'Loading...' : 'Save'}
                 </button>
             </div>
         </>

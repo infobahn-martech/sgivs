@@ -45,21 +45,21 @@ const VisaInScan = () => {
     {
       name: 'Date',
       selector: 'date',
-      sortable: true,
+      sort: true,
       sortField: 'date',
       cell: (row) => <span>{row?.date ? formatDate(row?.date) : '-'}</span>,
     },
     {
       name: 'By',
       selector: 'created_by',
-      sortable: true,
+      sort: true,
       sortField: 'created_by',
       cell: (row) => <span>{row?.created_by || '-'}</span>,
     },
     {
       name: 'Total Application',
       selector: 'total_application',
-      sortable: true,
+      sort: true,
       sortField: 'total_application',
       cell: (row) => <span>{row?.total_application ?? 0}</span>,
     },
@@ -112,7 +112,7 @@ const VisaInScan = () => {
         pagination={{ currentPage: params.page, limit: params.limit }}
         count={visaInScanData?.total || visaInScanData?.data?.length || 0}
         columns={columns}
-        data={visaInScanData?.data || []}
+        data={visaInScanData || []}
         isLoading={isLoadingGet}
         onPageChange={(page) => setParams((prev) => ({ ...prev, page }))}
         setLimit={(limit) => setParams((prev) => ({ ...prev, limit, page: 1 }))}
