@@ -1,5 +1,9 @@
 import Gateway from '../config/gateway';
 
-const getData = (params) => Gateway.get('/visa-ifm', { params });
+const getData = (payload) => Gateway.post('visa/inscan_from_mission/list', payload);
+const bulkIFM = (payload) => Gateway.post('/visa/inscan_from_mission/bulk_update', payload);
 
-export default { getData };
+export default { 
+    getData,
+    bulkIFM
+ };

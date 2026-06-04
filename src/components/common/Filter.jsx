@@ -74,7 +74,7 @@ const Filter = ({
 
   const clearFilters = () => {
     const cleared = {};
-    clearCounterData();
+    // clearCounterData();
     filterOptions.forEach((option) => {
       if (!option) return;
 

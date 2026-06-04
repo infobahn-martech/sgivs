@@ -3,7 +3,6 @@ import useAlertReducer from './AlertReducer';
 import visaCounterDeliveryService from '../services/VisaCounterDeliveryService';
 
 const useVisaCounterDeliveryReducer = create((set) => ({
-    isLoading: false,
     isLoadingGet: false,
     errorMessage: '',
     successMessage: '',

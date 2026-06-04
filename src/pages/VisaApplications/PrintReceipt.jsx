@@ -32,7 +32,7 @@ function formatOMR(val) {
 
 function ReceiptContent({ data }) {
     if (!data || typeof data !== 'object') return null;
-
+debugger
     const applicantName =
         data.applicant_name ||
         data.name ||

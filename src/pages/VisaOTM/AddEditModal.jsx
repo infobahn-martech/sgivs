@@ -9,8 +9,7 @@ const nameSchema = z.object({
     application_numbers: z
         .string()
         .trim()
-        .nonempty('Application Number(s) is required')
-        .max(5000, 'Too many characters'),
+        .nonempty('At least one Application Number is required'),
 });
 
 export default function AddEditModal({ showModal, closeModal, onRefreshOTM }) {
@@ -47,7 +46,7 @@ export default function AddEditModal({ showModal, closeModal, onRefreshOTM }) {
 
     const renderHeader = () => (
         <>
-            <h4 className="modal-title">Add Visa Out Scan to Mission</h4>
+            <h4 className="modal-title">Add Visa OutScan to Mission</h4>
             <button
                 type="button"
                 className="btn-close"
@@ -63,14 +62,14 @@ export default function AddEditModal({ showModal, closeModal, onRefreshOTM }) {
                 <div className="col-12">
                     <div className="form-group">
                         <label htmlFor="application_numbers" className="form-label">
-                            Application Number(s)<span className="text-danger">*</span>
+                            Application Numbers [ Each Number should be in new line ] <span className="text-danger">*</span>
                         </label>
                         <textarea
                             id="application_numbers"
                             className="form-control"
-                            rows={6}
-                            placeholder="APPT001"
+                            placeholder="Enter one Application Number per line"
                             {...register('application_numbers')}
+                            style={{ minHeight: '120px' }}
                         />
                         {errors.application_numbers && (
                             <span className="error">{errors.application_numbers.message}</span>

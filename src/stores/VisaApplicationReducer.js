@@ -17,6 +17,9 @@ const useVisaApplicationReducer = create((set) => ({
   nationalityData: [],
   visaStatusData: [],
 
+  changeServiceDetails: null,
+  isLoadingChangeService: false,
+
   postData: async (payload, callback) => {
     try {
       set({ isLoading: true, errorMessage: '' });
@@ -232,6 +235,27 @@ const useVisaApplicationReducer = create((set) => ({
         visaStatusData: [],
       });
       error(err?.response?.data?.message ?? err?.message ?? 'Failed to fetch visa metadata');
+    }
+  },
+
+  getChangeServiceDetails: async (visa_application_id, cb) => {
+    try {
+      set({ isLoadingChangeService: true });
+      const response = await visaApplicationService.getChangeServiceDetails(visa_application_id);
+      const responseData = response?.data;
+
+      set({
+        changeServiceDetails: responseData?.data ?? null,
+        isLoadingChangeService: false,
+      });
+
+      cb?.(responseData?.data ?? null);
+    } catch (err) {
+      const message = err?.response?.data?.message ?? err?.message ?? 'Something went wrong';
+      const { error } = useAlertReducer.getState();
+
+      set({ isLoadingChangeService: false, changeServiceDetails: null });
+      error(message);
     }
   },
 }));

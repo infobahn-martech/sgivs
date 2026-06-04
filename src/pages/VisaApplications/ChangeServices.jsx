@@ -1,9 +1,11 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 
 import CustomModal from '../../components/common/CustomModal';
+import useVisaApplicationReducer from '../../stores/VisaApplicationReducer';
+import useServiceReducer from '../../stores/ServiceReducer';
 
 // ✅ Schema (numbers from inputs come as string -> use preprocess)
 const changeServicesSchema = z
@@ -56,39 +58,72 @@ const changeServicesSchema = z
         }
     });
 
-export default function ChangeServicesModal({
-    showModal,
-    closeModal,
-    onRefreshPassportApplications,
-}) {
-    // ✅ Replace these with API data if needed
-    const visaServiceOptions = [
-        { value: 'normal', label: 'Normal' },
-        { value: 'premium', label: 'Premium' },
-        { value: 'express', label: 'Express' },
-    ];
+export default function ChangeServicesModal({ showModal, closeModal, onRefreshVisaApplications, }) {
 
-    const visaDurationOptions = [
-        { value: '14_days', label: '14 Days' },
-        { value: '30_days', label: '30 Days' },
-        { value: '60_days', label: '60 Days' },
-        { value: '90_days', label: '90 Days' },
-    ];
+    const {
+        servicesByType,
+        getServicesByServiceType,
+    } = useServiceReducer((state) => state);
 
-    const visaEntryOptions = [
-        { value: 'single', label: 'Single Entry' },
-        { value: 'multiple', label: 'Multiple Entry' },
-    ];
+    // Fetch services for the static service type (1) when modal opens
+    useEffect(() => {
+        if (showModal) {
+            getServicesByServiceType(2);
+        }
+    }, [showModal, getServicesByServiceType]);
 
-    const nationalityOptions = [
-        { value: 'india', label: 'India' },
-        { value: 'uae', label: 'UAE' },
-        { value: 'pakistan', label: 'Pakistan' },
-        { value: 'bangladesh', label: 'Bangladesh' },
-        { value: 'sri_lanka', label: 'Sri Lanka' },
-        { value: 'nepal', label: 'Nepal' },
-        { value: 'other', label: 'Other' },
-    ];
+    const visaServiceOptions = useMemo(
+        () =>
+            (servicesByType || []).map((item) => ({
+                value: String(item.service_id),
+                label: item.service_name,
+            })),
+        [servicesByType]
+    );
+
+    const {
+        visaDurationData,
+        visaEntryData,
+        nationalityData,
+        getVisaMetaData,
+        isMetaLoading,
+        getChangeServiceDetails,
+        isLoadingChangeService,
+    } = useVisaApplicationReducer((state) => state);
+
+    // Fetch dropdown metadata when the modal opens
+    useEffect(() => {
+        if (showModal) {
+            getVisaMetaData();
+        }
+    }, [showModal, getVisaMetaData]);
+
+    const visaDurationOptions = useMemo(
+        () =>
+            (visaDurationData || []).map((item) => ({
+                value: String(item.visa_duration_id),
+                label: item.visa_duration,
+            })),
+        [visaDurationData]
+    );
+
+    const visaEntryOptions = useMemo(
+        () =>
+            (visaEntryData || []).map((item) => ({
+                value: String(item.visa_entry_id),
+                label: item.visa_entry,
+            })),
+        [visaEntryData]
+    );
+
+    const nationalityOptions = useMemo(
+        () =>
+            (nationalityData || []).map((item) => ({
+                value: String(item.nationality_id),
+                label: item.nationality,
+            })),
+        [nationalityData]
+    );
 
     const cancelReasonOptions = [
         { value: 'wrong_details', label: 'Entered wrong details' },
@@ -132,54 +167,58 @@ export default function ChangeServicesModal({
 
     // ✅ Prefill when opening (from row)
     useEffect(() => {
-        if (showModal) {
-            reset({
-                referenceNo: showModal?.referenceNo ?? '',
-                applicantName: showModal?.applicantName ?? '',
+        const id = showModal?.visa_application_id;
+        if (showModal && id) {
+            getChangeServiceDetails(id, (data) => {
+                if (!data) return;
+                reset({
+                    referenceNo: data.appointment_reference_no ?? '',
+                    applicantName: data.applicant_name ?? '',
 
-                visaServiceId: showModal?.visaServiceId ?? '',
-                visaDuration: showModal?.visaDuration ?? '',
-                visaEntry: showModal?.visaEntry ?? '',
-                nationality: showModal?.nationality ?? '',
+                    visaServiceId: data.visa_service_id != null ? String(data.visa_service_id) : '',
+                    visaDuration: data.visa_duration_id != null ? String(data.visa_duration_id) : '',
+                    visaEntry: data.visa_entry_id != null ? String(data.visa_entry_id) : '',
+                    nationality: data.nationality_id != null ? String(data.nationality_id) : '',
 
-                govtFee: showModal?.govtFee ?? '',
-                icwfFee: showModal?.icwfFee ?? '',
-                sgivsServiceFee: showModal?.sgivsServiceFee ?? '',
+                    govtFee: data.govt_fee ?? '',
+                    icwfFee: data.icwf_fee ?? '',
+                    sgivsServiceFee: data.sgv_service_fee ?? '',
 
-                urgentFee: !!showModal?.urgentFee,
+                    urgentFee: data.urgent_fee ?? '',
 
-                cancelApplication: !!showModal?.cancelApplication,
-                cancelReason: showModal?.cancelReason ?? '',
-                remark: showModal?.remark ?? '',
+                    cancelApplication: false,
+                    cancelReason: '',
+                    remark: '',
+                });
             });
         }
-    }, [showModal, reset]);
+    }, [showModal, getChangeServiceDetails, reset]);
 
     const onSubmit = (data) => {
         console.log('Change Service/Fee Payload:', data);
 
         // ✅ call API here (post/patch)
-        // patchData(showModal.id, data, () => onRefreshPassportApplications?.());
+        // patchData(showModal.id, data, () => onRefreshVisaApplications?.());
 
-        onRefreshPassportApplications?.();
+        onRefreshVisaApplications?.();
         closeModal?.();
     };
 
     const renderHeader = () => (
         <>
-            <h4 className="modal-title">Change Visa Service / Fee</h4>
+            <h4 className="modal-title">Change Visa Service / Fees</h4>
             <button type="button" className="btn-close" aria-label="Close" onClick={closeModal} />
         </>
     );
 
     const renderBody = () => (
         <div className="modal-body custom-scroll">
-            <div className="row g-3">
+            <div className="row">
                 {/* Reference No */}
                 <div className="col-md-6">
                     <div className="form-group">
                         <label className="form-label">Reference No</label>
-                        <input
+                        <input disabled
                             type="text"
                             className="form-control"
                             placeholder="REF-0001"
@@ -195,7 +234,7 @@ export default function ChangeServicesModal({
                 <div className="col-md-6">
                     <div className="form-group">
                         <label className="form-label">Applicant Name</label>
-                        <input
+                        <input disabled
                             type="text"
                             className="form-control"
                             placeholder="Enter applicant name"
@@ -211,7 +250,7 @@ export default function ChangeServicesModal({
                 <div className="col-md-6">
                     <div className="form-group">
                         <label className="form-label">Visa Service</label>
-                        <select className="form-select" {...register('visaServiceId')}>
+                        <select className="form-control" {...register('visaServiceId')}>
                             <option value="">Select Visa Service</option>
                             {visaServiceOptions.map((opt) => (
                                 <option key={opt.value} value={opt.value}>
@@ -229,7 +268,7 @@ export default function ChangeServicesModal({
                 <div className="col-md-6">
                     <div className="form-group">
                         <label className="form-label">Visa Duration</label>
-                        <select className="form-select" {...register('visaDuration')}>
+                        <select className="form-control" {...register('visaDuration')}>
                             <option value="">Select Visa Duration</option>
                             {visaDurationOptions.map((opt) => (
                                 <option key={opt.value} value={opt.value}>
@@ -247,7 +286,7 @@ export default function ChangeServicesModal({
                 <div className="col-md-6">
                     <div className="form-group">
                         <label className="form-label">Visa Entry</label>
-                        <select className="form-select" {...register('visaEntry')}>
+                        <select className="form-control" {...register('visaEntry')}>
                             <option value="">Select Visa Entry</option>
                             {visaEntryOptions.map((opt) => (
                                 <option key={opt.value} value={opt.value}>
@@ -265,7 +304,7 @@ export default function ChangeServicesModal({
                 <div className="col-md-6">
                     <div className="form-group">
                         <label className="form-label">Nationality</label>
-                        <select className="form-select" {...register('nationality')}>
+                        <select className="form-control" {...register('nationality')}>
                             <option value="">Select Nationality</option>
                             {nationalityOptions.map((opt) => (
                                 <option key={opt.value} value={opt.value}>
@@ -280,28 +319,28 @@ export default function ChangeServicesModal({
                 </div>
 
                 {/* Govt Fee */}
-                <div className="col-md-6">
+                <div className="col-md-4">
                     <div className="form-group">
                         <label className="form-label">Govt Fee</label>
-                        <input type="number" className="form-control" placeholder="0" {...register('govtFee')} />
+                        <input disabled type="number" className="form-control" placeholder="0" {...register('govtFee')} />
                         {errors?.govtFee && <p className="text-danger mt-1">{errors.govtFee.message}</p>}
                     </div>
                 </div>
 
                 {/* ICWF Fee */}
-                <div className="col-md-6">
+                <div className="col-md-4">
                     <div className="form-group">
                         <label className="form-label">ICWF Fee</label>
-                        <input type="number" className="form-control" placeholder="0" {...register('icwfFee')} />
+                        <input disabled type="number" className="form-control" placeholder="0" {...register('icwfFee')} />
                         {errors?.icwfFee && <p className="text-danger mt-1">{errors.icwfFee.message}</p>}
                     </div>
                 </div>
 
                 {/* SGIVS Service Fee */}
-                <div className="col-md-6">
+                <div className="col-md-4">
                     <div className="form-group">
                         <label className="form-label">SGIVS Service Fee</label>
-                        <input
+                        <input disabled
                             type="number"
                             className="form-control"
                             placeholder="0"
@@ -350,11 +389,11 @@ export default function ChangeServicesModal({
 
                 {/* Cancel reason dropdown (show only if cancel checked) */}
                 {cancelApplication && (
-                    <div className="col-md-6">
+                    <div className="col-md-12">
                         <div className="form-group">
-                            <label className="form-label">Select reason</label>
-                            <select className="form-select" {...register('cancelReason')}>
-                                <option value="">Select Reason</option>
+                            <label className="form-label">Reason</label>
+                            <select className="form-control" {...register('cancelReason')}>
+                                <option value="">Select</option>
                                 {cancelReasonOptions.map((opt) => (
                                     <option key={opt.value} value={opt.value}>
                                         {opt.label}
@@ -372,7 +411,7 @@ export default function ChangeServicesModal({
                 <div className="col-12">
                     <div className="form-group">
                         <label className="form-label">Remark</label>
-                        <textarea rows={4} className="form-control" placeholder="Enter remark" {...register('remark')} />
+                        <textarea rows={4} style={{ minHeight: "120px" }} className="form-control" placeholder="Enter remark" {...register('remark')} />
                         {errors?.remark && <p className="text-danger mt-1">{errors.remark.message}</p>}
                     </div>
                 </div>

@@ -3,7 +3,6 @@ import useAlertReducer from './AlertReducer';
 import visaOTSService from '../services/VisaOTSService';
 
 const useVisaOTSReducer = create((set) => ({
-    isLoading: false,
     isLoadingGet: false,
     errorMessage: '',
     successMessage: '',

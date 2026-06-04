@@ -1,5 +1,5 @@
 import Gateway from '../config/gateway';
 
-const getData = (params) => Gateway.get('/visa-ots', { params });
+const getData = (payload) => Gateway.post('/visa/outscan_to_spoke/list', payload );
 
 export default { getData };
