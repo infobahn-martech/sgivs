@@ -17,8 +17,9 @@ const useVisaApplicationReducer = create((set) => ({
   nationalityData: [],
   visaStatusData: [],
 
-  changeServiceDetails: null,
-  isLoadingChangeService: false,
+  changeServiceDetails: null, isLoadingChangeService: false,
+
+   isLoadingPostChangeService: false,
 
   postData: async (payload, callback) => {
     try {
@@ -256,6 +257,27 @@ const useVisaApplicationReducer = create((set) => ({
 
       set({ isLoadingChangeService: false, changeServiceDetails: null });
       error(message);
+    }
+  },
+
+  updateChangeService: async (payload, cb) => {
+    try {
+      set({ isLoadingPostChangeService: true });
+      const response = await visaApplicationService.updateChangeService(payload);
+      const responseData = response?.data;
+
+      const { success } = useAlertReducer.getState();
+      success(responseData?.message ?? 'Service updated successfully');
+
+      set({ isLoadingPostChangeService: false });
+      cb?.();
+      return true;
+    } catch (err) {
+      const message = err?.response?.data?.message ?? err?.message ?? 'Something went wrong';
+      const { error } = useAlertReducer.getState();
+      set({ isLoadingPostChangeService: false });
+      error(message);
+      return false;
     }
   },
 }));

@@ -3,6 +3,8 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 
+import { Spinner } from 'react-bootstrap';
+
 import CustomModal from '../../components/common/CustomModal';
 import useVisaApplicationReducer from '../../stores/VisaApplicationReducer';
 import useServiceReducer from '../../stores/ServiceReducer';
@@ -61,11 +63,11 @@ const changeServicesSchema = z
 export default function ChangeServicesModal({ showModal, closeModal, onRefreshVisaApplications, }) {
 
     const {
-        servicesByType,
-        getServicesByServiceType,
+        servicesByType, getServicesByServiceType, isLaodingServicesByType,
+        getServiceById, isLoadingSelectedService
     } = useServiceReducer((state) => state);
 
-    // Fetch services for the static service type (1) when modal opens
+    // Fetch services for the static service type (2) when modal opens
     useEffect(() => {
         if (showModal) {
             getServicesByServiceType(2);
@@ -87,8 +89,8 @@ export default function ChangeServicesModal({ showModal, closeModal, onRefreshVi
         nationalityData,
         getVisaMetaData,
         isMetaLoading,
-        getChangeServiceDetails,
-        isLoadingChangeService,
+        getChangeServiceDetails, isLoadingChangeService,
+        updateChangeService, isLoadingPostChangeService
     } = useVisaApplicationReducer((state) => state);
 
     // Fetch dropdown metadata when the modal opens
@@ -194,14 +196,36 @@ export default function ChangeServicesModal({ showModal, closeModal, onRefreshVi
         }
     }, [showModal, getChangeServiceDetails, reset]);
 
+    const handleServiceChange = (e) => {
+        const serviceId = e.target.value;
+        if (!serviceId) {
+            setValue('govtFee', '');
+            setValue('icwfFee', '');
+            setValue('sgivsServiceFee', '');
+            return;
+        }
+        getServiceById(serviceId, (service) => {
+            if (!service) return;
+            setValue('govtFee', service.govt_fee ?? '');
+            setValue('icwfFee', service.icwf_fee ?? '');
+            setValue('sgivsServiceFee', service.service_fee ?? '');
+        });
+    };
+
     const onSubmit = (data) => {
-        console.log('Change Service/Fee Payload:', data);
+        const payload = {
+            visa_application_id: Number(showModal?.visa_application_id),
+            visa_service_id: Number(data.visaServiceId),
+            urgent_status: data.urgentFee ? 1 : 0,
+            visa_duration_id: Number(data.visaDuration),
+            visa_entry_id: Number(data.visaEntry),
+            nationality_id: Number(data.nationality),
+        };
 
-        // ✅ call API here (post/patch)
-        // patchData(showModal.id, data, () => onRefreshVisaApplications?.());
-
-        onRefreshVisaApplications?.();
-        closeModal?.();
+        updateChangeService(payload, () => {
+            onRefreshVisaApplications?.();
+            closeModal?.();
+        });
     };
 
     const renderHeader = () => (
@@ -211,8 +235,22 @@ export default function ChangeServicesModal({ showModal, closeModal, onRefreshVi
         </>
     );
 
-    const renderBody = () => (
-        <div className="modal-body custom-scroll">
+    const isModalLoading = isLoadingChangeService || isMetaLoading || isLaodingServicesByType;
+
+    const renderBody = () => {
+        if (isModalLoading) {
+            return (
+                <div
+                    className="modal-body custom-scroll d-flex justify-content-center align-items-center"
+                    style={{ minHeight: 300 }}
+                >
+                    <Spinner animation="border" />
+                </div>
+            );
+        }
+
+        return (
+            <div className="modal-body custom-scroll">
             <div className="row">
                 {/* Reference No */}
                 <div className="col-md-6">
@@ -250,7 +288,7 @@ export default function ChangeServicesModal({ showModal, closeModal, onRefreshVi
                 <div className="col-md-6">
                     <div className="form-group">
                         <label className="form-label">Visa Service</label>
-                        <select className="form-control" {...register('visaServiceId')}>
+                        <select className="form-control" {...register('visaServiceId', { onChange: handleServiceChange })}>
                             <option value="">Select Visa Service</option>
                             {visaServiceOptions.map((opt) => (
                                 <option key={opt.value} value={opt.value}>
@@ -417,7 +455,10 @@ export default function ChangeServicesModal({ showModal, closeModal, onRefreshVi
                 </div>
             </div>
         </div>
-    );
+        );
+    };
+
+    
 
     const renderFooter = () => (
         <div className="modal-footer bottom-btn-sec">

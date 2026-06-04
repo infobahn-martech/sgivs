@@ -28,6 +28,8 @@ const getVisaNationalities = () => Gateway.post('visa/nationality');
 const getVisaStatuses = () => Gateway.post('visa/status');
 
 const getChangeServiceDetails= (visa_application_id) => Gateway.get('visa/change_service_details', { params: { visa_application_id } });
+const updateChangeService= (payload) => Gateway.post('visa/update_change_service', payload);
+
 
 export default {
   getVisaApplications,
@@ -42,5 +44,7 @@ export default {
   getVisaEntries,
   getVisaNationalities,
   getVisaStatuses,
-  getChangeServiceDetails
+
+  getChangeServiceDetails,
+  updateChangeService,
 };

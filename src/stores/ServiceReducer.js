@@ -8,6 +8,7 @@ const useServiceReducer = create((set) => ({
   isLoading: false,
   isLoadingGet: false,
   isLoadingDelete: false,
+  isLaodingServicesByType:false,
 
   errorMessage: '',
   successMessage: '',
@@ -20,7 +21,7 @@ const useServiceReducer = create((set) => ({
   // Services by service_type_id
   servicesByType: [],
 
-  selectedService: null,
+  selectedService: null, isLoadingSelectedService: false, 
 
   postData: async (payload, cb) => {
     try {
@@ -126,7 +127,7 @@ const useServiceReducer = create((set) => ({
 
   getServicesByServiceType: async (service_type_id) => {
     try {
-      set({ isLoadingGet: true });
+      set({ isLaodingServicesByType: true });
 
       const {
         data: { data },
@@ -134,13 +135,13 @@ const useServiceReducer = create((set) => ({
 
       set((state) => ({
         servicesByType: data || [],
-        isLoadingGet: false,
+        isLaodingServicesByType: false,
       }));
     } catch (err) {
       const { error } = useAlertReducer.getState();
       set({
         errorMessage: err?.response?.data?.message ?? err?.message,
-        isLoadingGet: false,
+        isLaodingServicesByType: false,
       });
 
       error(err?.response?.data?.message ?? err.message);
@@ -149,13 +150,13 @@ const useServiceReducer = create((set) => ({
 
    getServiceById: async (service_id, cb) => {
     try {
-      set({ isLoadingGet: true });
+      set({ isLoadingSelectedService: true });
 
       const { data } = await serviceService.getServiceById(service_id);
 
       set({
         selectedService: data?.data,
-        isLoadingGet: false,
+        isLoadingSelectedService: false,
       });
 
       cb?.(data?.data);
@@ -164,7 +165,7 @@ const useServiceReducer = create((set) => ({
 
       set({
         errorMessage: err?.response?.data?.message ?? err?.message,
-        isLoadingGet: false,
+        isLoadingSelectedService: false,
       });
 
       error(err?.response?.data?.message ?? err.message);
