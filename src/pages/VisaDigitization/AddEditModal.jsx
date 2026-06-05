@@ -2,27 +2,81 @@ import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import * as XLSX from 'xlsx'
 import CustomModal from '../../components/common/CustomModal';
+import useAlertReducer from '../../stores/AlertReducer';
 import useVisaDigitizationReducer from '../../stores/VisaDigitizationReducer';
 
-// ✅ Schema: only file is required
+const ACCEPTED = [
+  'text/csv',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+];
+
+// Schema: only file is required
 const fileSchema = z.object({
   file: z
     .any()
     .refine((v) => v instanceof FileList && v.length > 0, 'File is required')
     .refine(
-      (v) => v instanceof FileList && v.length > 0 && v[0].size <= 5 * 1024 * 1024,
+      (v) => v?.[0]?.size <= 5 * 1024 * 1024,
       'File must be less than 5MB'
+    )
+    .refine(
+      (v) =>
+        ACCEPTED.includes(v?.[0]?.type) ||
+        /\.(csv|xlsx|xls)$/i.test(v?.[0]?.name ?? ''),
+      'Only CSV / Excel files allowed'
     ),
-  // If you want to restrict types, uncomment:
-  // .refine(
-  //   (v) =>
-  //     v instanceof FileList &&
-  //     v.length > 0 &&
-  //     ['application/pdf', 'image/png', 'image/jpeg'].includes(v[0].type),
-  //   'Only PDF / PNG / JPG allowed'
-  // ),
 });
+
+// ---- helpers -----------------------------------------------------------
+
+const normalizeKey = (k) =>
+  k?.toString().trim().toLowerCase().replace(/[\s-]+/g, '_');
+
+const formatDate = (value) => {
+  if (!value) return '';
+  if (value instanceof Date) {
+    const y = value.getFullYear();
+    const m = String(value.getMonth() + 1).padStart(2, '0');
+    const d = String(value.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+  return value.toString().trim();
+};
+
+const mapRow = (row) => {
+  const n = {};
+  Object.keys(row).forEach((key) => {
+    n[normalizeKey(key)] = row[key];
+  });
+  return {
+    consprom_file_number: (n.consprom_file_number ?? '').toString().trim(),
+    visa_number: (n.visa_number ?? '').toString().trim(),
+    visa_issue_date: formatDate(n.visa_issue_date),
+  };
+};
+
+const parseFile = (file) =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const wb = XLSX.read(e.target.result, {
+          type: 'array',
+          cellDates: true,
+        });
+        const sheet = wb.Sheets[wb.SheetNames[0]];
+        const json = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+        resolve(json.map(mapRow));
+      } catch (err) {
+        reject(err);
+      }
+    };
+    reader.onerror = reject;
+    reader.readAsArrayBuffer(file);
+  });
 
 export function AddEditModal({ showModal, closeModal, onRefreshVisaDigitization }) {
   const {
@@ -37,38 +91,40 @@ export function AddEditModal({ showModal, closeModal, onRefreshVisaDigitization 
     },
   });
 
-  const { postData, patchData, isLoading } = useVisaDigitizationReducer((state) => state);
+  const { postData, isLoading } = useVisaDigitizationReducer((state) => state);
 
   // Reset on open/close or when switching edit/add
   useEffect(() => {
     if (!showModal) reset();
   }, [showModal, reset]);
 
-  const onSubmit = (data) => {
-    const selectedFile = data?.file?.[0];
+  const onSubmit = async (values) => {
+    const file = values?.file?.[0];
+    if (!file) return;
 
-    // ✅ send as FormData (recommended for file upload)
-    const formData = new FormData();
-    formData.append('file', selectedFile);
+    try {
+      const rows = await parseFile(file);
 
-    if (showModal?.id) {
-      patchData({ id: showModal.id, data: formData }, () => {
-        onRefreshVisaDigitization();
+      if (!rows.length) {
+        const { error } = useAlertReducer.getState();
+        error('The file has no rows to upload');
+        return;
+      }
+
+      postData({ data: rows }, () => {
+        onRefreshVisaDigitization?.();
+        closeModal();
       });
-    } else {
-      postData(formData, () => {
-        onRefreshVisaDigitization();
-      });
+    } catch (err) {
+      console.error('Parse error:', err);   
+      const { error } = useAlertReducer.getState();
+      error('Could not read the file. Please check the format.');
     }
-
-    closeModal();
   };
 
   const renderHeader = () => (
     <>
-      <h4 className="modal-title">
-        {showModal?.id ? 'Edit Upload' : 'Upload File'}
-      </h4>
+      <h4 className="modal-title">Add Visa Digitization</h4>
       <button
         type="button"
         className="btn-close"
@@ -85,16 +141,14 @@ export function AddEditModal({ showModal, closeModal, onRefreshVisaDigitization 
         <div className="col-12">
           <div className="form-group">
             <label htmlFor="file" className="form-label">
-              Upload File<span className="text-danger">*</span>
+              Upload CSV File <span className="text-danger">*</span>
             </label>
-
             <input
               type="file"
               id="file"
               className="form-control"
               {...register('file')}
             />
-
             {errors.file && (
               <span className="error">{errors.file.message}</span>
             )}

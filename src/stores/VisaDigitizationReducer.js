@@ -5,52 +5,40 @@ import visaDigitizationService from '../services/VisaDigitizationService';
 const useVisaDigitizationReducer = create((set) => ({
   isLoading: false,
   isLoadingGet: false,
-  isLoadingDelete: false,
   errorMessage: '',
   successMessage: '',
   visaDigitizationData: null,
+  uploadResults: null,
 
   postData: async (payload, cb) => {
     try {
-      set({ isLoading: true });
+      set({ isLoading: true, errorMessage: '', successMessage: '' });
+
       const { data } = await visaDigitizationService.postData(payload);
       const { success } = useAlertReducer.getState();
-      success(data?.response?.data?.message ?? data?.message);
+
+      const message = data?.message ?? 'Upload completed';
+
+      // status can be "success" or "partial_success"
+      if (data?.status === 'success') {
+        success(message);
+      } else {
+        // partial success / failures -> surface as a warning/error toast
+        error(message);
+      }
+
       set({
-        successMessage: data?.response?.data?.message ?? data?.message,
+        successMessage: message,
+        uploadResults: data?.results ?? null,
         isLoading: false,
       });
-      cb && cb();
+
+      cb && cb(data);
     } catch (err) {
       const { error } = useAlertReducer.getState();
-      set({
-        errorMessage: err?.response?.data?.message ?? err?.message,
-        isLoading: false,
-      });
-      error(err?.response?.data?.message ?? err.message);
-    }
-  },
-  patchData: async (payload, cb) => {
-    try {
-      set({ isLoading: true });
-
-      const { id, ...rest } = payload;
-      const { data } = await visaDigitizationService.patchData(id, rest); // Updated call
-
-      const { success } = useAlertReducer.getState();
-      success(data?.response?.data?.message ?? data?.message);
-      cb && cb();
-      set({
-        successMessage: data?.response?.data?.message ?? data?.message,
-        isLoading: false,
-      });
-    } catch (err) {
-      const { error } = useAlertReducer.getState();
-      set({
-        errorMessage: err?.response?.data?.message ?? err?.message,
-        isLoading: false,
-      });
-      error(err?.response?.data?.message ?? err.message);
+      const message = err?.response?.data?.message ?? err?.message;
+      set({ errorMessage: message, isLoading: false });
+      error(message);
     }
   },
 
@@ -58,6 +46,7 @@ const useVisaDigitizationReducer = create((set) => ({
     try {
       set({ isLoadingGet: true });
       const { data } = await visaDigitizationService.getData(params);
+      debugger
       const datas = data;
       set({
         visaDigitizationData: datas?.data,
@@ -69,26 +58,6 @@ const useVisaDigitizationReducer = create((set) => ({
       set({
         errorMessage: err?.response?.data?.message ?? err?.message,
         isLoadingGet: false,
-      });
-      error(err?.response?.data?.message ?? err.message);
-    }
-  },
-  deleteData: async (id, cb) => {
-    try {
-      set({ isLoadingDelete: true });
-      const { data } = await visaDigitizationService.deleteData(id);
-      const datas = data;
-      set({
-        visaDigitizationData: datas?.data,
-        successMessage: data?.response?.data?.message ?? data?.message,
-        isLoadingDelete: false,
-      });
-      cb && cb();
-    } catch (err) {
-      const { error } = useAlertReducer.getState();
-      set({
-        errorMessage: err?.response?.data?.message ?? err?.message,
-        isLoadingDelete: false,
       });
       error(err?.response?.data?.message ?? err.message);
     }

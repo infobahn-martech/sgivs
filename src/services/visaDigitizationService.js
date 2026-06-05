@@ -1,13 +1,13 @@
 import Gateway from '../config/gateway';
 
-const postData = (payload) => Gateway.post('/visa-digitization', payload);
-const patchData = (id, payload) => Gateway.put(`/visa-digitization/${id}`, payload);
-const getData = (params) => Gateway.get('/visa-digitization', { params });
-const deleteData = (id) => Gateway.delete(`/visa-digitization/${id}`);
+// Upload parsed visa rows
+const postData = (payload) => Gateway.post('/visa/digitalization/update', payload);
+
+// Keep list fetch for refreshing the table
+const getData = (params) => Gateway.post('/visa/digitalization/list', params);
+
 
 export default {
   postData,
-  patchData,
   getData,
-  deleteData,
 };

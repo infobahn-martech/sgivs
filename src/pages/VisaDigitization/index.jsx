@@ -11,7 +11,6 @@ import { formatDate } from '../../config/config';
 import { AddEditModal } from './AddEditModal';
 
 const VisaDigitization = () => {
-  const USE_MOCK = true;
 
   const { getData, visaDigitizationData, isLoadingGet, isLoadingPost, isLoadingPatch, isLoadingDelete } =
     useVisaDigitizationReducer((state) => state);
@@ -19,99 +18,23 @@ const VisaDigitization = () => {
   const [modal, setModal] = useState(false);
 
   const initialParams = {
-    search: '',
     page: 1,
     limit: 10,
-    fromDate: null,
-    toDate: null,
-    sortBy: 'applicationDate',
-    sortOrder: 'DESC',
-    isExcelExport: 'false',
+    sort_by: 'created_at', 
+    sort_order: 'DESC',
   };
 
   const [params, setParams] = useState(initialParams);
 
-  // ✅ Mock Data (Required fields)
-  const mockVisaDigitizationData = {
-    total: 5,
-    data: [
-      {
-        id: 1,
-        fileNo: 'FILE-0001',
-        passportNo: 'P1234567',
-        applicantName: 'Arjun Kumar',
-        dateOfBirth: '1996-04-12',
-        gender: 'Male',
-        issueDate: '2025-01-10',
-        visaNumber: 'VISA-981122',
-        fatherName: 'Kumar Raj',
-        applicationDate: '2025-01-10T09:30:00Z',
-        applicationType: 'Tourist',
-      },
-      {
-        id: 2,
-        fileNo: 'FILE-0002',
-        passportNo: 'P7654321',
-        applicantName: 'Sara Ahmed',
-        dateOfBirth: '1999-11-02',
-        gender: 'Female',
-        issueDate: '2025-02-14',
-        visaNumber: 'VISA-772210',
-        fatherName: 'Ahmed Ali',
-        applicationDate: '2025-02-14T12:15:00Z',
-        applicationType: 'Visit',
-      },
-      {
-        id: 3,
-        fileNo: 'FILE-0003',
-        passportNo: 'P9988776',
-        applicantName: 'John Mathew',
-        dateOfBirth: '1993-07-21',
-        gender: 'Male',
-        issueDate: '2025-03-05',
-        visaNumber: 'VISA-556677',
-        fatherName: 'Mathew Joseph',
-        applicationDate: '2025-03-05T08:45:00Z',
-        applicationType: 'Work',
-      },
-      {
-        id: 4,
-        fileNo: 'FILE-0004',
-        passportNo: 'P1122334',
-        applicantName: 'Fatima Noor',
-        dateOfBirth: '1998-01-30',
-        gender: 'Female',
-        issueDate: '2025-03-20',
-        visaNumber: 'VISA-334455',
-        fatherName: 'Noor Hassan',
-        applicationDate: '2025-03-20T10:00:00Z',
-        applicationType: 'Family',
-      },
-      {
-        id: 5,
-        fileNo: 'FILE-0005',
-        passportNo: 'P5566778',
-        applicantName: 'Vishnu Das',
-        dateOfBirth: '1995-09-18',
-        gender: 'Male',
-        issueDate: '2025-04-02',
-        visaNumber: 'VISA-119900',
-        fatherName: 'Das Krishnan',
-        applicationDate: '2025-04-02T11:20:00Z',
-        applicationType: 'Student',
-      },
-    ],
-  };
-
   const onRefreshVisaDigitization = () => {
-    if (!USE_MOCK) getData(params);
+    getData(params);
     setModal(false);
   };
 
   useEffect(() => {
-    if (!USE_MOCK) getData(params);
+    getData(params);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [params, USE_MOCK]);
+  }, [params]);
 
   const handleSortChange = (selector) => {
     setParams((prev) => ({
@@ -211,14 +134,14 @@ const VisaDigitization = () => {
     return () => debouncedSearch.cancel();
   }, [debouncedSearch]);
 
-  const tableData = USE_MOCK ? mockVisaDigitizationData : visaDigitizationData;
-  const loading = USE_MOCK ? false : isLoadingGet || isLoadingPost || isLoadingPatch || isLoadingDelete;
+  const tableData = visaDigitizationData;
+  const loading = isLoadingGet || isLoadingPost || isLoadingPatch || isLoadingDelete;
 
   return (
     <>
       <CommonHeader
         addButton={{
-          name: 'Add File',
+          name: 'Upload',
           type: 'button',
           action: () => setModal(true),
         }}
