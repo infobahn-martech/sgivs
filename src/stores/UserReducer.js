@@ -3,10 +3,10 @@ import useAlertReducer from './AlertReducer';
 import userService from '../services/userService';
 
 const useUserReducer = create((set) => ({
-  isLoading: false, isLoadingGet: false, isLoadingDelete: false,
+  isLoading: false, isLoadingGet: false,
   errorMessage: '', successMessage: '',
   countryList: [], missionList: [], centerList: [], isLoadingCountries: false, isLoadingMissions: false, isLoadingCenters: false,
-  employeeList: [], employeeCount: 0, isLoadingEmployees: false,
+  employeeList: [], isLoadingEmployees: false, employeeCount: 0,
   employeeData: null,
   isLoadingStatus: false,
 
@@ -15,7 +15,7 @@ const useUserReducer = create((set) => ({
       set({ isLoading: true });
       const { data } = await userService.postData(payload);
       const { success } = useAlertReducer.getState();
-      success(data?.response?.data?.message ?? data?.message);
+      success(data?.message ?? 'Employee created successfully');
       set({
         successMessage: data?.response?.data?.message ?? data?.message,
         isLoading: false,
@@ -30,6 +30,7 @@ const useUserReducer = create((set) => ({
       error(err?.response?.data?.message ?? err.message);
     }
   },
+
   patchData: async (payload, cb) => {
     try {
       set({ isLoading: true });
@@ -53,43 +54,38 @@ const useUserReducer = create((set) => ({
   },
 
   getEmployeeById: async (employee_id) => {
-    set({ isLoadingGet: true });
-
-    const { data } = await userService.getDataById(employee_id);
-
-    set({
-      employeeData: data?.data,
-      isLoadingGet: false,
-    });
-
-    return data?.data;
+    try {
+      set({ isLoadingGet: true });
+      const { data } = await userService.getDataById(employee_id);
+      set({ employeeData: data?.data, isLoadingGet: false });
+      return data?.data;
+    } catch (err) {
+      const { error } = useAlertReducer.getState();
+      set({ isLoadingGet: false });
+      error(err?.response?.data?.message ?? err?.message);
+      return null;
+    }
   },
 
   getAllEmployees: async (params) => {
     try {
       set({ isLoadingEmployees: true });
-
       const { data } = await userService.getData(params);
-
       const employees = data?.data?.employees || [];
       const pagination = data?.data?.pagination || {};
-
       set({
         employeeList: employees,
         employeeCount: pagination?.total_records || 0,
         isLoadingEmployees: false,
       });
-
       return data;
     } catch (err) {
       const { error } = useAlertReducer.getState();
-
       set({
         isLoadingEmployees: false,
         employeeList: [],
         employeeCount: 0,
       });
-
       error(err?.response?.data?.message ?? err.message);
     }
   },
@@ -97,24 +93,14 @@ const useUserReducer = create((set) => ({
   changeEmployeeStatus: async (payload, cb) => {
     try {
       set({ isLoadingStatus: true });
-
       const { data } = await userService.changeStatus(payload);
-
       const { success } = useAlertReducer.getState();
       success(data?.message ?? 'Status updated successfully');
-
-      set({
-        isLoadingStatus: false,
-      });
-
+      set({ isLoadingStatus: false, });
       cb && cb();
     } catch (err) {
       const { error } = useAlertReducer.getState();
-
-      set({
-        isLoadingStatus: false,
-      });
-
+      set({ isLoadingStatus: false, });
       error(err?.response?.data?.message ?? err.message);
     }
   },

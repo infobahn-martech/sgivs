@@ -15,7 +15,7 @@ const postData = (payload) => {
     },
   });
 };
-const getData = (params) => Gateway.get('employee/list', params);
+const getData = (params) => Gateway.post('employee/list', params);
 const getDataById = (employee_id) => Gateway.post('employee/get_by_id', { employee_id }); 
 const patchData = (payload) => Gateway.post('employee/update', payload);
 const changeStatus = (payload) => Gateway.post('employee/change_status', payload);

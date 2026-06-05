@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import Skeleton from 'react-loading-skeleton';
+import 'react-loading-skeleton/dist/skeleton.css';
 import CustomModal from '../../components/common/CustomModal';
 import CustomSelect from '../../components/common/CustomSelect';
 import useUserReducer from '../../stores/UserReducer';
@@ -66,7 +68,7 @@ export default function EmployeeAddEditModal({ showModal, closeModal, onRefreshE
         countryList, missionList, centerList,
         isLoadingCountries, isLoadingMissions, isLoadingCenters,
         getCountries, getMissionsByCountry, getCentersByMission,
-        getEmployeeById, employeeData
+        getEmployeeById, employeeData, isLoadingGet
     } = useUserReducer((state) => state);
 
     // Load countries on mount
@@ -75,7 +77,6 @@ export default function EmployeeAddEditModal({ showModal, closeModal, onRefreshE
     }, []);
 
     const selectedCountryId = watch('country_id');
-
 
     const selectedMissionId = watch('mission_id');
 
@@ -110,35 +111,6 @@ export default function EmployeeAddEditModal({ showModal, closeModal, onRefreshE
     }, [showModal?.employee_id]);
 
     // ✅ Fill form for edit / clear for add
-    // useEffect(() => {
-    //     if (!showModal?.employee_id) {
-    //         reset();
-    //         setImagePreview('');
-    //         return;
-    //     }
-
-    //     // Prefill (edit) - adjust keys based on your API
-    //     setValue('country_id', String(showModal?.country_id || ''));
-    //     setValue('mission_id', String(showModal?.mission_id || ''));
-    //     setValue('center_id', String(showModal?.center_id || ''));
-    //     setValue('employee_role_id', String(showModal?.employee_role_id || ''));
-    //     setValue('employee_designation_id', String(showModal?.employee_designation_id || ''));
-    //     setValue('collection_type_id', String(showModal?.collection_type_id || ''));
-
-    //     setValue('firstName', showModal?.firstName || '');
-    //     setValue('lastName', showModal?.lastName || '');
-    //     setValue('contactNumber', showModal?.contactNumber || '');
-    //     setValue('email', showModal?.email || '');
-    //     setValue('username', showModal?.username || '');
-    //     setValue('password', ''); // keep empty in edit
-
-    //     setValue('ipAllowed', showModal?.ipAllowed || '');
-    //     setValue('ipBounded', !!showModal?.ipBounded);
-
-    //     // optional: existing image url
-    //     if (showModal?.imageUrl) setImagePreview(showModal.imageUrl);
-    //     // eslint-disable-next-line react-hooks/exhaustive-deps
-    // }, [showModal?.id, reset, setValue]);
     useEffect(() => {
         if (!showModal?.employee_id || !employeeData) return;
 
@@ -195,12 +167,14 @@ export default function EmployeeAddEditModal({ showModal, closeModal, onRefreshE
         [missionList]
     );
 
-    const centerOptions = useMemo(() => {
-        return centerList.map(x => ({
-            label: x.center_name,
-            value: String(x.center_id),
-        }));
-    }, [centerList]);
+    const centerOptions = useMemo(
+        () =>
+            (centerList || []).map((x) => ({
+                label: x.center_name,
+                value: String(x.center_id),
+            })),
+        [centerList]
+    );
 
     const roleOptions = useMemo(
         () =>
@@ -211,23 +185,23 @@ export default function EmployeeAddEditModal({ showModal, closeModal, onRefreshE
         [roleData]
     );
 
-    const designationOptions = useMemo(() => {
-        const list = designationData?.data || [];
+    const designationOptions = useMemo(
+        () =>
+            (designationData?.data || []).map((x) => ({
+                label: x.employee_designation,
+                value: String(x.employee_designation_id),
+            })),
+        [designationData]
+    );
 
-        return list.map((x) => ({
-            label: x.employee_designation,
-            value: String(x.employee_designation_id),
-        }));
-    }, [designationData]);
-
-    const collectionTypeOptions = useMemo(() => {
-        const collData = collectionTypeData || [];
-
-        return collData.map((x) => ({
-            label: x.collection_type,
-            value: String(x.collection_type_id),
-        }));
-    }, [collectionTypeData]);
+    const collectionTypeOptions = useMemo(
+        () =>
+            (collectionTypeData || []).map((x) => ({
+                label: x.collection_type,
+                value: String(x.collection_type_id),
+            })),
+        [collectionTypeData]
+    );
 
     // ✅ image change
     const onImageChange = (e) => {
@@ -240,17 +214,6 @@ export default function EmployeeAddEditModal({ showModal, closeModal, onRefreshE
             setImageFile(null);
         }
     };
-
-//       const handleImageChange = (e) => {
-//     const file = e.target.files?.[0];
-//     if (file) {
-//       setProfileImage(file);
-//       const reader = new FileReader();
-//       reader.onloadend = () => setProfileImagePreview(reader.result);
-//       reader.readAsDataURL(file);
-//     }
-//   };
-
 
     // ✅ submit
     const onSubmit = (data) => {
@@ -304,28 +267,6 @@ export default function EmployeeAddEditModal({ showModal, closeModal, onRefreshE
         </>
     );
 
-    const SelectField = ({ label, name, options, placeholder = 'Select' }) => {
-        const val = watch(name);
-        return (
-            <div className="form-group forms-custom">
-                <label className="label">
-                    {label}
-                    <span className="text-danger">*</span>
-                </label>
-                <CustomSelect
-                    options={options}
-                    value={options.find((o) => o.value === String(val || '')) || null}
-                    onChange={(ev) => setValue(name, ev?.target?.value ?? '')}
-                    placeholder={placeholder}
-                    showIndicator={false}
-                    className="form-select form-control"
-                    name={name}
-                />
-                {errors?.[name]?.message && <span className="error">{errors[name].message}</span>}
-            </div>
-        );
-    };
-
     const TextField = ({
         label,
         name,
@@ -335,9 +276,8 @@ export default function EmployeeAddEditModal({ showModal, closeModal, onRefreshE
         required = true,
     }) => (
         <div className="form-group forms-custom">
-            <label className="label">
-                {label}
-                {required && <span className="text-danger">*</span>}
+            <label className="form-label">
+                {label} {required && <span className="text-danger">*</span>}
             </label>
             <input
                 type={type}
@@ -351,216 +291,238 @@ export default function EmployeeAddEditModal({ showModal, closeModal, onRefreshE
         </div>
     );
 
-    const renderBody = () => (
+    // 👇 Skeleton placeholder shown while the employee record loads (edit mode)
+    const renderSkeleton = () => (
         <div className="modal-body employee-modal-body">
-            {/* ✅ Round image upload (top center) */}
-            <div className="employee-avatar-wrp">
-                <div className="employee-avatar">
-                    {imagePreview ? (
-                        <img src={imagePreview} alt="Employee" />
-                    ) : (
-                        <div className="employee-avatar-placeholder">
-                            <img src={dummyIcon} alt="Employee" className="employee-avatar-placeholder-img" />
-                        </div>
-                    )}
-                </div>
-
-                <label className="employee-avatar-btn">
-                    Upload Image
-                    <input type="file" accept="image/*" onChange={onImageChange} />
-                </label>
-
-                {errors?.imageFile?.message && <span className="error">{errors.imageFile.message}</span>}
+            <div className="d-flex justify-content-center mb-4">
+                <Skeleton circle width={90} height={90} />
             </div>
-
-            {/* ✅ 2 fields per row */}
             <div className="row">
-                <div className="col-sm-6">
-                    <div className="form-group forms-custom">
-                        <label htmlFor="country_id" className="label">
-                            Country<span className="text-danger">*</span>
-                        </label>
-                        <CustomSelect options={countryOptions}
-                            value={
-                                countryOptions.find((opt) => opt.value === String(selectedCountryId || '')) || null
-                            }
-                            onChange={(selected) => {
-                                const value = selected?.target?.value || '';
-                                setValue('country_id', value, { shouldDirty: true, shouldValidate: true, shouldTouch: true });
-
-                                setValue('mission_id', '');
-                                setValue('center_id', '');
-
-                                if (value) {
-                                    getMissionsByCountry(value);
-                                }
-                            }}
-                            placeholder={isLoadingCountries ? 'Loading countries...' : 'Select Country'}
-                            isDisabled={isLoadingCountries}
-                            showIndicator={false}
-                            className="form-control"
-                        />
-                        {errors?.country_id?.message && <span className="error">{errors?.country_id?.message}</span>}
+                {Array.from({ length: 12 }).map((_, i) => (
+                    <div className="col-sm-6 mb-3" key={i}>
+                        <Skeleton width={120} height={14} className="mb-2" />
+                        <Skeleton height={38} />
                     </div>
-                </div>
-
-                <div className="col-sm-6">
-                    <div className="form-group forms-custom">
-                        <label htmlFor="mission_id" className="label">
-                            Mission<span className="text-danger">*</span>
-                        </label>
-                        <CustomSelect options={missionOptions}
-                            value={
-                                missionOptions.find((opt) => opt.value === String(selectedMissionId || '')) || null
-                            }
-                            onChange={(selected) => {
-                                const value = selected?.target?.value || '';
-                                setValue('mission_id', value || '', { shouldDirty: true, shouldValidate: true, shouldTouch: true });
-
-                                setValue('center_id', '');
-
-                                if (value) {
-                                    getCentersByMission(value);
-                                }
-                            }}
-                            placeholder={isLoadingMissions ? 'Loading mission...' : 'Select Mission'}
-                            isDisabled={isLoadingMissions}
-                            showIndicator={false}
-                            className="form-control"
-                        />
-                        {errors?.mission_id?.message && <span className="error">{errors?.mission_id?.message}</span>}
-                    </div>
-                </div>
-
-                <div className="col-sm-6">
-                    <div className="form-group forms-custom">
-                        <label htmlFor="center_id" className="label">
-                            Center<span className="text-danger">*</span>
-                        </label>
-                        <CustomSelect options={centerOptions}
-                            value={
-                                centerOptions.find((opt) => opt.value === String(selectedCenterId || '')) || null
-                            }
-                            onChange={(selected) => {
-                                const value = selected?.target?.value || '';
-                                setValue('center_id', value, { shouldDirty: true, shouldValidate: true, shouldTouch: true });
-                            }}
-                            placeholder={isLoadingCenters ? 'Loading centers...' : 'Select Center'}
-                            isDisabled={isLoadingCenters}
-                            showIndicator={false}
-                            className="form-control"
-                        />
-                        {errors?.center_id?.message && <span className="error">{errors?.center_id?.message}</span>}
-                    </div>
-                </div>
-
-                <div className="col-sm-6">
-                    <div className="form-group forms-custom">
-                        <label htmlFor="employee_role_id" className="label">
-                            Role<span className="text-danger">*</span>
-                        </label>
-                        <CustomSelect options={roleOptions}
-                            value={
-                                roleOptions.find((opt) => opt.value === String(selectedRoleId || '')) || null
-                            }
-                            onChange={(selected) => {
-                                const value = selected?.target?.value || '';
-                                setValue('employee_role_id', value, { shouldDirty: true, shouldValidate: true, shouldTouch: true });
-                            }}
-                            placeholder={isLoadingRole ? 'Loading role...' : 'Select Role'}
-                            isDisabled={isLoadingRole}
-                            showIndicator={false}
-                            className="form-select form-control"
-                        />
-                        {errors?.employee_role_id?.message && <span className="error">{errors?.employee_role_id?.message}</span>}
-                    </div>
-                </div>
-
-                <div className="col-sm-6">
-                    <div className="form-group forms-custom">
-                        <label htmlFor="employee_designation_id" className="label">
-                            Designation<span className="text-danger">*</span>
-                        </label>
-                        <CustomSelect options={designationOptions}
-                            value={
-                                designationOptions.find((opt) => opt.value === String(selectedDesignationId || '')) || null
-                            }
-                            onChange={(selected) => {
-                                const value = selected?.target?.value || '';
-                                setValue('employee_designation_id', value, { shouldDirty: true, shouldValidate: true, shouldTouch: true });
-                            }}
-                            placeholder={isLoadingDesignation ? 'Loading designation...' : 'Select Designation'}
-                            isDisabled={isLoadingDesignation}
-                            showIndicator={false}
-                            className="form-select form-control"
-                        />
-                        {errors?.employee_designation_id?.message && <span className="error">{errors?.employee_designation_id?.message}</span>}
-                    </div>
-                </div>
-                <div className="col-sm-6">
-                    <div className="form-group forms-custom">
-                        <label htmlFor="collection_type_id" className="label">
-                            Collection Type<span className="text-danger">*</span>
-                        </label>
-                        <CustomSelect options={collectionTypeOptions}
-                            value={
-                                collectionTypeOptions.find((opt) => opt.value === String(selectedCollectionTypeId || '')) || null
-                            }
-                            onChange={(selected) => {
-                                const value = selected?.target?.value || '';
-                                setValue('collection_type_id', value, { shouldDirty: true, shouldValidate: true, shouldTouch: true });
-                            }}
-                            placeholder={isLoadingCollectionType ? 'Loading collection type...' : 'Select Collection Type'}
-                            isDisabled={isLoadingCollectionType}
-                            showIndicator={false}
-                            className="form-select form-control"
-                        />
-                        {errors?.collection_type_id?.message && <span className="error">{errors?.collection_type_id?.message}</span>}
-                    </div>
-                </div>
-
-                <div className="col-sm-6">
-                    <TextField label="First Name" name="firstName" placeholder="Enter first name" maxLength={30} />
-                </div>
-                <div className="col-sm-6">
-                    <TextField label="Last Name" name="lastName" placeholder="Enter last name" maxLength={30} />
-                </div>
-
-                <div className="col-sm-6">
-                    <TextField label="Contact Number" name="contactNumber" placeholder="Enter contact number" maxLength={20} />
-                </div>
-                <div className="col-sm-6">
-                    <TextField label="Email Address" name="email" type="email" placeholder="Enter email address" />
-                </div>
-
-                <div className="col-sm-6">
-                    <TextField label="Username" name="username" placeholder="Enter username" maxLength={30} />
-                </div>
-                <div className="col-sm-6">
-                    <TextField label="Password" name="password" type="password" placeholder={showModal?.employee_id ? 'Set new password (optional)' : 'Enter password'} required={!showModal?.employee_id} />
-                </div>
-
-                <div className="col-sm-6">
-                    <div className="form-group forms-custom">
-                        <label className="label">IP Allowed</label>
-                        <textarea className="form-control" rows={3} placeholder="Enter allowed IPs (comma / new line separated)" {...register('ipAllowed')} />
-                        {errors?.ipAllowed?.message && <span className="error">{errors.ipAllowed.message}</span>}
-                    </div>
-                </div>
-
-                <div className="col-sm-6 d-flex align-items-end">
-                    <div className="form-group forms-custom">
-                        <label className="label d-block">IP Bounded</label>
-                        <label className="checkbox-custom">
-                            <input type="checkbox" {...register('ipBounded')} />
-                            <span className="checkmark" />
-                            Enable IP Bounded
-                        </label>
-                    </div>
-                </div>
+                ))}
             </div>
         </div>
     );
+
+    const isFetchingEmployee = !!showModal?.employee_id && isLoadingGet;
+    
+    const renderBody = () => {
+        // 👇 show the skeleton instead of an empty form while fetching
+        if (isFetchingEmployee) {
+            return renderSkeleton();
+        }
+        return (
+            <div className="modal-body employee-modal-body">
+                {/* ✅ Round image upload (top center) */}
+                <div className="employee-avatar-wrp">
+                    <div className="employee-avatar">
+                        {imagePreview ? (
+                            <img src={imagePreview} alt="Employee" />
+                        ) : (
+                            <div className="employee-avatar-placeholder">
+                                <img src={dummyIcon} alt="Employee" className="employee-avatar-placeholder-img" />
+                            </div>
+                        )}
+                    </div>
+
+                    <label className="employee-avatar-btn">
+                        Upload Image
+                        <input type="file" accept="image/*" onChange={onImageChange} />
+                    </label>
+
+                    {errors?.imageFile?.message && <span className="error">{errors.imageFile.message}</span>}
+                </div>
+
+                {/* ✅ 2 fields per row */}
+                <div className="row">
+                    <div className="col-sm-6">
+                        <div className="form-group forms-custom">
+                            <label htmlFor="country_id" className="form-label">
+                                Country <span className="text-danger">*</span>
+                            </label>
+                            <CustomSelect options={countryOptions}
+                                value={
+                                    countryOptions.find((opt) => opt.value === String(selectedCountryId || '')) || null
+                                }
+                                onChange={(selected) => {
+                                    const value = selected?.target?.value || '';
+                                    setValue('country_id', value, { shouldDirty: true, shouldValidate: true, shouldTouch: true });
+
+                                    setValue('mission_id', '');
+                                    setValue('center_id', '');
+
+                                    if (value) {
+                                        getMissionsByCountry(value);
+                                    }
+                                }}
+                                placeholder={isLoadingCountries ? 'Loading...' : 'Select Country'}
+                                showIndicator={false}
+                                className="form-control"
+                            />
+                            {errors?.country_id?.message && <span className="error">{errors?.country_id?.message}</span>}
+                        </div>
+                    </div>
+
+                    <div className="col-sm-6">
+                        <div className="form-group forms-custom">
+                            <label htmlFor="mission_id" className="form-label">
+                                Mission <span className="text-danger">*</span>
+                            </label>
+                            <CustomSelect options={missionOptions}
+                                value={
+                                    missionOptions.find((opt) => opt.value === String(selectedMissionId || '')) || null
+                                }
+                                onChange={(selected) => {
+                                    const value = selected?.target?.value || '';
+                                    setValue('mission_id', value || '', { shouldDirty: true, shouldValidate: true, shouldTouch: true });
+
+                                    setValue('center_id', '');
+
+                                    if (value) {
+                                        getCentersByMission(value);
+                                    }
+                                }}
+                                placeholder={isLoadingMissions ? 'Loading...' : 'Select Mission'}
+                                showIndicator={false}
+                                className="form-control"
+                            />
+                            {errors?.mission_id?.message && <span className="error">{errors?.mission_id?.message}</span>}
+                        </div>
+                    </div>
+
+                    <div className="col-sm-6">
+                        <div className="form-group forms-custom">
+                            <label htmlFor="center_id" className="form-label">
+                                Center <span className="text-danger">*</span>
+                            </label>
+                            <CustomSelect options={centerOptions}
+                                value={
+                                    centerOptions.find((opt) => opt.value === String(selectedCenterId || '')) || null
+                                }
+                                onChange={(selected) => {
+                                    const value = selected?.target?.value || '';
+                                    setValue('center_id', value, { shouldDirty: true, shouldValidate: true, shouldTouch: true });
+                                }}
+                                placeholder={isLoadingCenters ? 'Loading...' : 'Select Center'}
+                                showIndicator={false}
+                                className="form-control"
+                            />
+                            {errors?.center_id?.message && <span className="error">{errors?.center_id?.message}</span>}
+                        </div>
+                    </div>
+
+                    <div className="col-sm-6">
+                        <div className="form-group forms-custom">
+                            <label htmlFor="employee_role_id" className="form-label">
+                                Role <span className="text-danger">*</span>
+                            </label>
+                            <CustomSelect options={roleOptions}
+                                value={
+                                    roleOptions.find((opt) => opt.value === String(selectedRoleId || '')) || null
+                                }
+                                onChange={(selected) => {
+                                    const value = selected?.target?.value || '';
+                                    setValue('employee_role_id', value, { shouldDirty: true, shouldValidate: true, shouldTouch: true });
+                                }}
+                                placeholder={isLoadingRole ? 'Loading role...' : 'Select Role'}
+                                isDisabled={isLoadingRole}
+                                showIndicator={false}
+                                className="form-select form-control"
+                            />
+                            {errors?.employee_role_id?.message && <span className="error">{errors?.employee_role_id?.message}</span>}
+                        </div>
+                    </div>
+
+                    <div className="col-sm-6">
+                        <div className="form-group forms-custom">
+                            <label htmlFor="employee_designation_id" className="form-label">
+                                Designation <span className="text-danger">*</span>
+                            </label>
+                            <CustomSelect options={designationOptions}
+                                value={
+                                    designationOptions.find((opt) => opt.value === String(selectedDesignationId || '')) || null
+                                }
+                                onChange={(selected) => {
+                                    const value = selected?.target?.value || '';
+                                    setValue('employee_designation_id', value, { shouldDirty: true, shouldValidate: true, shouldTouch: true });
+                                }}
+                                placeholder={isLoadingDesignation ? 'Loading designation...' : 'Select Designation'}
+                                isDisabled={isLoadingDesignation}
+                                showIndicator={false}
+                                className="form-select form-control"
+                            />
+                            {errors?.employee_designation_id?.message && <span className="error">{errors?.employee_designation_id?.message}</span>}
+                        </div>
+                    </div>
+                    <div className="col-sm-6">
+                        <div className="form-group forms-custom">
+                            <label htmlFor="collection_type_id" className="form-label">
+                                Collection Type <span className="text-danger">*</span>
+                            </label>
+                            <CustomSelect options={collectionTypeOptions}
+                                value={
+                                    collectionTypeOptions.find((opt) => opt.value === String(selectedCollectionTypeId || '')) || null
+                                }
+                                onChange={(selected) => {
+                                    const value = selected?.target?.value || '';
+                                    setValue('collection_type_id', value, { shouldDirty: true, shouldValidate: true, shouldTouch: true });
+                                }}
+                                placeholder={isLoadingCollectionType ? 'Loading collection type...' : 'Select Collection Type'}
+                                isDisabled={isLoadingCollectionType}
+                                showIndicator={false}
+                                className="form-select form-control"
+                            />
+                            {errors?.collection_type_id?.message && <span className="error">{errors?.collection_type_id?.message}</span>}
+                        </div>
+                    </div>
+
+                    <div className="col-sm-6">
+                        <TextField label="First Name" name="firstName" placeholder="Enter first name" maxLength={30} />
+                    </div>
+                    <div className="col-sm-6">
+                        <TextField label="Last Name" name="lastName" placeholder="Enter last name" maxLength={30} />
+                    </div>
+
+                    <div className="col-sm-6">
+                        <TextField label="Contact Number" name="contactNumber" placeholder="Enter contact number" maxLength={20} />
+                    </div>
+                    <div className="col-sm-6">
+                        <TextField label="Email Address" name="email" type="email" placeholder="Enter email address" />
+                    </div>
+
+                    <div className="col-sm-6">
+                        <TextField label="Username" name="username" placeholder="Enter username" maxLength={30} />
+                    </div>
+                    <div className="col-sm-6">
+                        <TextField label="Password" name="password" type="password" placeholder={showModal?.employee_id ? 'Set new password (optional)' : 'Enter password'} required={!showModal?.employee_id} />
+                    </div>
+
+                    <div className="col-sm-6">
+                        <div className="form-group forms-custom">
+                            <label className="form-label">IP Allowed</label>
+                            <textarea className="form-control" rows={3} placeholder="Enter allowed IPs (comma / new line separated)" {...register('ipAllowed')} style={{ height: 120 }} />
+                            {errors?.ipAllowed?.message && <span className="error">{errors.ipAllowed.message}</span>}
+                        </div>
+                    </div>
+
+                    <div className="col-sm-6">
+                        <div className="form-group forms-custom">
+                            <label className="form-label d-block">IP Bounded</label>
+                            <label className="checkbox-custom">
+                                <input type="checkbox" {...register('ipBounded')} />
+                                <span className="checkmark" />
+                                Enable IP Bounded
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    };
 
     const renderFooter = () => (
         <div className="modal-footer bottom-btn-sec">
@@ -570,10 +532,10 @@ export default function EmployeeAddEditModal({ showModal, closeModal, onRefreshE
             <button
                 type="button"
                 className="btn btn-submit"
-                disabled={isLoading}
+                disabled={isLoading || isFetchingEmployee}
                 onClick={handleSubmit(onSubmit)}
             >
-                {isLoading ? 'Loading...' : 'Save'}
+                {isLoading || isFetchingEmployee ? 'Loading...' : 'Save'}
             </button>
         </div>
     );

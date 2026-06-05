@@ -1,7 +1,7 @@
 // components/common/UserTableColumns.js
 import React from 'react';
 import editIcon from '../../assets/images/edit.svg';
-import deleteIcon from '../../assets/images/delete.svg';
+// import deleteIcon from '../../assets/images/delete.svg';
 import activeIcon from '../../assets/images/close.svg';
 import blockIcon from '../../assets/images/block.svg';
 // import alertIcon from '../../assets/images/alert.svg';
@@ -14,7 +14,7 @@ import InitialsAvatar from '../../components/common/InitialsAvatar';
 const getUserTableColumns = ({
   onUserNotify,
   onEditClick,
-  onDeleteClick,
+  //onDeleteClick,
   onStatusClick,
   showActions = true,
   isDashboard = false,
@@ -26,7 +26,22 @@ const getUserTableColumns = ({
       sort: true,
       cell: (row) => (
         <div className="user-pic">
-          <InitialsAvatar name={`${row.first_name} ${row.last_name}`} />
+          {row.image ? (
+            <img
+              src={`${row.image}`}
+              alt={`${row.first_name} ${row.last_name}`}
+              className="user-avatar-img"
+              style={{
+                width: 30,
+                height: 30,
+                background: '#f0f0f0',
+                borderRadius: '50%',
+                objectFit: 'cover',
+              }}
+            />
+          ) : (
+            <InitialsAvatar name={`${row.first_name} ${row.last_name}`} />
+          )}
           <span>
             {row.first_name} {row.last_name}
           </span>
@@ -54,7 +69,7 @@ const getUserTableColumns = ({
     {
       name: 'Role',
       selector: row => `${row.role || ''} - ${row.designation || ''}`,
-      sortable: true,
+      sort: true,
       cell: (row) => {
         const value = [row.role, row.designation].filter(Boolean).join(' - ');
         return <span>{value}</span>;
@@ -63,7 +78,7 @@ const getUserTableColumns = ({
     {
       name: 'Center',
       selector: row => row.center,
-      sortable: true,
+      sort: true,
       cell: (row) => {
         const subLine = [row.mission, row.country] // country last
           .filter(Boolean)
@@ -145,8 +160,7 @@ const getUserTableColumns = ({
             style={{ backgroundColor: '#051a53' }}
           />
 
-
-          <img
+          {/* <img
             src={deleteIcon}
             alt="Delete"
             data-tooltip-id={`delete-tooltip-${row.employee_id}`}
@@ -159,7 +173,7 @@ const getUserTableColumns = ({
             place="top"
             effect="solid"
             style={{ backgroundColor: '#051a53' }}
-          />
+          /> */}
 
           <img
             src={row?.status === "1" ? activeIcon : blockIcon}

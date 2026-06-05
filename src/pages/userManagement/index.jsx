@@ -12,13 +12,73 @@ import CommonHeader from '../../components/common/CommonHeader';
 
 const UserManagement = () => {
 
-  const { getAllEmployees, employeeList, employeeCount, isLoadingEmployees,
-          isLoadingDelete,
-          changeEmployeeStatus, isLoadingStatus
+  const {
+    getAllEmployees, employeeList, isLoadingEmployees, employeeCount,
+    changeEmployeeStatus, isLoadingStatus,
+
+    countryList, missionList, centerList,
+    isLoadingCountries, isLoadingMissions, isLoadingCenters,
+    getCountries, getMissionsByCountry, getCentersByMission,
   } = useUserReducer((state) => state);
 
+  // load countries once
+  useEffect(() => {
+    getCountries();
+  }, []);
+
+  // option builders
+  const countryOptions = useMemo(
+    () => (countryList || []).map((x) => ({ label: x.country_name, value: String(x.country_id) })),
+    [countryList]
+  );
+  const missionOptions = useMemo(
+    () => (missionList || []).map((x) => ({ label: x.mission_name, value: String(x.mission_id) })),
+    [missionList]
+  );
+  const centerOptions = useMemo(
+    () => (centerList || []).map((x) => ({ label: x.center_name, value: String(x.center_id) })),
+    [centerList]
+  );
+
+  const filterOptions = useMemo(
+    () => [
+      {
+        fieldName: 'Country',
+        BE_keyName: 'country_id',
+        fieldType: 'select',
+        placeholder: 'Select Country',
+        Options: countryOptions,
+        isLoading: isLoadingCountries,
+        // 👇 when country changes, load that country's missions
+        callBack: (value) => {
+          getMissionsByCountry(value);
+        },
+      },
+      {
+        fieldName: 'Mission',
+        BE_keyName: 'mission_id',
+        fieldType: 'select',
+        placeholder: 'Select Mission',
+        Options: missionOptions,
+        isLoading: isLoadingMissions,
+        // 👇 when mission changes, load that mission's centers
+        callBack: (value) => {
+          getCentersByMission(value);
+        },
+      },
+      {
+        fieldName: 'Center',
+        BE_keyName: 'center_id',
+        fieldType: 'select',
+        placeholder: 'Select Center',
+        Options: centerOptions,
+        isLoading: isLoadingCenters,
+      },
+    ],
+    [countryOptions, missionOptions, centerOptions, isLoadingCountries, isLoadingMissions, isLoadingCenters]
+  );
+
   const [modal, setModal] = useState(false);
-  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [statusModalOpen, setStatusModalOpen] = useState(false);
 
   const initialParams = useMemo(
@@ -26,9 +86,7 @@ const UserManagement = () => {
       search: '',
       page: 1,
       limit: 10,
-      fromDate: null,
-      toDate: null,
-      sortBy: 'createdAt',
+      sortBy: 'added_on',
       sortOrder: 'DESC',
     }),
     []
@@ -78,11 +136,6 @@ const UserManagement = () => {
     setModal(row);
   };
 
-  const handleDeleteClick = (row) => {
-    console.log("Delete:", row);
-    // call API delete here
-  };
-
   const handleStatusClick = (row) => {
     setStatusModalOpen(row);
   };
@@ -103,7 +156,6 @@ const UserManagement = () => {
   const columns = getUserTableColumns({
     onUserNotify: handleNotification,
     onEditClick: handleEditClick,
-    onDeleteClick: handleDeleteClick,
     onStatusClick: handleStatusClick,
     showActions: true,
   });
@@ -119,16 +171,13 @@ const UserManagement = () => {
           type: 'button',
           action: () => setModal(true),
         }}
-        hideFilter
+        filterOptions={filterOptions}
         onSearch={debouncedSearch}
         submitFilter={(filters) => {
           const { fromDate, toDate, ...rest } = filters;
-
           setParams((prev) => ({
             ...prev,
-            ...rest,
-            fromDate: fromDate ? moment(fromDate).format('YYYY-MM-DD') : null,
-            toDate: toDate ? moment(toDate).format('YYYY-MM-DD') : null,
+            ...rest,   // country_id, mission_id, center_id flow through
             page: 1,
           }));
         }}
@@ -154,27 +203,14 @@ const UserManagement = () => {
         />
       )}
 
-      {deleteModalOpen && (
-        <CustomActionModal
-          isDelete
-          isLoading={isLoadingDelete}
-          showModal={deleteModalOpen}
-          closeModal={() => setDeleteModalOpen(false)}
-          message={`Are you sure you want to delete this ${deleteModalOpen?.employee_role || deleteModalOpen?.employeeRole || ''
-            }?`}
-          onCancel={() => setDeleteModalOpen(false)}
-          onSubmit={handleDelete}
-        />
-      )}
       {statusModalOpen && (
         <CustomActionModal
           isWarning
           isLoading={isLoadingStatus}
           showModal={statusModalOpen}
           closeModal={() => setStatusModalOpen(false)}
-          message={`Are you sure, you want to ${
-            statusModalOpen?.status === "1" ? "block" : "activate"
-          } ${statusModalOpen?.first_name || ""}?`}
+          message={`Are you sure, you want to ${statusModalOpen?.status === "1" ? "block" : "activate"
+            } ${[statusModalOpen?.first_name, statusModalOpen?.last_name].filter(Boolean).join(' ')}?`}
           onCancel={() => setStatusModalOpen(false)}
           onSubmit={handleConfirmStatusChange}
           button={{ primary: "Yes", secondary: "Cancel" }}
