@@ -1,8 +1,9 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import CustomModal from '../../components/common/CustomModal';
+import BulkResultModal from '../../components/common/BulkResultModal';
 import useVisaInScanReducer from '../../stores/VisaInScanReducer';
 
 // Updated schema with isEZPass as a boolean
@@ -27,7 +28,9 @@ export default function AddEditModal({ showModal, closeModal, onRefreshInScan })
         },
     });
 
-    const { bulkInscan, isLoadingPost } = useVisaInScanReducer((state) => state);
+    const { bulkStatusChange, isLoadingPost } = useVisaInScanReducer((state) => state);
+
+    const [result, setResult] = useState(null);
 
     useEffect(() => {
         if (showModal) {
@@ -44,12 +47,21 @@ export default function AddEditModal({ showModal, closeModal, onRefreshInScan })
 
         const employee_id = localStorage.getItem('employee_id');
 
-        bulkInscan({ status_id: 5, employee_id:Number(employee_id), application_numbers }, () => {
-            onRefreshInScan?.();
-            closeModal?.();
-        });
+        bulkStatusChange(
+            { status_id: 26, employee_id: Number(employee_id), application_numbers },
+            (body) => {
+                if (body) {
+                    onRefreshInScan?.();
+                    setResult(body);   // show result modal, DON'T close
+                }
+            }
+        );
     };
 
+    const handleResultClose = () => {
+        setResult(null);
+        closeModal?.(); // now fully close
+    };
 
     const renderHeader = () => (
         <>
@@ -94,7 +106,7 @@ export default function AddEditModal({ showModal, closeModal, onRefreshInScan })
     const renderFooter = () => (
         <>
             <div className="modal-footer bottom-btn-sec">
-                <button type="button" className="btn btn-cancel" onClick={closeModal}>
+                <button type="button" className="btn btn-cancel" onClick={closeModal} disabled={isLoadingPost}>
                     Cancel
                 </button>
                 <button
@@ -110,15 +122,26 @@ export default function AddEditModal({ showModal, closeModal, onRefreshInScan })
     );
 
     return (
-        <CustomModal
-            className="modal fade category-mgmt-modal show"
-            dialgName="modal-dialog-scrollable"
-            show={!!showModal}
-            closeModal={closeModal}
-            body={renderBody()}
-            header={renderHeader()}
-            footer={renderFooter()}
-            isLoading={false}
-        />
+        <>
+            <CustomModal
+                className="modal fade category-mgmt-modal show"
+                dialgName="modal-dialog-scrollable"
+                show={!!showModal && !result}
+                closeModal={closeModal}
+                body={renderBody()}
+                header={renderHeader()}
+                footer={renderFooter()}
+                isLoading={false}
+            />
+
+            <BulkResultModal
+                show={!!result}
+                closeModal={handleResultClose}
+                title="Visa InScan Result"
+                status={result?.status}
+                message={result?.message}
+                data={result?.data}
+            />
+        </>
     );
 }

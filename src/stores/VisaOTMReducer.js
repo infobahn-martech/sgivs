@@ -1,8 +1,8 @@
 import { create } from 'zustand';
 import useAlertReducer from './AlertReducer';
 import visaOTMService from '../services/visaOTMService';
-import { getItem } from '../helpers/localStorage';
-import { OTM_STATUS_ID } from '../utils/helpers';
+// import { getItem } from '../helpers/localStorage';
+// import { OTM_STATUS_ID } from '../utils/helpers';
 
 const mapVisaOTMRow = (item) => ({
     id: item?.manifest_id,
@@ -14,7 +14,6 @@ const mapVisaOTMRow = (item) => ({
 });
 
 const useVisaOTMReducer = create((set) => ({
-    isLoading: false,
     isLoadingGet: false,
     errorMessage: '',
     successMessage: '',
@@ -22,6 +21,7 @@ const useVisaOTMReducer = create((set) => ({
         total: 0,
         data: [],
     },
+    isLoadingPost: false,
 
     getData: async (params) => {
         try {
@@ -61,30 +61,33 @@ const useVisaOTMReducer = create((set) => ({
         }
     },
 
-    postData: async ({ application_numbers }, cb) => {
+    bulkStatusChange: async (payload, callback) => {
+        const { error } = useAlertReducer.getState();
+
         try {
-            set({ isLoading: true });
-            const employee_id_raw = getItem('employee_id');
-            const employee_id = employee_id_raw ? Number(employee_id_raw) : null;
-            if (!employee_id) {
-                const { error } = useAlertReducer.getState();
-                error('Employee ID not found in local storage');
-                set({ isLoading: false });
-                return;
-            }
-            await visaOTMService.bulkStatusChange({
-                status_id: OTM_STATUS_ID,
-                employee_id,
-                application_numbers,
+            set({ isLoadingPost: true, errorMessage: '', successMessage: '' });
+
+            const response = await visaOTMService.bulkStatusChange(payload);
+            const body = response?.data || {}; // { status, message, data: {...} }
+
+            set({
+                successMessage: body?.status === 'error' ? '' : (body?.message || ''),
+                errorMessage: body?.status === 'error' ? (body?.message || '') : '',
             });
-            const { success } = useAlertReducer.getState();
-            success('Visa Out Scan to Mission updated successfully');
-            set({ isLoading: false });
-            cb?.();
+
+            // Hand the full body to the component so it can open the result modal
+            callback?.(body);
         } catch (err) {
-            const { error } = useAlertReducer.getState();
-            error(err?.response?.data?.message ?? err.message);
-            set({ isLoading: false });
+            const msg =
+                err?.response?.data?.message ||
+                err?.message ||
+                'Something went wrong';
+
+            error(msg); // only network/unexpected errors fall back to a toast
+            set({ errorMessage: msg, successMessage: '' });
+            callback?.(null, err);
+        } finally {
+            set({ isLoadingPost: false });
         }
     },
 }));

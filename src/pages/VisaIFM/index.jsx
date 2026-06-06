@@ -198,7 +198,7 @@ const VisaIFM = () => {
         pagination={{ currentPage: params.page, limit: params.limit }}
         count={tableData?.total || 0}
         columns={columns}
-        data={tableData?.data || []}
+        data={tableData || []}
         isLoading={loading}
         onPageChange={(page) => setParams({ ...params, page })}
         setLimit={(limit) => setParams({ ...params, limit })}

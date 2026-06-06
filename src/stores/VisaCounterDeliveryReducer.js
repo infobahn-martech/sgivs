@@ -7,6 +7,7 @@ const useVisaCounterDeliveryReducer = create((set) => ({
     errorMessage: '',
     successMessage: '',
     visaCounterDeliveryData: null,
+    isLoadingPost: false,
 
     getData: async (params) => {
         try {
@@ -25,6 +26,36 @@ const useVisaCounterDeliveryReducer = create((set) => ({
                 isLoadingGet: false,
             });
             error(err?.response?.data?.message ?? err.message);
+        }
+    },
+
+    bulkStatusChange: async (payload, callback) => {
+        const { error } = useAlertReducer.getState();
+
+        try {
+            set({ isLoadingPost: true, errorMessage: '', successMessage: '' });
+
+            const response = await visaCounterDeliveryService.bulkStatusChange(payload);
+            const body = response?.data || {}; // { status, message, data: {...} }
+
+            set({
+                successMessage: body?.status === 'error' ? '' : (body?.message || ''),
+                errorMessage: body?.status === 'error' ? (body?.message || '') : '',
+            });
+
+            // Hand the full body to the component so it can open the result modal
+            callback?.(body);
+        } catch (err) {
+            const msg =
+                err?.response?.data?.message ||
+                err?.message ||
+                'Something went wrong';
+
+            error(msg); // only network/unexpected errors fall back to a toast
+            set({ errorMessage: msg, successMessage: '' });
+            callback?.(null, err);
+        } finally {
+            set({ isLoadingPost: false });
         }
     },
 }));

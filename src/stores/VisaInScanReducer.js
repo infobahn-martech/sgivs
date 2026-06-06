@@ -37,96 +37,33 @@ const useVisaInScanReducer = create((set) => ({
         }
     },
 
-    bulkInscan: async (payload, callback) => {
-
-        const { success, error } = useAlertReducer.getState();
+    bulkStatusChange: async (payload, callback) => {
+        const { error } = useAlertReducer.getState();
 
         try {
-            set({
-                isLoadingPost: true,
-                errorMessage: '',
-                successMessage: '',
-            });
+            set({ isLoadingPost: true, errorMessage: '', successMessage: '' });
 
-            const response = await visaInScanService.bulkInscan(payload);
-            const data = response?.data;
-
-            const status = data?.status;
-            const backendMessage = data?.message || '';
-
-            // Arrays
-            const updated = data?.updated_references || [];
-            const deleted = data?.deleted_references || [];
-            const missing = data?.missing_references || [];
-            const already = data?.already_in_same_status || [];
-
-            // 🔥 BUILD MULTI-LINE TOAST
-            let lines = [];
-
-            // 1st line → backend message
-            if (backendMessage) {
-                lines.push(backendMessage);
-            }
-
-            // 2nd line → updated
-            if (updated.length) {
-                lines.push(`Updated (${updated.length}): ${updated.join(', ')}`);
-            }
-
-            // 3rd line → deleted
-            if (deleted.length) {
-                lines.push(`Deleted (${deleted.length}): ${deleted.join(', ')}`);
-            }
-
-            // 4th line → missing
-            if (missing.length) {
-                lines.push(`Missing (${missing.length}): ${missing.join(', ')}`);
-            }
-
-            // 5th line → already same status (optional but useful)
-            if (already.length) {
-                lines.push(`Already same (${already.length}): ${already.join(', ')}`);
-            }
-
-            const message = lines.join(' | ');
-
-            // 🔥 TOAST HANDLING (ALL CASES SAME STRUCTURE)
-            if (status === 'error') {
-                error(message);
-            } else if (status === 'info') {
-                success(message);
-            } else if (status === 'partial success') {
-                success(message);
-            } else {
-                success(message);
-            }
+            const response = await visaInScanService.bulkStatusChange(payload);
+            const body = response?.data || {}; // { status, message, data: {...} }
 
             set({
-                successMessage: status === 'error' ? '' : message,
-                errorMessage: status === 'error' ? message : '',
+                successMessage: body?.status === 'error' ? '' : (body?.message || ''),
+                errorMessage: body?.status === 'error' ? (body?.message || '') : '',
             });
 
-            callback?.(data);
-
+            // Hand the full body to the component so it can open the result modal
+            callback?.(body);
         } catch (err) {
-
             const msg =
                 err?.response?.data?.message ||
                 err?.message ||
                 'Something went wrong';
 
-            error(msg);
-
-            set({
-                errorMessage: msg,
-                successMessage: '',
-            });
-
+            error(msg); // only network/unexpected errors fall back to a toast
+            set({ errorMessage: msg, successMessage: '' });
+            callback?.(null, err);
         } finally {
-
-            set({
-                isLoadingPost: false,
-            });
+            set({ isLoadingPost: false });
         }
     },
 }));

@@ -1,16 +1,17 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import CustomModal from '../../components/common/CustomModal';
-import useOTCReducer from '../../stores/OTCReducer';
+import BulkResultModal from '../../components/common/BulkResultModal';
+import useVisaOTCReducer from '../../stores/VisaOTCReducer';
 
 // Updated schema with isEZPass as a boolean
 const nameSchema = z.object({
-    applicationNumber: z
+    applicationNumbers: z
         .string()
-        .nonempty('Application Number is required')
-        .max(20, 'Application Number must be 10 characters or less'),
+        .trim()
+        .nonempty('At least one Application Number is required'),
 });
 
 export default function AddEditModal({ showModal, closeModal, onRefreshOTC }) {
@@ -23,44 +24,51 @@ export default function AddEditModal({ showModal, closeModal, onRefreshOTC }) {
     } = useForm({
         resolver: zodResolver(nameSchema),
         defaultValues: {
-            applicationNumber: '',
+            applicationNumbers: '',
         },
     });
 
-    const { postData, patchData, isLoading } = useOTCReducer(
-        (state) => state
-    );
+    const { bulkStatusChange, isLoadingPost } = useVisaOTCReducer((state) => state);
 
-    // Prefill form when editing
+    const [result, setResult] = useState(null);
+
     useEffect(() => {
-        if (showModal?.id) {
-            setValue('applicationNumber', showModal?.applicationNumber || '');
-        } else {
-            reset();
+        if (showModal) {
+            reset({ applicationNumbers: '' });
         }
-    }, [showModal?.id]);
+    }, [showModal, reset]);
 
     const onSubmit = (data) => {
-        if (showModal?.id) {
-            patchData({ id: showModal.id, ...data }, () => {
-                onRefreshOTC();
-            });
-        } else {
-            postData(data, () => {
-                onRefreshOTC();
-            });
-        }
-        closeModal();
+        const application_numbers = data.applicationNumbers
+            .split('\n')
+            .map((x) => x.trim())
+            .filter(Boolean)
+            .join('\n');
+
+        const employee_id = localStorage.getItem('employee_id');
+
+        bulkStatusChange(
+            { status_id: 12, employee_id: Number(employee_id), application_numbers },
+            (body) => {
+                if (body) {
+                    onRefreshOTC?.();
+                    setResult(body);   // show result modal, DON'T close
+                }
+            }
+        );
+    };
+
+    const handleResultClose = () => {
+        setResult(null);
+        closeModal?.(); // now fully close
     };
 
     const renderHeader = () => (
         <>
-            <h4 className="modal-title">
-                {showModal?.id ? 'Edit OutScan to Courier' : 'Add Out Scan to Courier'}
-            </h4>
+            <h4 className="modal-title">Add OutScan to Courier</h4>
             <button
                 type="button"
-                class="btn-close"
+                className="btn-close"
                 data-bs-dismiss="modal"
                 aria-label="Close"
                 onClick={closeModal}
@@ -74,19 +82,19 @@ export default function AddEditModal({ showModal, closeModal, onRefreshOTC }) {
                 <div className="row">
                     <div className="col-12">
                         <div className="form-group">
-                            <label htmlFor="applicationNumber" className="form-label">
-                                Application Number<span className="text-danger">*</span>
+                            <label htmlFor="applicationNumbers" className="form-label">
+                                Application Numbers [ Each Number should be in new line ]<span className="text-danger">*</span>
                             </label>
-                            <input
-                                type="text"
-                                id="applicationNumber"
+                            <textarea
+                                id="applicationNumbers"
                                 className="form-control"
+                                placeholder="Enter one Application Number per line"
                                 autoComplete="off"
-                                maxLength={20}
-                                {...register('applicationNumber')}
+                                {...register('applicationNumbers')}
+                                style={{ minHeight: '120px' }}
                             />
-                            {errors.applicationNumber && (
-                                <span className="error">{errors.applicationNumber.message}</span>
+                            {errors.applicationNumbers && (
+                                <span className="error">{errors.applicationNumbers.message}</span>
                             )}
                         </div>
                     </div>
@@ -98,31 +106,43 @@ export default function AddEditModal({ showModal, closeModal, onRefreshOTC }) {
     const renderFooter = () => (
         <>
             <div className="modal-footer bottom-btn-sec">
-                <button type="button" className="btn btn-cancel" onClick={closeModal}>
+                <button type="button" className="btn btn-cancel" onClick={closeModal} disabled={isLoadingPost}>
                     Cancel
                 </button>
                 <button
                     type="submit"
                     className="btn btn-submit"
-                    disabled={isLoading}
+                    disabled={isLoadingPost}
                     onClick={handleSubmit(onSubmit)}
                 >
-                    {isLoading ? 'Loading...' : 'Save'}
+                    {isLoadingPost ? 'Loading...' : 'Save'}
                 </button>
             </div>
         </>
     );
 
     return (
-        <CustomModal
-            className="modal fade category-mgmt-modal show"
-            dialgName="modal-dialog-scrollable"
-            show={!!showModal}
-            closeModal={closeModal}
-            body={renderBody()}
-            header={renderHeader()}
-            footer={renderFooter()}
-            isLoading={false}
-        />
+
+        <>
+            <CustomModal
+                className="modal fade category-mgmt-modal show"
+                dialgName="modal-dialog-scrollable"
+                show={!!showModal && !result}
+                closeModal={closeModal}
+                body={renderBody()}
+                header={renderHeader()}
+                footer={renderFooter()}
+                isLoading={false}
+            />
+
+            <BulkResultModal
+                show={!!result}
+                closeModal={handleResultClose}
+                title="Visa OutScan To Courier Result"
+                status={result?.status}
+                message={result?.message}
+                data={result?.data}
+            />
+        </>
     );
 }

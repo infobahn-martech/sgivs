@@ -1,14 +1,16 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import CustomModal from '../../components/common/CustomModal';
+import BulkResultModal from '../../components/common/BulkResultModal';
 import useVisaOTSReducer from '../../stores/VisaOTSReducer';
 
 // Updated schema with isEZPass as a boolean
 const nameSchema = z.object({
     applicationNumbers: z
         .string()
+        .trim()
         .nonempty('At least one Application Number is required'),
 });
 
@@ -26,25 +28,39 @@ export default function AddEditModal({ showModal, closeModal, onRefreshOTS }) {
         },
     });
 
-    const { bulkOTS, isLoadingPost } = useVisaOTSReducer((state) => state);
+    const { bulkStatusChange, isLoadingPost } = useVisaOTSReducer((state) => state);
+
+    const [result, setResult] = useState(null);
+
+    useEffect(() => {
+        if (showModal) {
+            reset({ applicationNumbers: '' });
+        }
+    }, [showModal, reset]);
 
     const onSubmit = (data) => {
-        const reference_nos = data.applicationNumbers
+        const application_numbers = data.applicationNumbers
             .split('\n')
-            .map(v => v.trim())
-            .filter(Boolean);
-        const employeeId = localStorage.getItem('employee_id');
-        const payload = {
-            reference_nos,
-            employee_id: employeeId,
-        };
+            .map((x) => x.trim())
+            .filter(Boolean)
+            .join('\n');
 
-        bulkOTS(payload, (res) => {
-            if (!res) return;
+        const employee_id = localStorage.getItem('employee_id');
 
-            onRefreshOTS();
-            closeModal();
-        });
+        bulkStatusChange(
+            { status_id: 10, employee_id: Number(employee_id), application_numbers },
+            (body) => {
+                if (body) {
+                    onRefreshOTS?.();
+                    setResult(body);   // show result modal, DON'T close
+                }
+            }
+        );
+    };
+
+    const handleResultClose = () => {
+        setResult(null);
+        closeModal?.(); // now fully close
     };
 
     const renderHeader = () => (
@@ -52,7 +68,7 @@ export default function AddEditModal({ showModal, closeModal, onRefreshOTS }) {
             <h4 className="modal-title">Add Visa OutScan to Spoke</h4>
             <button
                 type="button"
-                class="btn-close"
+                className="btn-close"
                 data-bs-dismiss="modal"
                 aria-label="Close"
                 onClick={closeModal}
@@ -90,7 +106,7 @@ export default function AddEditModal({ showModal, closeModal, onRefreshOTS }) {
     const renderFooter = () => (
         <>
             <div className="modal-footer bottom-btn-sec">
-                <button type="button" className="btn btn-cancel" onClick={closeModal}>
+                <button type="button" className="btn btn-cancel" onClick={closeModal} disabled={isLoadingPost}>
                     Cancel
                 </button>
                 <button
@@ -106,15 +122,26 @@ export default function AddEditModal({ showModal, closeModal, onRefreshOTS }) {
     );
 
     return (
-        <CustomModal
-            className="modal fade category-mgmt-modal show"
-            dialgName="modal-dialog-scrollable"
-            show={!!showModal}
-            closeModal={closeModal}
-            body={renderBody()}
-            header={renderHeader()}
-            footer={renderFooter()}
-            isLoading={false}
-        />
+        <>
+            <CustomModal
+                className="modal fade category-mgmt-modal show"
+                dialgName="modal-dialog-scrollable"
+                show={!!showModal && !result}
+                closeModal={closeModal}
+                body={renderBody()}
+                header={renderHeader()}
+                footer={renderFooter()}
+                isLoading={false}
+            />
+
+            <BulkResultModal
+                show={!!result}
+                closeModal={handleResultClose}
+                title="Visa OutScan To Spoke Result"
+                status={result?.status}
+                message={result?.message}
+                data={result?.data}
+            />
+        </>
     );
 }

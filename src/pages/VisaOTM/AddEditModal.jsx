@@ -1,12 +1,13 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import CustomModal from '../../components/common/CustomModal';
+import BulkResultModal from '../../components/common/BulkResultModal';
 import useVisaOTMReducer from '../../stores/VisaOTMReducer';
 
 const nameSchema = z.object({
-    application_numbers: z
+    applicationNumbers: z
         .string()
         .trim()
         .nonempty('At least one Application Number is required'),
@@ -20,28 +21,42 @@ export default function AddEditModal({ showModal, closeModal, onRefreshOTM }) {
         reset,
     } = useForm({
         resolver: zodResolver(nameSchema),
-        defaultValues: { application_numbers: '' },
+        defaultValues: { applicationNumbers: '' },
     });
 
-    const { postData, isLoading } = useVisaOTMReducer((state) => state);
+    const { bulkStatusChange, isLoadingPost } = useVisaOTMReducer((state) => state);
+
+    const [result, setResult] = useState(null);
 
     useEffect(() => {
         if (showModal) {
-            reset({ application_numbers: '' });
+            reset({ applicationNumbers: '' });
         }
     }, [showModal, reset]);
 
-    const onSubmit = (values) => {
-        const application_numbers = values.application_numbers
+    const onSubmit = (data) => {
+        const application_numbers = data.applicationNumbers
             .split('\n')
             .map((x) => x.trim())
             .filter(Boolean)
             .join('\n');
 
-        postData({ application_numbers }, () => {
-            onRefreshOTM?.();
-            closeModal?.();
-        });
+        const employee_id = localStorage.getItem('employee_id');
+
+        bulkStatusChange(
+            { status_id: 28, employee_id: Number(employee_id), application_numbers },
+            (body) => {
+                if (body) {
+                    onRefreshOTM?.();
+                    setResult(body);   // show result modal, DON'T close
+                }
+            }
+        );
+    };
+
+    const handleResultClose = () => {
+        setResult(null);
+        closeModal?.(); // now fully close
     };
 
     const renderHeader = () => (
@@ -61,18 +76,18 @@ export default function AddEditModal({ showModal, closeModal, onRefreshOTM }) {
             <div className="row">
                 <div className="col-12">
                     <div className="form-group">
-                        <label htmlFor="application_numbers" className="form-label">
+                        <label htmlFor="applicationNumbers" className="form-label">
                             Application Numbers [ Each Number should be in new line ] <span className="text-danger">*</span>
                         </label>
                         <textarea
-                            id="application_numbers"
+                            id="applicationNumbers"
                             className="form-control"
                             placeholder="Enter one Application Number per line"
-                            {...register('application_numbers')}
+                            {...register('applicationNumbers')}
                             style={{ minHeight: '120px' }}
                         />
-                        {errors.application_numbers && (
-                            <span className="error">{errors.application_numbers.message}</span>
+                        {errors.applicationNumbers && (
+                            <span className="error">{errors.applicationNumbers.message}</span>
                         )}
                     </div>
                 </div>
@@ -82,25 +97,36 @@ export default function AddEditModal({ showModal, closeModal, onRefreshOTM }) {
 
     const renderFooter = () => (
         <div className="modal-footer bottom-btn-sec">
-            <button type="button" className="btn btn-cancel" onClick={closeModal} disabled={isLoading}>
+            <button type="button" className="btn btn-cancel" onClick={closeModal} disabled={isLoadingPost}>
                 Cancel
             </button>
-            <button type="button" className="btn btn-submit" disabled={isLoading} onClick={handleSubmit(onSubmit)}>
-                {isLoading ? 'Loading...' : 'Save'}
+            <button type="button" className="btn btn-submit" disabled={isLoadingPost} onClick={handleSubmit(onSubmit)}>
+                {isLoadingPost ? 'Loading...' : 'Save'}
             </button>
         </div>
     );
 
     return (
-        <CustomModal
-            className="modal fade category-mgmt-modal show"
-            dialgName="modal-dialog-scrollable"
-            show={!!showModal}
-            closeModal={closeModal}
-            body={renderBody()}
-            header={renderHeader()}
-            footer={renderFooter()}
-            isLoading={false}
-        />
+        <>
+            <CustomModal
+                className="modal fade category-mgmt-modal show"
+                dialgName="modal-dialog-scrollable"
+                show={!!showModal && !result}
+                closeModal={closeModal}
+                body={renderBody()}
+                header={renderHeader()}
+                footer={renderFooter()}
+                isLoading={false}
+            />
+
+            <BulkResultModal
+                show={!!result}
+                closeModal={handleResultClose}
+                title="Visa OutScan To Mission Result"
+                status={result?.status}
+                message={result?.message}
+                data={result?.data}
+            />
+        </>
     );
 }

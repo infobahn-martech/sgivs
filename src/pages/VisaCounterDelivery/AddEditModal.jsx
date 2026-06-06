@@ -1,9 +1,10 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import CustomModal from '../../components/common/CustomModal';
-import useCounterDeliveryReducer from '../../stores/CounterDeliveryReducer';
+import BulkResultModal from '../../components/common/BulkResultModal';
+import useVisaCounterDeliveryReducer from '../../stores/VisaCounterDeliveryReducer';
 
 const collectedByOptions = [
     { value: 'MY_SELF', label: 'My self' },
@@ -13,18 +14,15 @@ const collectedByOptions = [
 const schema = z.object({
     applicationNumbers: z
         .string()
-        .nonempty('Application Numbers is required')
-        .max(2000, 'Application Numbers is too long'),
+        .trim()
+        .nonempty('At least one Application Number is required'),
+        
     collectedBy: z.enum(['MY_SELF', 'OTHER_PERSON'], {
         required_error: 'Collected By is required',
     }),
 });
 
-export default function AddEditModal({
-    showModal,
-    closeModal,
-    onRefreshCounterDelivery,
-}) {
+export default function AddEditModal({ showModal, closeModal, onRefreshCounterDelivery, }) {
     const {
         register,
         handleSubmit,
@@ -39,38 +37,44 @@ export default function AddEditModal({
         },
     });
 
-    const { postData, patchData, isLoading } = useCounterDeliveryReducer(
-        (state) => state
-    );
+    const { bulkStatusChange, isLoadingPost } = useVisaCounterDeliveryReducer((state) => state);
 
-    // Prefill when editing
+    const [result, setResult] = useState(null);
+
     useEffect(() => {
-        if (showModal?.id) {
-            setValue('applicationNumbers', showModal?.applicationNumbers || '');
-            setValue('collectedBy', showModal?.collectedBy || 'MY_SELF');
-        } else {
-            reset();
+        if (showModal) {
+            reset({ applicationNumbers: '' });
         }
-    }, [showModal?.id, reset, setValue]);
+    }, [showModal, reset]);
 
     const onSubmit = (data) => {
-        if (showModal?.id) {
-            patchData({ id: showModal.id, ...data }, () => {
-                onRefreshCounterDelivery();
-            });
-        } else {
-            postData(data, () => {
-                onRefreshCounterDelivery();
-            });
-        }
-        closeModal();
+        const application_numbers = data.applicationNumbers
+            .split('\n')
+            .map((x) => x.trim())
+            .filter(Boolean)
+            .join('\n');
+
+        const employee_id = localStorage.getItem('employee_id');
+
+        bulkStatusChange(
+            { status_id: 13, employee_id: Number(employee_id), application_numbers },
+            (body) => {
+                if (body) {
+                    onRefreshCounterDelivery?.();
+                    setResult(body);   // show result modal, DON'T close
+                }
+            }
+        );
+    };
+
+    const handleResultClose = () => {
+        setResult(null);
+        closeModal?.(); // now fully close
     };
 
     const renderHeader = () => (
         <>
-            <h4 className="modal-title">
-                {showModal?.id ? 'Edit Counter Delivery' : 'Add Counter Delivery'}
-            </h4>
+            <h4 className="modal-title">Add Visa Counter Delivery</h4>
             <button
                 type="button"
                 className="btn-close"
@@ -84,29 +88,25 @@ export default function AddEditModal({
     const renderBody = () => (
         <div className="modal-body custom-scroll">
             <div className="row">
-                {/* Application Numbers */}
                 <div className="col-12">
                     <div className="form-group">
                         <label htmlFor="applicationNumbers" className="form-label">
-                            Application Numbers <span className="text-danger">*</span>
+                            Application Numbers [ Each Number should be in new line ] <span className="text-danger">*</span>
                         </label>
                         <textarea
                             id="applicationNumbers"
                             className="form-control"
-                            rows={4}
-                            placeholder={'Enter application numbers (one per line)'}
+                            placeholder="Enter one Application Number per line"
                             autoComplete="off"
-                            maxLength={2000}
                             {...register('applicationNumbers')}
+                            style={{ minHeight: '120px' }}
                         />
                         {errors.applicationNumbers && (
                             <span className="error">{errors.applicationNumbers.message}</span>
                         )}
-
                     </div>
                 </div>
 
-                {/* Collected By */}
                 <div className="col-12 mt-2">
                     <div className="form-group">
                         <label htmlFor="collectedBy" className="form-label">
@@ -134,30 +134,41 @@ export default function AddEditModal({
 
     const renderFooter = () => (
         <div className="modal-footer bottom-btn-sec">
-            <button type="button" className="btn btn-cancel" onClick={closeModal}>
+            <button type="button" className="btn btn-cancel" onClick={closeModal} disabled={isLoadingPost}>
                 Cancel
             </button>
             <button
                 type="submit"
                 className="btn btn-submit"
-                disabled={isLoading}
+                disabled={isLoadingPost}
                 onClick={handleSubmit(onSubmit)}
             >
-                {isLoading ? 'Loading...' : 'Save'}
+                {isLoadingPost ? 'Loading...' : 'Save'}
             </button>
         </div>
     );
 
     return (
-        <CustomModal
-            className="modal fade counter-delivery-modal show"
-            dialgName="modal-dialog-scrollable"
-            show={!!showModal}
-            closeModal={closeModal}
-            body={renderBody()}
-            header={renderHeader()}
-            footer={renderFooter()}
-            isLoading={false}
-        />
+        <>
+            <CustomModal
+                className="modal fade counter-delivery-modal show"
+                dialgName="modal-dialog-scrollable"
+                show={!!showModal && !result}
+                closeModal={closeModal}
+                body={renderBody()}
+                header={renderHeader()}
+                footer={renderFooter()}
+                isLoading={false}
+            />
+
+            <BulkResultModal
+                show={!!result}
+                closeModal={handleResultClose}
+                title="Visa Counter Delivery Result"
+                status={result?.status}
+                message={result?.message}
+                data={result?.data}
+            />
+        </>
     );
 }
