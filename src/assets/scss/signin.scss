@@ -18,9 +18,11 @@
     flex-direction: column;
     padding: 20px 30px;
 
-    background: radial-gradient(1200px 800px at 80% 20%, rgba(44, 160, 218, 0.10), transparent 60%),
-        radial-gradient(900px 600px at 15% 85%, rgba(5, 26, 83, 0.10), transparent 55%),
-        #ffffff;
+    // background: radial-gradient(1200px 800px at 80% 20%, rgba(44, 160, 218, 0.10), transparent 60%),
+    //     radial-gradient(900px 600px at 15% 85%, rgba(5, 26, 83, 0.10), transparent 55%),
+    //     #ffffff;
+    background:radial-gradient(1200px 800px at 80% 20%, rgb(10 118 173 / 38%), #00000033 60%),
+     radial-gradient(900px 600px at 15% 85%, rgb(0 21 78 / 0%), transparent 55%), #ffffff;
 
     @media ($sm-1679) {
         padding: 20px 28px;
@@ -289,11 +291,11 @@
                         position: relative;
 
                         .error {
-                            position: absolute;
-                            bottom: -18px;
-                            left: 18px;
-                            font-size: 12px;
-                            font-weight: 700;
+                            // position: absolute;
+                            // left: 18px;
+                            // font-size: 12px;
+                            // font-weight: 700;
+                            bottom: -12px;
                             color: #d0342c;
                         }
                     }
@@ -308,8 +310,8 @@
 
                     /* ✅ inputs - compact */
                     .form-control {
-                        border-radius: 999px;
-                        height: 42px;
+                        border-radius: 10px;
+                        height: 44px;
                         padding: 0 22px;
 
                         background: #ffffff;

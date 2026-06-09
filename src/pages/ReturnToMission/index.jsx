@@ -249,6 +249,11 @@ const ReturnToMission = () => {
   return (
     <>
       <CommonHeader
+        addButton={{
+          name: 'Add Item',
+          type: 'button',
+          action: () => setModal(true),
+        }}
         hideFilter
         onSearch={debouncedSearch}
         submitFilter={(filters) => {

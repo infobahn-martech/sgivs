@@ -46,7 +46,6 @@ const useVisaDigitizationReducer = create((set) => ({
     try {
       set({ isLoadingGet: true });
       const { data } = await visaDigitizationService.getData(params);
-      debugger
       const datas = data;
       set({
         visaDigitizationData: datas?.data,

@@ -10,8 +10,8 @@ import useInScanReducer from '../../stores/InScanReducer';
 import { formatDate } from '../../config/config';
 import AddEditModal from './AddEditModal';
 
-
 const InScan = () => {
+  
   const { getData, inScanData, isLoadingGet } = useInScanReducer((state) => state);
 
   const initialParams = {

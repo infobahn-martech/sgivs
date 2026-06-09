@@ -41,7 +41,6 @@ export function AddEditModal({ showModal, closeModal, onRefreshRole }) {
   }, [showModal?.employee_role_id]);
 
   const onSubmit = (data) => {
-    debugger
     const onSuccess = () => {
       onRefreshRole();
       closeModal();

@@ -13,13 +13,14 @@ import useReturnFromMissionReducer from '../../stores/ReturnFromMissionReducer';
 import { formatDate } from '../../config/config';
 import { debounce } from 'lodash';
 import CustomActionModal from '../../components/common/CustomActionModal';
+import AddEditModal from './AddEditModal';
 
 const ReturnFromMission = () => {
 
-  const { getData, returnFromMissionData, isLoadingGet, deleteData, isLoadingDelete } =
-    useReturnFromMissionReducer((state) => state);
-
-  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const { 
+    getData, returnFromMissionData, isLoadingGet, 
+    deleteData, isLoadingDelete 
+  } = useReturnFromMissionReducer((state) => state);
 
   const initialParams = {
     search: '',
@@ -33,13 +34,15 @@ const ReturnFromMission = () => {
   };
 
   const [params, setParams] = useState(initialParams);
+  const [addEditModal, setAddEditModal] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
 
   const onRefreshReturnFromMission = () => {
     getData(params);
+    setAddEditModal(false);
     setDeleteModalOpen(false);
   };
 
-  // ✅ Call API only if not mock
   useEffect(() => {
     getData(params);
   }, [params]);
@@ -123,7 +126,9 @@ const ReturnFromMission = () => {
         addButton={{
           name: 'Add Item',
           type: 'button',
-          action: () => setModal(true),
+          action: () => {
+            setAddEditModal(true);
+          },
         }}
         hideFilter
         onSearch={debouncedSearch}
@@ -154,6 +159,14 @@ const ReturnFromMission = () => {
         onSortChange={handleSortChange}
         wrapClasses="inventory-table-wrap"
       />
+
+      {addEditModal && (
+        <AddEditModal
+          showModal={addEditModal}
+          closeModal={() => setAddEditModal(false)}
+          onRefreshRFM={() => getData(params)}
+        />
+      )}
 
       {deleteModalOpen && (
         <CustomActionModal

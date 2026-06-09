@@ -8,7 +8,7 @@ const doLoginValidate = (username, password, center_id, counter_id) =>
 const logout = () => Gateway.post('users/logout');
 
 // The rest can stay same if backend uses session for auth checking
-const forgotPassword = (email) => Gateway.post('auth/forgot-password', { email });
+const forgotPassword = (email_address) => Gateway.post('employee/reset_password', { email_address });
 
 const restPassword = (token, password, confirmPassword) =>
   Gateway.post('auth/reset-password', { token, password, confirmPassword });
