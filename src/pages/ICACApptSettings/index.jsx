@@ -315,11 +315,11 @@ const ICACApptSettings = () => {
   return (
     <>
       <CommonHeader
-        // addButton={{
-        //   name: 'Add Item',
-        //   type: 'button',
-        //   action: () => setModal(true),
-        // }}
+        addButton={{
+          name: 'Add Item',
+          type: 'button',
+          action: () => setModal(true),
+        }}
         hideFilter
         submitFilter={(filters) => {
           const { fromDate, toDate, ...rest } = filters;

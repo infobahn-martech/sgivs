@@ -37,43 +37,36 @@ function ReceiptContent({ data }) {
 
     const arnNumber = data.arn_number || '—';
 
-    const applicantName =
-        data.applicant_name ||
-        [data.first_name, data.last_name].filter(Boolean).join(' ') ||
-        '—';
+    const applicantName = [data.first_name, data.last_name].filter(Boolean).join(' ') || '—';
 
-    
-    const counterUser = data.created_by || data.counter_user || '—';
+
+    const counterUser = data.created_by || '—';
     const printedOn = moment().format('DD/MM/YYYY, HH:mm');
     const applicationDate = data.created_on
         ? moment(data.created_on).format('DD/MM/YYYY, HH:mm')
         : printedOn;
-    const phone = data.contact_no || data.applicant_phone || data.phone || '—';
+    const phone = data.contact_no || '—';
     const passportNo = data.passport_no || data.old_passport_no || '—';
-    const passportService =
-        data.service_name || data.passport_service || '—';
+    const passportService = data.service_name || '—';
 
-    const passportFee = data.govt_fee ?? data.passport_fee;
+    const passportFee = data.govt_fee;
     const icwfFee = data.icwf_fee;
-    const totalA = data.total_a ?? (passportFee != null && icwfFee != null
-        ? parseFloat(passportFee) + parseFloat(icwfFee)
-        : null);
-    const sgivsFee = data.sgv_service_fee ?? data.sgivs_service_fee ?? data.service_fee;
-    const totalB = data.total_b ?? sgivsFee;
-    const grandTotal = data.grand_total ?? data.total_amount ?? (totalA != null && totalB != null
-        ? parseFloat(totalA) + parseFloat(totalB)
-        : null);
-    const vatAmount = data.vat_amount ?? null;
-    const vatPercent = data.vat_percent ?? (vatAmount != null && totalB != null ? '5' : null);
+    const totalA = data.total_a;
+    const sgivsFee = data.sgv_service_fee;
+    const totalB = data.total_b;
+    const grandTotal = data.total_amount;
+    const vatAmount = data.vat_amount;
+    const vatPercent = data.vat_percent;
 
-    const paymentMode = data.payment_mode || data.card_type || '—';
-    const submissionMode = data.submission_mode || data.application_mode || 'Counter';
-    const deliveryDate =
-        data.delivery_date ||
-        'SUBJECT TO CLEARANCE FROM THE CONCERNED INDIAN GOVERNMENT AUTHORITIES';
-    const sgivsReceiptNo = data.sgivs_receipt_no || data.transactionID || data.reference_no || arnNumber;
+    const paymentMode = data.payment_mode || '—';
+    const submissionMode =
+        data.courier_type === '1' || data.courier_type === 1
+            ? 'Courier'
+            : 'Counter';
+    const deliveryDate = 'SUBJECT TO CLEARANCE FROM THE CONCERNED INDIAN GOVERNMENT AUTHORITIES';
+    const sgivsReceiptNo = data.appointment_ref_no || '—';
     const trackUrl = data.track_url || 'sgivsglobal-oman.com';
-    const email = data.email || data.email_address || 'info@sgivsglobal-oman.com';
+    const email = data.email_address || '—';
 
     const barcodeValue = arnNumber;
     const sgivsBarcodeValue = sgivsReceiptNo;
@@ -165,7 +158,7 @@ function ReceiptContent({ data }) {
             </div>
 
             <div className="receipt-title">Fee Receipt</div>
-           
+
             <div className="barcode-section">
                 <Barcode value={barcodeValue} />
                 <div className="barcode-value">{arnNumber}</div>

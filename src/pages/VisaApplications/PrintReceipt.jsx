@@ -32,49 +32,38 @@ function formatOMR(val) {
 
 function ReceiptContent({ data }) {
     if (!data || typeof data !== 'object') return null;
-debugger
-    const applicantName =
-        data.applicant_name ||
-        data.name ||
-        [data.first_name, data.last_name].filter(Boolean).join(' ') ||
-        '—';
-    const centerName = data.center_name || data.center || data.mission_name || 'India Consular Application Center';
-    const vatin = data.vatin || data.vat_number || '—';
-    const arnNumber = data.arn_number || data.arn || data.reference_no || data.referenceNo || '—';
-    const embassyArn = data.embassy_arn || arnNumber;
-    const counterUser = data.created_by || data.counter_user || '—';
+    const applicantName = data.applicant_name || '—';
+    const centerName = data.header?.center_name || 'India Consular Application Center';
+    const vatin = data.header?.vatin || '—';
+    const arnNumber = data.arn_number || '—';
+    const embassyArn = data.arn_number || '—';
+    const counterUser = data.counter_user || '—';
     const printedOn = moment().format('DD/MM/YYYY, HH:mm');
-    const applicationDate = data.created_on
-        ? moment(data.created_on).format('DD/MM/YYYY, HH:mm')
-        : printedOn;
-    const phone = data.contact_no || data.applicant_phone || data.phone || '—';
-    const passportNo = data.passport_no || data.passportNo || data.old_passport_no || '—';
-    const serviceName = data.service_name || data.serviceName || data.visa_service || '—';
+    const applicationDate = data.application_date
+        ? moment(data.application_date).format('DD/MM/YYYY, HH:mm')
+        : '—';
+    const phone = data.applicant_phone_no || '—';
+    const passportNo = data.passport_no || '—';
+    const serviceName = data.visa_service || '—';
 
-    const visaFee = data.govt_fee ?? data.visa_fee;
+    const visaFee = data.visa_fee;
     const icwfFee = data.icwf_fee;
-    const totalA = data.total_a ?? (visaFee != null && icwfFee != null
-        ? parseFloat(visaFee) + parseFloat(icwfFee)
-        : null);
-    const sgivsFee = data.sgv_service_fee ?? data.sgivs_service_fee ?? data.service_fee;
-    const totalB = data.total_b ?? sgivsFee;
-    const grandTotal = data.grand_total ?? data.total_amount ?? (totalA != null && totalB != null
-        ? parseFloat(totalA) + parseFloat(totalB)
-        : null);
+    const totalA = data.total_a;
+    const sgivsFee = data.sgivs_service_fee;
+    const totalB = data.total_b;
+    const grandTotal = data.grand_total;
     const vatAmount = data.vat_amount ?? null;
-    const vatPercent = data.vat_percent ?? (vatAmount != null && totalB != null ? '5' : null);
+    const vatPercent = data.vat_percent;
 
-    const paymentMode = data.payment_mode || data.card_type || '—';
-    const submissionMode = data.submission_mode || data.application_mode || 'Counter';
-    const deliveryDate =
-        data.delivery_date ||
-        'SUBJECT TO CLEARANCE FROM THE CONCERNED INDIAN GOVERNMENT AUTHORITIES';
-    const sgivsReceiptNo = data.sgivs_receipt_no || data.transactionID || data.reference_no || data.referenceNo || arnNumber;
-    const trackUrl = data.track_url || 'sgivsglobal-oman.com';
+    const paymentMode = data.payment_mode || '—';
+    const submissionMode = data.submission_mode || '—';
+    const deliveryDate = data.delivery_date_note || '—';
+    const sgivsReceiptNo = data.receipt_barcode?.value || '—';
+    const trackUrl = data.tracking_text || '—';
     const email = data.email || data.email_address || 'info@sgivsglobal-oman.com';
 
-    const barcodeValue = data.barcode_value || arnNumber;
-    const sgivsBarcodeValue = data.sgivs_barcode_value || sgivsReceiptNo;
+    const barcodeValue = data.barcode?.value || arnNumber;
+    const sgivsBarcodeValue = data.receipt_barcode?.value || sgivsReceiptNo;
 
     return (
         <div className="fee-receipt" id="fee-receipt-print-visa">
@@ -245,7 +234,7 @@ debugger
             </table>
 
             <div style={{ marginTop: 12, fontSize: 12 }}>
-                <div>Please Track status your application: {trackUrl}</div>
+                <div>{trackUrl}</div>
                 <div>Email: {email}</div>
             </div>
 

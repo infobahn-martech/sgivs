@@ -26,6 +26,7 @@ const VisaApplications = () => {
   const {
     getVisaApplications, visaApplicationsData, isLoadingGet, pagination,
     deleteVisaApplication, isLoadingDelete,
+    getVisaStatuses, visaStatusData, isMetaLoading,
   } = useVisaApplicationReducer((state) => state);
 
   const {
@@ -61,6 +62,7 @@ const VisaApplications = () => {
 
   useEffect(() => {
     getCountries();
+    getVisaStatuses();
   }, []);
 
   const countryOptions = useMemo(
@@ -71,6 +73,15 @@ const VisaApplications = () => {
       })),
     [countryList]
   );
+
+  const statusOptions = useMemo(
+      () =>
+        (visaStatusData || []).map((item) => ({
+          label: item.status,
+          value: item.status_id,
+        })),
+      [visaStatusData]
+    );
 
   const missionOptions = useMemo(
     () =>
@@ -270,6 +281,13 @@ const VisaApplications = () => {
       fieldType: 'select',
       Options: centerOptions,
       isLoading: isLoadingCenters,
+    },
+    {
+      fieldName: 'Status',
+      BE_keyName: 'status_id',
+      fieldType: 'select',
+      Options: statusOptions,
+      isLoading: isMetaLoading,
     },
     {
       fieldName: 'Date Range',
