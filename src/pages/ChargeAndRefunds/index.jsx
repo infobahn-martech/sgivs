@@ -3,9 +3,7 @@ import { Tooltip } from 'react-tooltip';
 import moment from 'moment';
 
 import '../../assets/scss/usermanagement.scss';
-
-import deleteIcon from '../../assets/images/delete.svg';
-import editIcon from '../../assets/images/edit.svg';
+import printIcon from '../../assets/images/print.svg';
 
 import CommonHeader from '../../components/common/CommonHeader';
 import CustomTable from '../../components/common/CustomTable';
@@ -13,26 +11,28 @@ import useChargeAndRefundsReducer from '../../stores/ChargeAndRefundsReducer';
 import { formatDate } from '../../config/config';
 import { debounce } from 'lodash';
 import CustomActionModal from '../../components/common/CustomActionModal';
+import PrintReceiptModal from './PrintReceipt';
 
 const ChargeAndRefunds = () => {
 
-  const { getData, chargeAndRefundsData, isLoadingGet, deleteData, isLoadingDelete } =
-    useChargeAndRefundsReducer((state) => state);
+  const { 
+    getData, chargeAndRefundsData, isLoadingGet, pagination,
+    getReceipt, isLoadingReceipt
+   } = useChargeAndRefundsReducer((state) => state);
 
-  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [printReceiptModal, setPrintReceiptModal] = useState(false);
 
   const initialParams = {
     page: 1,
     limit: 10,
-    sort_by: 'created_at', 
-    sort_order: 'DESC',
+    sortBy: 'created_at',
+    sortOrder: 'DESC',
   };
 
   const [params, setParams] = useState(initialParams);
 
   const onRefreshChargeAndRefunds = () => {
     getData(params);
-    setDeleteModalOpen(false);
   };
 
   useEffect(() => {
@@ -42,77 +42,77 @@ const ChargeAndRefunds = () => {
   const handleSortChange = (selector) => {
     setParams((prev) => ({
       ...prev,
-      sort_by: selector,
-      sort_order: prev.sort_order === 'ASC' ? 'DESC' : 'ASC',
+      sortBy: selector,
+      sortOrder: prev.sortOrder === 'ASC' ? 'DESC' : 'ASC',
     }));
   };
-
-  // const renderAction = (row) => {
-  //   return (
-  //     <>
-  //       <Tooltip id="edit" place="bottom" content="Edit" style={{ backgroundColor: '#051a53' }} />
-  //       <Tooltip id="delete" place="bottom" content="Delete" style={{ backgroundColor: '#051a53' }} />
-
-  //       <img src={editIcon} alt="edit" data-tooltip-id="edit" />
-
-  //       <img
-  //         src={deleteIcon}
-  //         alt="delete"
-  //         data-tooltip-id="delete"
-  //         onClick={() => setDeleteModalOpen(row)}
-  //       />
-  //     </>
-  //   );
-  // };
 
   const columns = [
     {
       name: 'Reference No',
-      selector: 'referenceNo',
+      selector: 'reference_no',
+      sort: true,
     },
     {
       name: 'Application Type',
-      selector: 'applicationType',
+      selector: 'application_type',
+      sort: true,
     },
     {
       name: 'Name',
-      selector: 'name',
+      selector: 'applicant_name',
+      sort: true,
     },
     {
       name: 'Service',
       selector: 'service',
+      sort: true,
     },
     {
       name: 'Amount',
       selector: 'amount',
       cell: (row) => <span>{row?.amount ?? '-'}</span>,
+      sort: true,
     },
     {
       name: 'Payment Mode',
-      selector: 'paymentMode',
+      selector: 'payment_mode',
+      sort: true,
     },
     {
       name: 'Transaction Type',
-      selector: 'transactionType',
+      selector: 'transaction_type',
+      sort: true,
     },
     {
       name: 'On / By',
-      selector: 'onBy',
-      cell: (row) => <span>{row?.onBy ? formatDate(row?.onBy) : '-'}</span>,
+      selector: 'transaction_date',
+      cell: (row) => (
+        <div className="d-flex flex-column">
+          <span>{row?.transaction_date ?? '-'}</span>
+          <small class="text-muted">{row?.processed_by ?? '-'}</small>
+        </div>
+      ),
+      sort: true,
     },
-    // {
-    //   name: 'Action',
-    //   contentClass: 'action-wrap',
-    //   disableViewClick: true,
-    //   thclass: 'actions-edit employee-actn-edit',
-    //   cell: (row) => (
-    //     <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-    //       <span style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-    //         {renderAction(row)}
-    //       </span>
-    //     </div>
-    //   ),
-    // },
+    {
+      name: 'Action',
+      contentClass: 'action-wrap',
+      disableViewClick: true,
+      thclass: 'actions-edit employee-actn-edit',
+      cell: (row) => (
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <Tooltip id="print-receipt" place="bottom" content="Print Receipt" style={{ backgroundColor: '#051a53' }} />
+          <img
+            src={printIcon}
+            alt="print"
+            data-tooltip-id="print-receipt"
+            style={{ cursor: 'pointer' }}
+            onClick={() => setPrintReceiptModal(row)}
+          />
+        </div>
+      ),
+    },
   ];
 
   // ✅ Stable debounce
@@ -128,13 +128,6 @@ const ChargeAndRefunds = () => {
     []
   );
 
-  const handleDelete = () => {
-    if (deleteModalOpen?.id) {
-      deleteData(deleteModalOpen?.id, () => {
-        onRefreshChargeAndRefunds();
-      });
-    }
-  };
 
   // ✅ Decide dataset
   const tableData = chargeAndRefundsData || [];
@@ -163,7 +156,7 @@ const ChargeAndRefunds = () => {
 
       <CustomTable
         pagination={{ currentPage: params.page, limit: params.limit }}
-        count={tableData?.total || 0}
+        count={pagination?.totalRows || 0}
         columns={columns}
         data={tableData}
         isLoading={loading}
@@ -173,18 +166,15 @@ const ChargeAndRefunds = () => {
         wrapClasses="inventory-table-wrap"
       />
 
-      {deleteModalOpen && (
-        <CustomActionModal
-          isDelete
-          isLoading={isLoadingDelete}
-          showModal={deleteModalOpen}
-          closeModal={() => setDeleteModalOpen(false)}
-          message={`Are you sure you want to delete this ${deleteModalOpen?.referenceNo || deleteModalOpen?.name || ''
-            }?`}
-          onCancel={() => setDeleteModalOpen(false)}
-          onSubmit={handleDelete}
+      {printReceiptModal && (
+        <PrintReceiptModal
+          showModal={printReceiptModal}
+          closeModal={() => setPrintReceiptModal(false)}
+          getReceipt={getReceipt}
+          isLoadingReceipt={isLoadingReceipt}
         />
       )}
+
     </>
   );
 };

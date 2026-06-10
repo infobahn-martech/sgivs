@@ -30,7 +30,7 @@ const Center = () => {
     limit: 10,
     fromDate: null,
     toDate: null,
-    sortBy: 'createdAt',
+    sort_by: 'createdAt',
     sortOrder: 'DESC',
   };
 
@@ -80,7 +80,7 @@ const Center = () => {
   const handleSortChange = (selector) => {
     setParams((prevParams) => ({
       ...prevParams,
-      sortBy: selector,
+      sort_by: selector,
       sortOrder: prevParams.sortOrder === 'ASC' ? 'DESC' : 'ASC',
     }));
   };

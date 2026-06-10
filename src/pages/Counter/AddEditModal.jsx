@@ -135,7 +135,6 @@ export function AddEditModal({ showModal, closeModal, onRefreshCounter }) {
                 setValue('center_id', selected?.value || '', { shouldValidate: true });
               }}
               placeholder={isLoadingGet ? 'Loading centers...' : 'Select Center'}
-              isDisabled={isLoadingGet}
               showIndicator={false}
               className="form-select form-control"
             />

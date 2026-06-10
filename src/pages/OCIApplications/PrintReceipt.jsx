@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import moment from 'moment';
 import JsBarcode from 'jsbarcode';
-import ociApplicationService from '../../services/OCIApplicationService';
+import chargeAndRefundsService from '../../services/chargeAndRefundsService';
 import useAlertReducer from '../../stores/AlertReducer';
 
 function Barcode({ value, options = {} }) {
@@ -68,7 +68,7 @@ function ReceiptContentOCI({ data }) {
     const sgivsBarcodeValue = receiptNo;
 
     return (
-        <div className="fee-receipt" id="fee-receipt-print-oci">
+        <div className="fee-receipt" id="fee-receipt-print-all">
 
             <style>{`
                 .fee-receipt {
@@ -297,7 +297,7 @@ export function PrintReceiptModal({ showModal, closeModal }) {
 
         const fetchReceipt = async () => {
             try {
-                const { data } = await ociApplicationService.getReceipt(id);
+                const { data } = await chargeAndRefundsService.getReceipt(id);
                 const payload = data?.data ?? data;
                 setReceiptData(payload);
             } catch (err) {
@@ -314,7 +314,7 @@ export function PrintReceiptModal({ showModal, closeModal }) {
         if (!receiptData || !showModal) return;
 
         const timer = setTimeout(() => {
-            const el = document.getElementById('fee-receipt-print-oci');
+            const el = document.getElementById('fee-receipt-print-all');
             if (!el) return;
 
             const w = window.open('', '_blank');
