@@ -6,6 +6,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import CustomModal from '../../components/common/CustomModal';
 import Phonenumber from '../../components/common/Phonenumber';
 
+import { CARD_VERIFICATION_CONTENT, CardNotificationModal } from '../../components/common/CardNotificationModal';
+
 import useVisaApplicationReducer from '../../stores/VisaApplicationReducer';
 import useAppointmentTypeReducer from '../../stores/AppointmentTypeReducer';
 import useApplicationModeReducer from '../../stores/ApplicationModeReducer';
@@ -430,6 +432,8 @@ export function AddEditModal({ showModal, closeModal, onRefreshVisaApplications,
   } = useServiceReducer((state) => state);
   const { getCountries, countryList, } = useUserReducer((state) => state);
   const { getData: getCourierTypes, courierTypeList, } = useCourierTypeReducer((state) => state);
+
+  const [showCardVerification, setShowCardVerification] = React.useState(false);
 
   useEffect(() => {
     getDataAppointmentType({});
@@ -1267,16 +1271,17 @@ export function AddEditModal({ showModal, closeModal, onRefreshVisaApplications,
             </label>
             <select
               className="form-control"
-              {...register('paymentMode')}
-              onChange={(e) => {
-                const val = e.target.value;
-                setValue('paymentMode', val, { shouldValidate: true });
-
-                if (String(val) !== String(CARD_PAYMENT_MODE_ID)) {
-                  setValue('cardType', '', { shouldValidate: true });
-                  setValue('transactionId', '', { shouldValidate: true });
+              {...register('paymentMode', {
+                onChange: (e) => {
+                  const val = e.target.value;
+                  if (String(val) === String(CARD_PAYMENT_MODE_ID)) {
+                    setShowCardVerification(true);
+                  } else {
+                    setValue('cardType', '', { shouldValidate: true });
+                    setValue('transactionId', '', { shouldValidate: true });
+                  }
                 }
-              }}
+              })}
             >
               <option value="">Select</option>
               {paymentModeOptions.map((o) => (
@@ -1335,16 +1340,27 @@ export function AddEditModal({ showModal, closeModal, onRefreshVisaApplications,
   );
 
   return (
-    <CustomModal
-      className="modal fade passport-application-modal show"
-      dialgName="modal-dialog-scrollable"
-      show={!!showModal}
-      closeModal={closeModal}
-      body={renderBody()}
-      header={renderHeader()}
-      footer={renderFooter()}
-      isLoading={isLoading}
-    />
+    <>
+      <CustomModal
+        className="modal fade passport-application-modal show"
+        dialgName="modal-dialog-scrollable"
+        show={!!showModal}
+        closeModal={closeModal}
+        body={renderBody()}
+        header={renderHeader()}
+        footer={renderFooter()}
+        isLoading={isLoading}
+      />
+
+      {showCardVerification && (
+        <CardNotificationModal
+          showModal={showCardVerification}
+          closeModal={() => setShowCardVerification(false)}
+          title="Card Type Verification"
+          content={CARD_VERIFICATION_CONTENT}
+        />
+      )}
+    </>
   );
 }
 

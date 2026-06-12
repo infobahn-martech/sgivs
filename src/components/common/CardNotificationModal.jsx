@@ -164,7 +164,7 @@ export const CARD_VERIFICATION_CONTENT = (
   </>
 );
 
-export function NotificationModal({ showModal, closeModal, title = 'Card Type Verification', content }) {
+export function CardNotificationModal({ showModal, closeModal, title = 'Card Type Verification', content }) {
   if (!showModal) return null;
 
   return createPortal(
@@ -273,4 +273,4 @@ export function NotificationModal({ showModal, closeModal, title = 'Card Type Ve
   );
 }
 
-export default NotificationModal;
+export default CardNotificationModal;

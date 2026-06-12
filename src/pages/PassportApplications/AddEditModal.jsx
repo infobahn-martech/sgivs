@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import CustomModal from '../../components/common/CustomModal';
 import Phonenumber from '../../components/common/Phonenumber';
 
-import { CARD_VERIFICATION_CONTENT, NotificationModal } from './NotificationModal';
+import { CARD_VERIFICATION_CONTENT, CardNotificationModal } from '../../components/common/CardNotificationModal';
 
 import usePassportApplicationReducer from '../../stores/PassportApplicationReducer';
 import useAppointmentTypeReducer from '../../stores/AppointmentTypeReducer';
@@ -1172,7 +1172,7 @@ export function AddEditModal({ showModal, closeModal, onRefreshPassportApplicati
       />
 
       {showCardVerification && (
-        <NotificationModal
+        <CardNotificationModal
           showModal={showCardVerification}
           closeModal={() => setShowCardVerification(false)}
           title="Card Type Verification"

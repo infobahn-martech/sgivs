@@ -6,6 +6,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import CustomModal from '../../components/common/CustomModal';
 import Phonenumber from '../../components/common/Phonenumber';
 
+import { CARD_VERIFICATION_CONTENT, CardNotificationModal } from '../../components/common/CardNotificationModal';
+
 import useAttestationApplicationReducer from '../../stores/AttestationApplicationReducer';
 import useAppointmentTypeReducer from '../../stores/AppointmentTypeReducer';
 import useApplicationModeReducer from '../../stores/ApplicationModeReducer';
@@ -223,6 +225,8 @@ export function AddEditModal({ showModal, closeModal, onRefreshAttestationApplic
     updateAttestationApplication, isUpdateAttestationApplicationLoading,
   } = useAttestationApplicationReducer((state) => state);
 
+  const [showCardVerification, setShowCardVerification] = React.useState(false);
+
   // ================= INIT LOAD =================
   useEffect(() => {
     fetchAppointmentTypes();
@@ -358,31 +362,31 @@ export function AddEditModal({ showModal, closeModal, onRefreshAttestationApplic
 
   // Clear card fields if switching away from Card
   useEffect(() => {
-    if (!isCardPayment && !isEditMode) { 
+    if (!isCardPayment && !isEditMode) {
       setValue('cardType', '', { shouldValidate: true });
       setValue('transactionId', '', { shouldValidate: true });
     }
   }, [isCardPayment, setValue]);
 
   // Dynamic fee calculation
-    const feeValues = useMemo(() => {
-      // ✅ EDIT MODE + NOT CHANGED → keep API fees (don’t override)
-      if (isEditMode && !serviceManuallyChanged) {
-        return null; // or keep previous API fee state externally
-      }
-  
-      const govtFees = Number(selectedService?.govt_fee || 0);
-      const icwfFees = Number(selectedService?.icwf_fee || 0);
-      const serviceFees = Number(selectedService?.service_fee || 0);
-  
-      return {
-        govtFees,
-        icwfFees,
-        serviceFees,
-        totalFees: govtFees + icwfFees + serviceFees,
-        onlinePaid: 0,
-      };
-    }, [selectedService, showModal?.attestation_application_id, serviceManuallyChanged]);
+  const feeValues = useMemo(() => {
+    // ✅ EDIT MODE + NOT CHANGED → keep API fees (don’t override)
+    if (isEditMode && !serviceManuallyChanged) {
+      return null; // or keep previous API fee state externally
+    }
+
+    const govtFees = Number(selectedService?.govt_fee || 0);
+    const icwfFees = Number(selectedService?.icwf_fee || 0);
+    const serviceFees = Number(selectedService?.service_fee || 0);
+
+    return {
+      govtFees,
+      icwfFees,
+      serviceFees,
+      totalFees: govtFees + icwfFees + serviceFees,
+      onlinePaid: 0,
+    };
+  }, [selectedService, showModal?.attestation_application_id, serviceManuallyChanged]);
 
   // Notify parent of fee values when Service Requested is selected (for FeeCalculator outside modal)
   useEffect(() => {
@@ -392,19 +396,19 @@ export function AddEditModal({ showModal, closeModal, onRefreshAttestationApplic
     if (showModal?.attestation_application_id && !serviceManuallyChanged) return;
 
 
-    if (serviceRequested) 
+    if (serviceRequested)
       onFeeValuesChange(feeValues);
     else
-       onFeeValuesChange(null);
-  }, [ serviceRequested, feeValues, onFeeValuesChange, showModal?.attestation_application_id, serviceManuallyChanged, ]);
+      onFeeValuesChange(null);
+  }, [serviceRequested, feeValues, onFeeValuesChange, showModal?.attestation_application_id, serviceManuallyChanged,]);
 
   // ================= EDIT PREFILL =================
 
   useEffect(() => {
-      if (!showModal?.attestation_application_id) return;
-  
-      getAttestationApplicationById(showModal.attestation_application_id);
-    }, [showModal?.attestation_application_id, getAttestationApplicationById]);
+    if (!showModal?.attestation_application_id) return;
+
+    getAttestationApplicationById(showModal.attestation_application_id);
+  }, [showModal?.attestation_application_id, getAttestationApplicationById]);
 
   // Prefill form when editing
   useEffect(() => {
@@ -1019,10 +1023,23 @@ export function AddEditModal({ showModal, closeModal, onRefreshAttestationApplic
             <label className="form-label">
               Payment Mode <span className="text-danger">*</span>
             </label>
-            <select className="form-control" {...register('paymentMode')}>
+            <select
+              className="form-control"
+              {...register('paymentMode', {
+                onChange: (e) => {
+                  const val = e.target.value;
+                  if (String(val) === String(CARD_PAYMENT_MODE_ID)) {
+                    setShowCardVerification(true);
+                  } else {
+                    setValue('cardType', '', { shouldValidate: true });
+                    setValue('transactionId', '', { shouldValidate: true });
+                  }
+                }
+              })}
+            >
               <option value="">Select</option>
               {paymentModeOptions.map((o) => (
-                <option key={o.value} value={o.value}>
+                <option key={o.value} value={String(o.value)}>
                   {o.label}
                 </option>
               ))}
@@ -1088,16 +1105,27 @@ export function AddEditModal({ showModal, closeModal, onRefreshAttestationApplic
   );
 
   return (
-    <CustomModal
-      className="modal fade passport-application-modal show"
-      dialgName="modal-dialog-scrollable"
-      show={!!showModal}
-      closeModal={closeModal}
-      body={renderBody()}
-      header={renderHeader()}
-      footer={renderFooter()}
-      isLoading={false}
-    />
+    <>
+      <CustomModal
+        className="modal fade passport-application-modal show"
+        dialgName="modal-dialog-scrollable"
+        show={!!showModal}
+        closeModal={closeModal}
+        body={renderBody()}
+        header={renderHeader()}
+        footer={renderFooter()}
+        isLoading={false}
+      />
+
+      {showCardVerification && (
+        <CardNotificationModal
+          showModal={showCardVerification}
+          closeModal={() => setShowCardVerification(false)}
+          title="Card Type Verification"
+          content={CARD_VERIFICATION_CONTENT}
+        />
+      )}
+    </>
   );
 }
 
