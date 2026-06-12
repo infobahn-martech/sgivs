@@ -10,7 +10,8 @@ export function ViewModal({ showModal, closeModal }) {
     const {
         getAttestationApplicationById,
         editORviewAttestationApplicationData,
-        isLoadingEditOrViewAttestationApplication
+        isLoadingEditOrViewAttestationApplication,
+        resetAttestationApplicationByIdState
     } = useAttestationApplicationReducer();
 
     useEffect(() => {
@@ -18,6 +19,12 @@ export function ViewModal({ showModal, closeModal }) {
             getAttestationApplicationById(showModal.attestation_application_id);
         }
     }, [showModal?.attestation_application_id]);
+
+    useEffect(() => {
+        return () => {
+            resetAttestationApplicationByIdState();
+        };
+    }, []);
 
     const application = editORviewAttestationApplicationData || {};
 

@@ -408,6 +408,7 @@ const AttestationApplications = () => {
         <ChangeServicesModal
           showModal={changeServicesModal}
           closeModal={() => setChangeServicesModal(false)}
+          onRefreshAttestationApplications={onRefreshAttestationApplications}
         />
       )}
 

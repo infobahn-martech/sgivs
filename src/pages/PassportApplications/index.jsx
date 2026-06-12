@@ -19,12 +19,19 @@ import ChangeServicesModal from './ChangeServices';
 import ActivityLog from './ActivityLog';
 import PrintReceiptModal from './PrintReceipt';
 import PrintBarcodeModal from './PrintBarcode';
+import useUserReducer from '../../stores/UserReducer';
 
 const PassportApplications = () => {
   const {
-    getPassportApplications, passportApplicationsData, isLoadingGet,
+    getPassportApplications, passportApplicationsData, isLoadingGet, pagination,
     deleteData, isLoadingDelete
   } = usePassportApplicationReducer((state) => state);
+
+  const {
+    countryList, missionList, centerList,
+    isLoadingCountries, isLoadingMissions, isLoadingCenters,
+    getCountries, getMissionsByCountry, getCentersByMission,
+  } = useUserReducer((state) => state);
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [modal, setModal] = useState(false);
@@ -56,11 +63,13 @@ const PassportApplications = () => {
     setFeeValues(null);
   };
 
-  // ✅ Fetch data whenever params change
   useEffect(() => {
     getPassportApplications(params);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params]);
+
+  useEffect(() => {
+    getCountries();
+  }, []);
 
   const handleSortChange = (selector) => {
     setParams((prev) => ({
@@ -78,12 +87,10 @@ const PassportApplications = () => {
   };
 
   const handlePrintReceipt = (row) => {
-    console.log('Print Receipt:', row);
     setPrintReceiptModal(row);
   };
 
   const handlePrintBarcode = (row) => {
-    console.log('Print Barcode:', row);
     setPrintBarcodeModal(row);
   };
 
@@ -104,21 +111,21 @@ const PassportApplications = () => {
     { name: 'Service Name', selector: 'service_name', sort: true, },
     { name: 'Delivery Type', selector: 'delivery_type', sort: true, },
     {
-          name: 'Status / By, On',
-          selector: 'status_comment',
-          cell: (row) => (
-            <div className="d-flex flex-column">
-              <span>
-                <b>{row?.status_comment || '-'}</b>
-              </span>
-              <small className="text-muted">
-                {row?.comment_by_name || '-'}
-                {row?.comment_at ? `, ${formatDate(row.comment_at)}` : ''}
-              </small>
-            </div>
-          ),
-          sort: true,
-        },
+      name: 'Status / By, On',
+      selector: 'status_comment',
+      cell: (row) => (
+        <div className="d-flex flex-column">
+          <span>
+            <b>{row?.status_comment || '-'}</b>
+          </span>
+          <small className="text-muted">
+            {row?.comment_by_name || '-'}
+            {row?.comment_at ? `, ${formatDate(row.comment_at)}` : ''}
+          </small>
+        </div>
+      ),
+      sort: true,
+    },
     {
       name: 'Action',
       selector: 'action',
@@ -169,24 +176,68 @@ const PassportApplications = () => {
     });
   };
 
-  const filterOptions = [
-    {
-      fieldName: 'Status',
-      BE_keyName: 'status',
-      fieldType: 'select',
-      Options: [
-        { label: 'Active', value: 1 },
-        { label: 'Blocked', value: 2 },
-      ],
-    },
-    {
-      fieldName: 'Joined Date',
-      fieldType: 'dateRangeCombined',
-      fromKey: 'fromDate',
-      toKey: 'toDate',
-    },
-  ];
+  // option builders
+  const countryOptions = useMemo(
+    () => (countryList || []).map((x) => ({ label: x.country_name, value: String(x.country_id) })),
+    [countryList]
+  );
+  const missionOptions = useMemo(
+    () => (missionList || []).map((x) => ({ label: x.mission_name, value: String(x.mission_id) })),
+    [missionList]
+  );
+  const centerOptions = useMemo(
+    () => (centerList || []).map((x) => ({ label: x.center_name, value: String(x.center_id) })),
+    [centerList]
+  );
 
+  const filterOptions = useMemo(
+    () => [
+      {
+        fieldName: 'Country',
+        BE_keyName: 'country_id',
+        fieldType: 'select',
+        placeholder: 'Select Country',
+        Options: countryOptions,
+        isLoading: isLoadingCountries,
+        resetFields: ['mission_id', 'center_id'],
+        // 👇 when country changes, load that country's missions
+        callBack: (value) => {
+          getMissionsByCountry(value);
+          getCentersByMission(null);
+        },
+      },
+      {
+        fieldName: 'Mission',
+        BE_keyName: 'mission_id',
+        fieldType: 'select',
+        placeholder: 'Select Mission',
+        Options: missionOptions,
+        isLoading: isLoadingMissions,
+        resetFields: ['center_id'],
+        // 👇 when mission changes, load that mission's centers
+        callBack: (value) => {
+          getCentersByMission(value);
+        },
+      },
+      {
+        fieldName: 'Center',
+        BE_keyName: 'center_id',
+        fieldType: 'select',
+        placeholder: 'Select Center',
+        Options: centerOptions,
+        isLoading: isLoadingCenters,
+      },
+      {
+        fieldName: 'Date Range',
+        fieldType: 'dateRangeCombined',
+        fromKey: 'from_date',
+        toKey: 'to_date',
+      },
+    ],
+    [countryOptions, missionOptions, centerOptions, isLoadingCountries, isLoadingMissions, isLoadingCenters]
+  );
+
+  const tableData = passportApplicationsData || [];
   const loading = isLoadingGet;
 
   return (
@@ -215,9 +266,9 @@ const PassportApplications = () => {
 
       <CustomTable
         pagination={{ currentPage: params.page, limit: params.limit }}
-        count={passportApplicationsData?.length || 0}
+        count={pagination?.total || 0}
         columns={columns}
-        data={passportApplicationsData || []}
+        data={tableData}
         isLoading={loading}
         onPageChange={(page) => setParams((prev) => ({ ...prev, page }))}
         setLimit={(limit) => setParams((prev) => ({ ...prev, limit, page: 1 }))}
@@ -297,6 +348,7 @@ const PassportApplications = () => {
         <ChangeServicesModal
           showModal={changeServicesModal}
           closeModal={() => setChangeServicesModal(false)}
+          onRefreshPassportApplications={onRefreshPassportApplications}
         />
       )}
 

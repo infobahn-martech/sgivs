@@ -58,10 +58,10 @@ const ActionsMenu = ({
             Activity Log
           </button> */}
           <button type="button" onClick={(e) => handleItem(e, onEditApplication)}>
-            Edit application
+            Edit Application
           </button>
           <button type="button" onClick={(e) => handleItem(e, onChangeServiceFee)}>
-            Change service/fee
+            Change Service/Fees
           </button>
 
           <div className="action-menu__divider" />

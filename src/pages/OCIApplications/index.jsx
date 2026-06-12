@@ -452,6 +452,7 @@ const OCIApplications = () => {
         <ChangeServicesModal
           showModal={changeServicesModal}
           closeModal={() => setChangeServicesModal(false)}
+          onRefreshOCIApplications={onRefreshOCIApplications}
         />
       )}
 

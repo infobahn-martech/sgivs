@@ -414,6 +414,7 @@ const VisaApplications = () => {
         <ChangeServicesModal
           showModal={changeServicesModal}
           closeModal={() => setChangeServicesModal(false)}
+          onRefreshVisaApplications={onRefreshVisaApplications}
         />
       )}
 

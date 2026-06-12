@@ -2,6 +2,11 @@ import { create } from 'zustand';
 import passportApplicationService from '../services/PassportApplicationService';
 import useAlertReducer from './AlertReducer';
 
+const initialChangeServiceState = {
+    changeServiceDetails: null,
+    isLoadingChangeService: false,
+    isLoadingPostChangeService: false,
+};
 
 const usePassportApplicationReducer = create((set) => ({
   isCreatePassportApplicationLoading: false,
@@ -17,6 +22,9 @@ const usePassportApplicationReducer = create((set) => ({
   pagination: {},
   paymentModeData: [],
   isLoadingPaymentMode: false,
+
+  ...initialChangeServiceState,
+  
   getDataPaymentMode: async () => {
     try {
       set({ isLoadingPaymentMode: true });
@@ -33,6 +41,7 @@ const usePassportApplicationReducer = create((set) => ({
       error(err?.response?.data?.message ?? err.message);
     }
   },
+
   createPassportApplication: async (data) => {
     try {
       set({ isCreatePassportApplicationLoading: true });
@@ -49,6 +58,7 @@ const usePassportApplicationReducer = create((set) => ({
       error(err?.response?.data?.message ?? err.message);
     }
   },
+
   postData: async (payload, cb) => {
     try {
       set({ isCreatePassportApplicationLoading: true, isLoading: true });
@@ -68,6 +78,7 @@ const usePassportApplicationReducer = create((set) => ({
       typeof cb === 'function' && cb();
     }
   },
+
   patchData: async (payload, cb) => {
     try {
       set({ isUpdatePassportApplicationLoading: true, isLoading: true });
@@ -87,6 +98,7 @@ const usePassportApplicationReducer = create((set) => ({
       typeof cb === 'function' && cb();
     }
   },
+
   updatePassportApplication: async (payload) => {
     try {
       set({ isUpdatePassportApplicationLoading: true });
@@ -106,6 +118,7 @@ const usePassportApplicationReducer = create((set) => ({
       error(err?.response?.data?.message ?? err.message);
     }
   },
+
   deleteData: async (passport_app_id, cb) => {
     try {
       set({ isDeletePassportApplicationLoading: true, isLoadingDelete: true });
@@ -121,6 +134,7 @@ const usePassportApplicationReducer = create((set) => ({
       typeof cb === 'function' && cb();
     }
   },
+
   deletePassportApplication: async (id) => {
     try {
       set({ isDeletePassportApplicationLoading: true, isLoadingDelete: true });
@@ -160,12 +174,16 @@ const usePassportApplicationReducer = create((set) => ({
       error(err?.response?.data?.message ?? err.message);
     }
   },
+
   getPassportApplications: async (params) => {
     try {
       set({ isLoadingGet: true });
       const { data } = await passportApplicationService.getPassportApplications(params);
-      const passportApplicationsData = data?.data;
-      set({ passportApplicationsData, isLoadingGet: false, pagination: data?.pagination });
+      set({
+        passportApplicationsData: data?.data ?? [],
+        pagination: data?.pagination ?? {},
+        isLoadingGet: false,
+      });
     } catch (err) {
       const { error } = useAlertReducer.getState();
       set({
@@ -189,6 +207,45 @@ const usePassportApplicationReducer = create((set) => ({
       set({ selectedPassportApplicationData: [], isLoadingGetDetails: false });
       error(err?.response?.data?.message ?? err.message);
       typeof cb === 'function' && cb(err, null);
+    }
+  },
+
+  resetChangeService: () => set(initialChangeServiceState),
+
+  getChangeServiceDetails: async (visa_application_id, cb) => {
+    try {
+      set({ isLoadingChangeService: true });
+      const response = await passportApplicationService.getChangeServiceDetails(visa_application_id);
+      const responseData = response?.data;
+      set({
+        changeServiceDetails: responseData?.data ?? null,
+        isLoadingChangeService: false,
+      });
+      cb?.(responseData?.data ?? null);
+    } catch (err) {
+      const message = err?.response?.data?.message ?? err?.message ?? 'Something went wrong';
+      const { error } = useAlertReducer.getState();
+      set({ isLoadingChangeService: false, changeServiceDetails: null });
+      error(message);
+    }
+  },
+
+  updateChangeService: async (payload, cb) => {
+    try {
+      set({ isLoadingPostChangeService: true });
+      const response = await passportApplicationService.updateChangeServiceFees(payload);
+      const responseData = response?.data;
+      const { success } = useAlertReducer.getState();
+      success(responseData?.message ?? 'Service updated successfully');
+      set({ isLoadingPostChangeService: false });
+      cb?.();
+      return true;
+    } catch (err) {
+      const message = err?.response?.data?.message ?? err?.message ?? 'Something went wrong';
+      const { error } = useAlertReducer.getState();
+      set({ isLoadingPostChangeService: false });
+      error(message);
+      return false;
     }
   },
 }));

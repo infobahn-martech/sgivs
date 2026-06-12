@@ -1534,3 +1534,9 @@
 .inventory-table-wrap .react-tooltip {
     z-index: 99999 !important;
 }
+
+input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}

@@ -1,65 +1,91 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 
+import { Spinner } from 'react-bootstrap';
+
 import CustomModal from '../../components/common/CustomModal';
 import useAttestationApplicationReducer from '../../stores/AttestationApplicationReducer';
-import useServiceOptions from '../../hooks/useServiceOptions';
 import useServiceReducer from '../../stores/ServiceReducer';
 
-// ✅ Schema (numbers from inputs come as string -> use preprocess)
-const changeServicesSchema = z
-    .object({
-        serviceId: z.string().nonempty('Attestation Service is required'),
-        referenceNo: z.string().nonempty('Reference No is required'),
-        applicantName: z.string().nonempty('Applicant Name is required'),
+const SERVICE_TYPE_ID = 4;
 
-        govtFee: z.string().optional(),
-        icwfFee: z.string().optional(),
-        sgivsServiceFee: z.string().optional(),
+const cancelReasonOptions = [
+    { value: 'wrong_details', label: 'Entered wrong details' },
+    { value: 'duplicate', label: 'Duplicate application' },
+    { value: 'not_required', label: 'Not required now' },
+    { value: 'other', label: 'Other' },
+];
 
-        cancelApplication: z.boolean().optional(),
-        govtFeeCancel: z.boolean().optional(),
-        icwfFeeCancel: z.boolean().optional(),
-        cancelReason: z.string().optional(),
-        remark: z.string().optional(),
-    })
-    .superRefine((data, ctx) => {
-        // If cancel is checked, reason is required
-        if (data.cancelApplication) {
+// Schema (numbers from inputs come as string -> use preprocess)
+const changeServicesSchema = z.object({
+    serviceId: z.string().nonempty('Attestation Service is required'),
+    referenceNo: z.string().nonempty('Reference No is required'),
+    applicantName: z.string().nonempty('Applicant Name is required'),
 
-            if (!data.govtFeeCancel && !data.icwfFeeCancel) {
-                ctx.addIssue({
-                    code: z.ZodIssueCode.custom,
-                    path: ['govtFeeCancel'],
-                    message: 'Select at least one fee to cancel',
-                });
-            }
+    govtFee: z.preprocess(
+        (v) => (v === '' || v === null || v === undefined ? undefined : Number(v)),
+        z.number({ invalid_type_error: 'Govt Fee is required' }).min(0, 'Govt Fee must be 0 or more')
+    ),
 
-            if (!data.cancelReason?.trim()) {
-                ctx.addIssue({
-                    code: z.ZodIssueCode.custom,
-                    path: ['cancelReason'],
-                    message: 'Cancellation reason is required',
-                });
-            }
+    icwfFee: z.preprocess(
+        (v) => (v === '' || v === null || v === undefined ? undefined : Number(v)),
+        z.number({ invalid_type_error: 'ICWF Fee is required' }).min(0, 'ICWF Fee must be 0 or more')
+    ),
+
+    sgivsServiceFee: z.preprocess(
+        (v) => (v === '' || v === null || v === undefined ? undefined : Number(v)),
+        z.number({ invalid_type_error: 'SGIVS Service Fee is required' }).min(0, 'SGIVS Service Fee must be 0 or more')
+    ),
+
+    cancelApplication: z.boolean().optional(),
+    govtFeeCancel: z.boolean().optional(),
+    icwfFeeCancel: z.boolean().optional(),
+    cancelReason: z.string().optional(),
+    remark: z.string().optional(),
+}).superRefine((data, ctx) => {
+    // If cancel is checked, reason is required
+    if (data.cancelApplication) {
+
+        if (!data.govtFeeCancel && !data.icwfFeeCancel) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ['govtFeeCancel'],
+                message: 'Select at least one fee to cancel',
+            });
         }
-    });
+
+        if (!data.cancelReason?.trim()) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ['cancelReason'],
+                message: 'Cancellation reason is required',
+            });
+        }
+    }
+});
 
 export default function ChangeServicesModal({ showModal, closeModal, onRefreshAttestationApplications, }) {
 
-    const serviceTypeId = 4;
-    const { options: attestationServiceOptions, loading: serviceLoading } = useServiceOptions(serviceTypeId);
+    const {
+        getAttestationApplicationById, editORviewAttestationApplicationData, isLoadingEditOrViewAttestationApplication, resetAttestationApplicationByIdState,
+        updateChangeService, isLoadingPostChangeService
+    } = useAttestationApplicationReducer();
 
-    const { getAttestationApplicationById, editORviewAttestationApplicationData, isLoadingEditOrViewAttestationApplication, } = useAttestationApplicationReducer();
+    const {
+        servicesByType, getServicesByServiceType, isLaodingServicesByType,
+        getServiceById, isLoadingSelectedService
+    } = useServiceReducer((state) => state);
 
-    const { getServiceById, selectedService } = useServiceReducer();
-
-    const cancelReasonOptions = [
-        { value: 'Applicant wishes to withdraw', label: 'Applicant wishes to withdraw' },
-        { value: 'Any Other reason', label: 'Any Other reason' },
-    ];
+    const attestationServiceOptions = useMemo(
+        () =>
+            (servicesByType || []).map((item) => ({
+                value: String(item.service_id),
+                label: item.service_name,
+            })),
+        [servicesByType]
+    );
 
     const {
         register,
@@ -88,23 +114,30 @@ export default function ChangeServicesModal({ showModal, closeModal, onRefreshAt
         mode: 'onSubmit',
     });
 
-    const serviceId = watch('serviceId');
     const cancelApplication = watch('cancelApplication');
 
     useEffect(() => {
-        if (!showModal?.attestation_application_id) return;
-
-        getAttestationApplicationById(showModal.attestation_application_id);
-
-    }, [showModal?.attestation_application_id]);
+        return () => {
+            resetAttestationApplicationByIdState();
+        };
+    }, []);
 
     useEffect(() => {
-        if (!editORviewAttestationApplicationData) return;
         if (!showModal?.attestation_application_id) return;
 
-        const app = editORviewAttestationApplicationData || {};
+        getServicesByServiceType(SERVICE_TYPE_ID);
+        getAttestationApplicationById(showModal.attestation_application_id);
+    }, [showModal]);
 
-        
+    useEffect(() => {
+        if (
+            !editORviewAttestationApplicationData ||
+            !servicesByType.length
+        ) {
+            return;
+        }
+
+        const app = editORviewAttestationApplicationData || {};
 
         reset({
             serviceId: String(app.service_id || ''),
@@ -121,46 +154,35 @@ export default function ChangeServicesModal({ showModal, closeModal, onRefreshAt
             cancelReason: '',
             remark: '',
         });
-    }, [editORviewAttestationApplicationData, showModal?.attestation_application_id]);
+    }, [editORviewAttestationApplicationData, servicesByType, reset,]);
 
-    /* -------------------------
-          2. SERVICE CHANGE (FIXED)
-       --------------------------*/
-    const handleServiceChange = (serviceId) => {
-        setValue('serviceId', serviceId, {
-            shouldDirty: true,
+    const handleServiceChange = (e) => {
+        const serviceId = e.target.value;
+        if (!serviceId) {
+            setValue('govtFee', '');
+            setValue('icwfFee', '');
+            setValue('sgivsServiceFee', '');
+            return;
+        }
+        getServiceById(serviceId, (service) => {
+            if (!service) return;
+            setValue('govtFee', service.govt_fee ?? '');
+            setValue('icwfFee', service.icwf_fee ?? '');
+            setValue('sgivsServiceFee', service.service_fee ?? '');
         });
-
-        if (!serviceId) return;
-
-        // clear UI instantly
-        setValue('govtFee', '');
-        setValue('icwfFee', '');
-        setValue('sgivsServiceFee', '');
-
-        // CALL STORE ACTION (it updates selectedService internally)
-        getServiceById(serviceId);
     };
 
-    /* -------------------------
-       3. APPLY selectedService → FORM
-    --------------------------*/
-    useEffect(() => {
-        if (!selectedService) return;
-
-        setValue('govtFee', String(selectedService.govt_fee || 0));
-        setValue('icwfFee', String(selectedService.icwf_fee || 0));
-        setValue('sgivsServiceFee', String(selectedService.service_fee || 0));
-    }, [selectedService]);
-
     const onSubmit = (data) => {
-        console.log('Change Service/Fee Payload:', data);
+        const payload = {
+            attestation_application_id: Number(showModal?.attestation_application_id),
+            service_id: Number(data.serviceId),
+            //cancellation: data.cancelApplication ? 'yes' : 'no',
+        };
 
-        // ✅ call API here (post/patch)
-        // patchData(showModal.id, data, () => onRefreshAttestationApplications?.());
-
-        onRefreshAttestationApplications?.();
-        closeModal?.();
+        updateChangeService(payload, () => {
+            onRefreshAttestationApplications?.();
+            closeModal?.();
+        });
     };
 
     const renderHeader = () => (
@@ -170,192 +192,190 @@ export default function ChangeServicesModal({ showModal, closeModal, onRefreshAt
         </>
     );
 
-    const renderBody = () => (
-        <div className="modal-body custom-scroll">
-            <div className="row g-3">
-                {/* Attestation Service dropdown */}
-                <div className="col-md-12">
-                    <div className="form-group">
-                        <label className="form-label">Attestation Service</label>
-                        <select
-                                className="form-control"
-                                disabled={serviceLoading}
-                                value={serviceId}
-                                onChange={(e) => handleServiceChange(e.target.value)}
-                            >
-                            <option value="">
-                                {serviceLoading ? 'Loading services...' : 'Select Service'}
-                            </option>
-
-                            {attestationServiceOptions.map((opt) => (
-                                <option key={opt.value} value={opt.value}>
-                                    {opt.label}
-                                </option>
-                            ))}
-                        </select>
-                        {errors?.serviceId && (
-                            <p className="text-danger mt-1">{errors.serviceId.message}</p>
-                        )}
-                    </div>
+    const renderBody = () => {
+        if (isLoadingEditOrViewAttestationApplication || isLaodingServicesByType) {
+            return (
+                <div className="modal-body custom-scroll d-flex justify-content-center align-items-center" style={{ minHeight: 300 }}>
+                    <Spinner animation="border" />
                 </div>
-
-                {/* Reference No */}
-                <div className="col-md-6">
-                    <div className="form-group">
-                        <label className="form-label">Reference No</label>
-                        <input disabled
-                            type="text"
-                            className="form-control"
-                            placeholder="REF-0001"
-                            {...register('referenceNo')}
-                        />
-                        {errors?.referenceNo && (
-                            <p className="text-danger mt-1">{errors.referenceNo.message}</p>
-                        )}
-                    </div>
-                </div>
-
-                {/* Applicant Name */}
-                <div className="col-md-6">
-                    <div className="form-group">
-                        <label className="form-label">Applicant Name</label>
-                        <input disabled
-                            type="text"
-                            className="form-control"
-                            placeholder="Enter applicant name"
-                            {...register('applicantName')}
-                        />
-                        {errors?.applicantName && (
-                            <p className="text-danger mt-1">{errors.applicantName.message}</p>
-                        )}
-                    </div>
-                </div>
-
-                {/* Govt Fee */}
-                <div className="col-md-4">
-                    <div className="form-group">
-                        <label className="form-label">Govt Fee</label>
-                        <input disabled type="text" className="form-control" placeholder="0" {...register('govtFee')} />
-                        {errors?.govtFee && <p className="text-danger mt-1">{errors.govtFee.message}</p>}
-                    </div>
-                </div>
-
-                {/* ICWF Fee */}
-                <div className="col-md-4">
-                    <div className="form-group">
-                        <label className="form-label">ICWF Fee</label>
-                        <input disabled type="text" className="form-control" placeholder="0" {...register('icwfFee')} />
-                        {errors?.icwfFee && <p className="text-danger mt-1">{errors.icwfFee.message}</p>}
-                    </div>
-                </div>
-
-                {/* SGIVS Service Fee */}
-                <div className="col-md-4">
-                    <div className="form-group">
-                        <label className="form-label">SGIVS Service Fee</label>
-                        <input disabled
-                            type="text"
-                            className="form-control"
-                            placeholder="0"
-                            {...register('sgivsServiceFee')}
-                        />
-                        {errors?.sgivsServiceFee && (
-                            <p className="text-danger mt-1">{errors.sgivsServiceFee.message}</p>
-                        )}
-                    </div>
-                </div>
-
-                {/* Cancel application checkbox */}
-                <div className="col-md-12">
-                    <div className="form-group mt-2">
-                        <div className="form-check">
-                            <input
-                                className="form-check-input"
-                                type="checkbox"
-                                id="cancelApplication"
-                                {...register('cancelApplication')}
-                                onChange={(e) => {
-                                    setValue('cancelApplication', e.target.checked);
-                                    if (!e.target.checked) {
-                                        setValue('cancelReason', '');
-                                    }
-                                }}
-                            />
-                            <label className="form-check-label" htmlFor="cancelApplication">
-                                Do you want to cancel your application?
-                            </label>
-                        </div>
-                    </div>
-                </div>
-
-
-                {/* Cancel reason dropdown (show only if cancel checked) */}
-                {cancelApplication && (
+            );
+        }
+        return (
+            <div className="modal-body custom-scroll">
+                <div className="row">
+                    {/* Attestation Service dropdown */}
                     <div className="col-md-12">
-
                         <div className="form-group">
-
-                            <div className="form-check">
-                                <input
-                                    className="form-check-input"
-                                    type="checkbox" disabled={!cancelApplication}
-                                    id="govtFeeCancel"
-                                    {...register('govtFeeCancel')}
-                                />
-                                <label className="form-check-label" htmlFor="govtFeeCancel">
-                                    Govt Fee Cancellation
-                                </label>
-                            </div>
-
-                            <div className="form-check">
-                                <input
-                                    className="form-check-input"
-                                    type="checkbox" disabled={!cancelApplication}
-                                    id="icwfFeeCancel"
-                                    {...register('icwfFeeCancel')}
-                                />
-                                <label className="form-check-label" htmlFor="icwfFeeCancel">
-                                    ICWF Fee Cancellation
-                                </label>
-                            </div>
-                        </div>
-
-                        <div className="form-group">
-                            <label className="form-label">Please select reason for cancellation</label>
-                            <select className="form-select" {...register('cancelReason')}>
-                                <option value="">Select Reason</option>
-                                {cancelReasonOptions.map((opt) => (
-                                    <option key={opt.value} value={opt.value}>
-                                        {opt.label}
-                                    </option>
+                            <label className="form-label">Attestation Service</label>
+                            <select
+                                className="form-control"
+                                disabled={isLaodingServicesByType || isLoadingSelectedService}
+                                {...register('serviceId', { onChange: handleServiceChange })}
+                            >
+                                <option value="">
+                                    {isLaodingServicesByType ? 'Loading...' : 'Select Attestation Service'}
+                                </option>
+                                {attestationServiceOptions.map((opt) => (
+                                    <option key={opt.value} value={opt.value}>{opt.label}</option>
                                 ))}
                             </select>
-                            {errors?.cancelReason && (
-                                <p className="text-danger mt-1">{errors.cancelReason.message}</p>
+                            {errors?.serviceId && <p className="text-danger mt-1">{errors.serviceId.message}</p>}
+                        </div>
+                    </div>
+
+                    {/* Reference No */}
+                    <div className="col-md-6">
+                        <div className="form-group">
+                            <label className="form-label">Reference No</label>
+                            <input disabled
+                                type="text"
+                                className="form-control"
+                                placeholder="REF-0001"
+                                {...register('referenceNo')}
+                            />
+                            {errors?.referenceNo && (
+                                <p className="text-danger mt-1">{errors.referenceNo.message}</p>
                             )}
                         </div>
                     </div>
-                )}
 
-                {/* Remark textarea */}
-                <div className="col-12">
-                    <div className="form-group">
-                        <label className="form-label">Remark</label>
-                        <textarea rows={4} style={{ minHeight: "120px" }} className="form-control" placeholder="Enter remark" {...register('remark')} />
-                        {errors?.remark && <p className="text-danger mt-1">{errors.remark.message}</p>}
+                    {/* Applicant Name */}
+                    <div className="col-md-6">
+                        <div className="form-group">
+                            <label className="form-label">Applicant Name</label>
+                            <input disabled
+                                type="text"
+                                className="form-control"
+                                placeholder="Enter applicant name"
+                                {...register('applicantName')}
+                            />
+                            {errors?.applicantName && (
+                                <p className="text-danger mt-1">{errors.applicantName.message}</p>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Govt Fee */}
+                    <div className="col-md-4">
+                        <div className="form-group">
+                            <label className="form-label">Govt Fee</label>
+                            <input disabled type="number" className="form-control" placeholder="0" {...register('govtFee')} />
+                            {errors?.govtFee && <p className="text-danger mt-1">{errors.govtFee.message}</p>}
+                        </div>
+                    </div>
+
+                    {/* ICWF Fee */}
+                    <div className="col-md-4">
+                        <div className="form-group">
+                            <label className="form-label">ICWF Fee</label>
+                            <input disabled type="number" className="form-control" placeholder="0" {...register('icwfFee')} />
+                            {errors?.icwfFee && <p className="text-danger mt-1">{errors.icwfFee.message}</p>}
+                        </div>
+                    </div>
+
+                    {/* SGIVS Service Fee */}
+                    <div className="col-md-4">
+                        <div className="form-group">
+                            <label className="form-label">SGIVS Service Fee</label>
+                            <input disabled type="number" className="form-control" placeholder="0" {...register('sgivsServiceFee')} />
+                            {errors?.sgivsServiceFee && (
+                                <p className="text-danger mt-1">{errors.sgivsServiceFee.message}</p>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Cancel application checkbox */}
+                    <div className="col-md-12">
+                        <div className="form-group mt-2">
+                            <div className="form-check">
+                                <input
+                                    className="form-check-input"
+                                    type="checkbox"
+                                    id="cancelApplication"
+                                    {...register('cancelApplication')}
+                                    onChange={(e) => {
+                                        setValue('cancelApplication', e.target.checked);
+                                        if (!e.target.checked) {
+                                            setValue('cancelReason', '');
+                                        }
+                                    }}
+                                />
+                                <label className="form-check-label" htmlFor="cancelApplication">
+                                    Do you want to cancel your application?
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    {/* Cancel reason dropdown (show only if cancel checked) */}
+                    {cancelApplication && (
+                        <div className="col-md-12">
+
+                            <div className="form-group">
+
+                                <div className="form-check">
+                                    <input
+                                        className="form-check-input"
+                                        type="checkbox" disabled={!cancelApplication}
+                                        id="govtFeeCancel"
+                                        {...register('govtFeeCancel')}
+                                    />
+                                    <label className="form-check-label" htmlFor="govtFeeCancel">
+                                        Govt Fee Cancellation
+                                    </label>
+                                </div>
+
+                                <div className="form-check">
+                                    <input
+                                        className="form-check-input"
+                                        type="checkbox" disabled={!cancelApplication}
+                                        id="icwfFeeCancel"
+                                        {...register('icwfFeeCancel')}
+                                    />
+                                    <label className="form-check-label" htmlFor="icwfFeeCancel">
+                                        ICWF Fee Cancellation
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div className="form-group">
+                                <label className="form-label">Please select reason for cancellation</label>
+                                <select className="form-select" {...register('cancelReason')}>
+                                    <option value="">Select Reason</option>
+                                    {cancelReasonOptions.map((opt) => (
+                                        <option key={opt.value} value={opt.value}>
+                                            {opt.label}
+                                        </option>
+                                    ))}
+                                </select>
+                                {errors?.cancelReason && (
+                                    <p className="text-danger mt-1">{errors.cancelReason.message}</p>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Remark textarea */}
+                    <div className="col-12">
+                        <div className="form-group">
+                            <label className="form-label">Remark</label>
+                            <textarea rows={4} style={{ minHeight: "120px" }} className="form-control" placeholder="Enter remark" {...register('remark')} />
+                            {errors?.remark && <p className="text-danger mt-1">{errors.remark.message}</p>}
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-    );
+        )
+    };
 
     const renderFooter = () => (
         <div className="modal-footer bottom-btn-sec">
-            <button type="button" className="btn btn-cancel" onClick={closeModal}>
+            <button type="button" className="btn btn-cancel" onClick={closeModal} disabled={isLoadingPostChangeService}>
                 Cancel
             </button>
-            <button type="button" className="btn btn-submit" onClick={handleSubmit(onSubmit)}>
-                Save
+            <button type="button" className="btn btn-submit" onClick={handleSubmit(onSubmit)} disabled={isLoadingPostChangeService}>
+                {isLoadingPostChangeService ? 'Saving...' : 'Save'}
             </button>
         </div>
     );
@@ -369,7 +389,8 @@ export default function ChangeServicesModal({ showModal, closeModal, onRefreshAt
             body={renderBody()}
             header={renderHeader()}
             footer={renderFooter()}
-            isLoading={false}
+            isLoading={isLoadingPostChangeService}
+
         />
     );
 }

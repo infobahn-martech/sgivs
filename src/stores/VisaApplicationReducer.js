@@ -2,6 +2,12 @@ import { create } from 'zustand';
 import visaApplicationService from '../services/VisaApplicationService';
 import useAlertReducer from './AlertReducer';
 
+const initialChangeServiceState = {
+    changeServiceDetails: null,
+    isLoadingChangeService: false,
+    isLoadingPostChangeService: false,
+};
+
 const useVisaApplicationReducer = create((set) => ({
   isLoading: false,
   isLoadingGet: false,
@@ -17,24 +23,19 @@ const useVisaApplicationReducer = create((set) => ({
   nationalityData: [],
   visaStatusData: [],
 
-  changeServiceDetails: null, isLoadingChangeService: false,
-
-   isLoadingPostChangeService: false,
+  ...initialChangeServiceState,
 
   postData: async (payload, callback) => {
     try {
       set({ isLoading: true, errorMessage: '' });
-
       const response = await visaApplicationService.createVisaApplication(payload);
       const responseData = response?.data;
-
       const { success } = useAlertReducer.getState();
       success(
         responseData?.response?.data?.message ??
         responseData?.message ??
         'Visa application created successfully'
       );
-
       set({
         isLoading: false,
         successMessage:
@@ -42,18 +43,15 @@ const useVisaApplicationReducer = create((set) => ({
           responseData?.message ??
           'Visa application created successfully',
       });
-
       if (typeof callback === 'function') callback();
       return true;
     } catch (err) {
       const message = err?.response?.data?.message ?? err?.message ?? 'Something went wrong';
       const { error } = useAlertReducer.getState();
-
       set({
         isLoading: false,
         errorMessage: message,
       });
-
       error(message);
       return false;
     }
@@ -62,17 +60,14 @@ const useVisaApplicationReducer = create((set) => ({
   patchData: async (payload, callback) => {
     try {
       set({ isLoading: true, errorMessage: '' });
-
       const response = await visaApplicationService.updateVisaApplication(payload);
       const responseData = response?.data;
-
       const { success } = useAlertReducer.getState();
       success(
         responseData?.response?.data?.message ??
         responseData?.message ??
         'Visa application updated successfully'
       );
-
       set({
         isLoading: false,
         successMessage:
@@ -80,18 +75,15 @@ const useVisaApplicationReducer = create((set) => ({
           responseData?.message ??
           'Visa application updated successfully',
       });
-
       if (typeof callback === 'function') callback();
       return true;
     } catch (err) {
       const message = err?.response?.data?.message ?? err?.message ?? 'Something went wrong';
       const { error } = useAlertReducer.getState();
-
       set({
         isLoading: false,
         errorMessage: message,
       });
-
       error(message);
       return false;
     }
@@ -107,7 +99,6 @@ const useVisaApplicationReducer = create((set) => ({
       cb?.(res?.data);
     } catch (err) {
       set({ isLoadingDelete: false });
-
       const { error } = useAlertReducer.getState();
       error(err?.response?.data?.message ?? err.message);
     }
@@ -116,29 +107,26 @@ const useVisaApplicationReducer = create((set) => ({
   getVisaApplications: async (params) => {
     try {
       set({ isLoadingGet: true });
-
       const response = await visaApplicationService.getVisaApplications(params);
       const responseData = response?.data;
       set({
-      visaApplicationsData: responseData?.data ?? [],
-      pagination: {
-        page: responseData?.page ?? 1,
-        limit: responseData?.limit ?? 10,
-        total_records: responseData?.total_records ?? 0,
-        total_pages: responseData?.total_pages ?? 0,
-      },
-      isLoadingGet: false,
-    });
+        visaApplicationsData: responseData?.data ?? [],
+        pagination: {
+          page: responseData?.page ?? 1,
+          limit: responseData?.limit ?? 10,
+          total_records: responseData?.total_records ?? 0,
+          total_pages: responseData?.total_pages ?? 0,
+        },
+        isLoadingGet: false,
+      });
     } catch (err) {
       const message = err?.response?.data?.message ?? err?.message ?? 'Something went wrong';
       const { error } = useAlertReducer.getState();
-
       set({
         isLoadingGet: false,
         visaApplicationsData: [],
         pagination: {},
       });
-
       error(message);
     }
   },
@@ -239,23 +227,25 @@ const useVisaApplicationReducer = create((set) => ({
     }
   },
 
+  resetChangeService: () => set(initialChangeServiceState),
+  
   getChangeServiceDetails: async (visa_application_id, cb) => {
     try {
       set({ isLoadingChangeService: true });
       const response = await visaApplicationService.getChangeServiceDetails(visa_application_id);
       const responseData = response?.data;
-
       set({
         changeServiceDetails: responseData?.data ?? null,
         isLoadingChangeService: false,
       });
-
       cb?.(responseData?.data ?? null);
     } catch (err) {
       const message = err?.response?.data?.message ?? err?.message ?? 'Something went wrong';
       const { error } = useAlertReducer.getState();
-
-      set({ isLoadingChangeService: false, changeServiceDetails: null });
+      set({
+        isLoadingChangeService: false,
+        changeServiceDetails: null
+      });
       error(message);
     }
   },
@@ -265,10 +255,8 @@ const useVisaApplicationReducer = create((set) => ({
       set({ isLoadingPostChangeService: true });
       const response = await visaApplicationService.updateChangeService(payload);
       const responseData = response?.data;
-
       const { success } = useAlertReducer.getState();
       success(responseData?.message ?? 'Service updated successfully');
-
       set({ isLoadingPostChangeService: false });
       cb?.();
       return true;

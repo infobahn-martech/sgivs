@@ -87,15 +87,19 @@ const Filter = ({
       } else if (option.BE_keyName) {
         cleared[option.BE_keyName] = '';
       }
-    });
 
+      // ✅ fire callBack(null) to clear dependent store lists
+      if (option.callBack) {
+        option.callBack(null);
+      }
+    });
     setFilters(cleared);
     clearOptions();
   };
 
   const cancelFilter = () => {
     onCancel();
-    clearSubCategoryData();
+    //clearSubCategoryData();
     isFilterApplied && clearFilters();
   };
 
@@ -147,6 +151,18 @@ const Filter = ({
                       if (option.callBack) {
                         option.callBack(selected?.value);
                       }
+
+                      // ✅ Clear dependent fields declared in resetFields
+                      if (option.resetFields?.length) {
+                        setFilters((prev) => {
+                          const updated = { ...prev };
+                          option.resetFields.forEach((key) => {
+                            updated[key] = '';
+                          });
+                          return updated;
+                        });
+                      }
+
                       const value = option.isMulti
                         ? selected?.map((item) => item.value)
                         : selected?.value;

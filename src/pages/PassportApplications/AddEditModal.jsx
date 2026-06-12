@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import CustomModal from '../../components/common/CustomModal';
 import Phonenumber from '../../components/common/Phonenumber';
 
-import { CARD_VERIFICATION_CONTENT } from './NotificationModal';
+import { CARD_VERIFICATION_CONTENT, NotificationModal } from './NotificationModal';
 
 import usePassportApplicationReducer from '../../stores/PassportApplicationReducer';
 import useAppointmentTypeReducer from '../../stores/AppointmentTypeReducer';
@@ -14,7 +14,7 @@ import useApplicationModeReducer from '../../stores/ApplicationModeReducer';
 import useUserReducer from '../../stores/UserReducer';
 
 import useCourierTypeReducer from '../../stores/CourierTypeReducer';
-import serviceService from '../../services/serviceService';
+import useServiceReducer from '../../stores/ServiceReducer';
 
 const PASSPORT_SERVICE_TYPE_ID = 1;
 const CARD_PAYMENT_MODE_ID = '2';
@@ -51,8 +51,6 @@ const afsOptions = [
   { value: '3', label: 'Form Filling' },
   { value: '4', label: 'SMS' },
 ];
-
-// Service Requested options are loaded dynamically from service/service_by_service_type/{service_type_id}
 
 function parseIntSafe(val, fallback = 0) {
   const n = parseInt(val, 10);
@@ -108,17 +106,14 @@ function buildUpdatePayload(data, passportAppId) {
 function buildCreateFullApplicationPayload(data, totalFees = 0) {
   const employeeId = getEmployeeIdFromStorage();
   const centerId = getCenterIdFromStorage();
-
   const vas_services = (data.afs || []).map((id) => {
     const item = {
       vas_service_id: Number(id),
     };
-
     // ONLY Photocopy gets quantity
     if (id === '1') {
       item.quantity = Number(data.photocopyCounts || 1);
     }
-
     return item;
   });
 
@@ -148,11 +143,11 @@ function buildCreateFullApplicationPayload(data, totalFees = 0) {
     return_courier_address: data.returnCourierAddress,
     courier_type: data.courierRequired ? 1 : 0,
     tatkal_status: data.tatkalService ? 1 : 0,
-    
+
     vas_service_status: (data.afs || []).length > 0 ? 1 : 0,
     payment_mode: parseIntSafe(data.paymentMode, 2),
     created_by: employeeId,
-    status:1,
+    status: 1,
   };
 
   const courier = {
@@ -306,31 +301,31 @@ const schema = z
     }
   });
 
-export function AddEditModal({
-  showModal,
-  closeModal,
-  onRefreshPassportApplications,
-  onFeeValuesChange,
-  serviceTypeId = PASSPORT_SERVICE_TYPE_ID,
-}) {
-  const { postData, patchData, isLoading, getPassportApplicationDetails, isLoadingGetDetails } =
-    usePassportApplicationReducer((state) => state);
+export function AddEditModal({ showModal, closeModal, onRefreshPassportApplications, onFeeValuesChange, serviceTypeId = PASSPORT_SERVICE_TYPE_ID, }) {
 
-  const { getData: getDataAppointmentType, appointmentTypeData } =
-    useAppointmentTypeReducer((state) => state);
+  const {
+    postData, patchData, isLoading, getPassportApplicationDetails, isLoadingGetDetails,
+    getDataPaymentMode, paymentModeData
+  } = usePassportApplicationReducer((state) => state);
 
-  const { getData: getDataApplicationMode, applicationModeData } =
-    useApplicationModeReducer((state) => state);
+  const { getData: getDataAppointmentType, appointmentTypeData } = useAppointmentTypeReducer((state) => state);
 
-  const { getDataPaymentMode, paymentModeData } = usePassportApplicationReducer((state) => state);
+  const { getData: getDataApplicationMode, applicationModeData } = useApplicationModeReducer((state) => state);
+
+  const { 
+    getServiceById, selectedService, isLoadingSelectedService,
+    getServicesByServiceType, servicesByType, isLaodingServicesByType  
+   } = useServiceReducer((state) => state);
 
   const { getData: getDataCourierTypes, courierTypeList } = useCourierTypeReducer((state) => state);
+
   const courierTypeData = Array.isArray(courierTypeList) ? courierTypeList : courierTypeList?.data ?? [];
 
-  const { countryList, getCountries } = useUserReducer();
+  const { countryList, getCountries } = useUserReducer((state) => state);
+
   const countries = countryList ?? [];
 
-  const [serviceRequestedOptions, setServiceRequestedOptions] = React.useState([]);
+  const [showCardVerification, setShowCardVerification] = React.useState(false);
 
   useEffect(() => {
     getDataAppointmentType({});
@@ -338,24 +333,19 @@ export function AddEditModal({
     getDataPaymentMode();
     if (typeof getDataCourierTypes === 'function') getDataCourierTypes();
     getCountries?.();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const serviceRequestedOptions = useMemo(
+    () => (servicesByType || []).map((item) => ({
+        value: String(item?.passport_service_id ?? item?.service_id ?? item?.id ?? ''),
+        label: item?.service_name ?? item?.service_type ?? item?.name ?? '-',
+    })),
+    [servicesByType]
+);
 
   useEffect(() => {
     if (!serviceTypeId) return;
-    serviceService
-      .getServicesByServiceType(serviceTypeId)
-      .then((res) => {
-        const list = res?.data?.data ?? res?.data ?? [];
-        const options = Array.isArray(list)
-          ? list.map((item) => ({
-            value: String(item?.passport_service_id ?? item?.service_id ?? item?.id ?? ''),
-            label: item?.service_name ?? item?.service_type ?? item?.name ?? '-',
-          }))
-          : [];
-        setServiceRequestedOptions(options);
-      })
-      .catch(() => setServiceRequestedOptions([]));
+    getServicesByServiceType(serviceTypeId);
   }, [serviceTypeId]);
 
   const defaultValues = useMemo(
@@ -394,7 +384,7 @@ export function AddEditModal({
       afs: [],
       photocopyCounts: 1,
 
-      // ✅ payment
+      // payment
       paymentMode: '',
       cardType: '',
       transactionId: '',
@@ -418,7 +408,6 @@ export function AddEditModal({
   const courierRequired = watch('courierRequired');
   const selectedAfs = watch('afs') || [];
   const serviceRequested = watch('serviceRequested');
-  const token = watch('token');
   const mobileCode = watch('mobileCode');
   const mobileNumber = watch('mobileNumber');
 
@@ -435,28 +424,31 @@ export function AddEditModal({
     }
   }, [isCardPayment, setValue]);
 
-  // Dynamic fee calculation (replace with your actual fee logic/API)
-  const feeValues = useMemo(() => {
-    const govtFees = 0;
-    const icwfFees = 0;
-    const serviceFeesByType = { Normal: 6, Tatkal: 10, Courier: 8 };
-    const selectedLabel = serviceRequestedOptions.find((o) => o.value === serviceRequested)?.label;
-    const serviceFees = selectedLabel ? serviceFeesByType[selectedLabel] ?? 6 : 0;
-    return {
-      govtFees,
-      icwfFees,
-      serviceFees,
-      totalFees: govtFees + icwfFees + serviceFees,
-      onlinePaid: '...',
-    };
-  }, [serviceRequested, serviceRequestedOptions, token]);
+  const [feeValues, setFeeValues] = React.useState(null);
 
-  // Notify parent of fee values when Service Requested is selected (for FeeCalculator outside modal)
   useEffect(() => {
-    if (typeof onFeeValuesChange !== 'function') return;
-    if (serviceRequested) onFeeValuesChange(feeValues);
-    else onFeeValuesChange(null);
-  }, [serviceRequested, feeValues, onFeeValuesChange]);
+    if (!serviceRequested) {
+      setFeeValues(null);
+      onFeeValuesChange?.(null);
+      return;
+    }
+    getServiceById(serviceRequested, (service) => {
+      if (!service) return;
+      const fees = {
+        govtFees: parseFloat(service.govt_fee ?? 0),
+        icwfFees: parseFloat(service.icwf_fee ?? 0),
+        serviceFees: parseFloat(service.service_fee ?? 0),
+        urgentFees: parseFloat(service.urgent_fee ?? 0),
+        tatkalFees: parseFloat(service.tatkal_fee ?? 0),
+        totalFees: parseFloat(service.govt_fee ?? 0) +
+          parseFloat(service.icwf_fee ?? 0) +
+          parseFloat(service.service_fee ?? 0),
+        onlinePaid: '0.00',
+      };
+      setFeeValues(fees);
+      onFeeValuesChange?.(fees);
+    });
+  }, [serviceRequested]);
 
   // When opening in edit mode: fetch details from API and set form values
   const editId = showModal?.passport_app_id ?? showModal?.id;
@@ -499,7 +491,7 @@ export function AddEditModal({
         mobileNumber: pa.contact_no != null ? String(pa.contact_no) : '',
         email: pa.email_address ?? '',
         oldPassportNo: pa.old_passport_no ?? '',
-        returnCourierAddress:pa.return_courier_address?? '',
+        returnCourierAddress: pa.return_courier_address ?? '',
         courierRequired: hasCourier,
         residenceCountry: '',
         addressLine1: courier.address_1 ?? '',
@@ -518,15 +510,13 @@ export function AddEditModal({
         transactionId: payment.transactionID ?? '',
       });
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editId]);
 
   const onSubmit = (data) => {
     const employeeId = getEmployeeIdFromStorage();
     const centerId = getCenterIdFromStorage();
-    const { referenceNo: _refNo, ...rest } = data;
     const normalizedData = {
-      ...rest,
+      ...data,
       ...(centerId != null && { center_id: centerId }),
       ...(employeeId != null && { created_by: employeeId }),
       ...(!data.courierRequired && {
@@ -619,7 +609,6 @@ export function AddEditModal({
               className="form-control"
               autoComplete="off"
               maxLength={50}
-              placeholder="e.g. APT003"
               {...register('appointmentPostalRefNo')}
             />
             {errors.appointmentPostalRefNo && (
@@ -647,7 +636,6 @@ export function AddEditModal({
         </div>
       </div>
 
-      {/* ===== Row 2 ===== */}
       <div className="row">
         <div className="col-md-6">
           <div className="form-group">
@@ -685,7 +673,6 @@ export function AddEditModal({
         </div>
       </div>
 
-      {/* ===== Row 3 ===== */}
       <div className="row">
         <div className="col-md-4">
           <div className="form-group">
@@ -915,7 +902,7 @@ export function AddEditModal({
                   Residence Country <span className="text-danger">*</span>
                 </label>
                 <select className="form-control" {...register('residenceCountry')}>
-                  <option value="">Select Country</option>
+                  <option value="">Select</option>
                   {countries.map((c) => (
                     <option
                       key={c.country_id ?? c.id ?? c.code}
@@ -1038,7 +1025,7 @@ export function AddEditModal({
         <div className="col-12">
           <div className="form-group">
             <label className="form-label">
-              Application Facilitation Services (AFS) - multiple selection
+              Application Facilitation Services (AFS)
             </label>
 
             <div className="d-flex flex-wrap gap-3">
@@ -1089,17 +1076,17 @@ export function AddEditModal({
             </label>
             <select
               className="form-control"
-              {...register('paymentMode')}
-              onChange={(e) => {
-                const val = e.target.value;
-                setValue('paymentMode', val, { shouldValidate: true });
-
-                // ✅ if switching away from Card (ID != "2"), clear fields
-                if (String(val) !== String(CARD_PAYMENT_MODE_ID)) {
-                  setValue('cardType', '', { shouldValidate: true });
-                  setValue('transactionId', '', { shouldValidate: true });
+              {...register('paymentMode', {
+                onChange: (e) => {
+                  const val = e.target.value;
+                  if (String(val) === String(CARD_PAYMENT_MODE_ID)) {
+                    setShowCardVerification(true); // ← show popup when card selected
+                  } else {
+                    setValue('cardType', '', { shouldValidate: true });
+                    setValue('transactionId', '', { shouldValidate: true });
+                  }
                 }
-              }}
+              })}
             >
               <option value="">Select</option>
               {paymentModeData?.map((o) => (
@@ -1150,14 +1137,6 @@ export function AddEditModal({
               )}
             </div>
           </div>
-
-          {/* Card verification info - inline instead of modal */}
-          <div className="col-12 mt-2">
-            <div className="card-verification-inline alert alert-info border-info">
-              <p className="fw-semibold mb-2">Please verify the issuing bank before proceeding</p>
-              {CARD_VERIFICATION_CONTENT}
-            </div>
-          </div>
         </div>
       )}
     </div>
@@ -1180,16 +1159,27 @@ export function AddEditModal({
   );
 
   return (
-    <CustomModal
-      className="modal fade passport-application-modal show"
-      dialgName="modal-dialog-scrollable"
-      show={!!showModal}
-      closeModal={closeModal}
-      body={renderBody()}
-      header={renderHeader()}
-      footer={renderFooter()}
-      isLoading={isLoadingGetDetails || isLoading}
-    />
+    <>
+      <CustomModal
+        className="modal fade passport-application-modal show"
+        dialgName="modal-dialog-scrollable"
+        show={!!showModal}
+        closeModal={closeModal}
+        body={renderBody()}
+        header={renderHeader()}
+        footer={renderFooter()}
+        isLoading={isLoadingGetDetails || isLoading}
+      />
+
+      {showCardVerification && (
+        <NotificationModal
+          showModal={showCardVerification}
+          closeModal={() => setShowCardVerification(false)}
+          title="Card Type Verification"
+          content={CARD_VERIFICATION_CONTENT}
+        />
+      )}
+    </>
   );
 }
 

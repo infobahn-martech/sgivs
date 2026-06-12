@@ -128,7 +128,6 @@ const CommonHeader = ({
     setSavedFilters(filters); // Persist applied filters
     setIsFilterApplied(true);
     setShowFilterModal(false); // Close modal
-    console.log('first2222');
     submitFilter(filters); // existing logic
   };
 

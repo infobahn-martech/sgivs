@@ -10,7 +10,8 @@ export function ViewModal({ showModal, closeModal }) {
     const {
         getOCIApplicationById,
         editORviewOCIApplicationData,
-        isLoadingEditOrViewOCIApplication
+        isLoadingEditOrViewOCIApplication,
+        resetOCIApplicationByIdState
     } = useOCIApplicationReducer();
 
     useEffect(() => {
@@ -18,6 +19,12 @@ export function ViewModal({ showModal, closeModal }) {
             getOCIApplicationById(showModal.oci_application_id);
         }
     }, [showModal?.oci_application_id]);
+
+    useEffect(() => {
+        return () => {
+            resetOCIApplicationByIdState();
+        };
+    }, []);
 
     const application = editORviewOCIApplicationData?.oci_application || {};
 

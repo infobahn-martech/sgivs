@@ -49,9 +49,11 @@ const UserManagement = () => {
         placeholder: 'Select Country',
         Options: countryOptions,
         isLoading: isLoadingCountries,
+        resetFields: ['mission_id', 'center_id'],
         // 👇 when country changes, load that country's missions
         callBack: (value) => {
           getMissionsByCountry(value);
+          getCentersByMission(null);
         },
       },
       {
@@ -61,6 +63,7 @@ const UserManagement = () => {
         placeholder: 'Select Mission',
         Options: missionOptions,
         isLoading: isLoadingMissions,
+        resetFields: ['center_id'],
         // 👇 when mission changes, load that mission's centers
         callBack: (value) => {
           getCentersByMission(value);
@@ -81,16 +84,13 @@ const UserManagement = () => {
   const [modal, setModal] = useState(false);
   const [statusModalOpen, setStatusModalOpen] = useState(false);
 
-  const initialParams = useMemo(
-    () => ({
-      search: '',
-      page: 1,
-      limit: 10,
-      sortBy: 'added_on',
-      sortOrder: 'DESC',
-    }),
-    []
-  );
+  const initialParams = {
+    search: '',
+    page: 1,
+    limit: 10,
+    sortBy: 'added_on',
+    sortOrder: 'DESC',
+  };
 
   const [params, setParams] = useState(initialParams);
 
@@ -160,7 +160,7 @@ const UserManagement = () => {
     showActions: true,
   });
 
-  const data = employeeList || [];
+  const tableData = employeeList || [];
   const count = employeeCount || 0;
 
   return (
@@ -181,14 +181,14 @@ const UserManagement = () => {
             page: 1,
           }));
         }}
-        clearOptions={() => setParams(initialParams)}
+        clearOptions={() => { setParams(initialParams); }}
       />
 
       <CustomTable
         pagination={{ currentPage: params.page, limit: params.limit }}
         count={count}
         columns={columns}
-        data={data}
+        data={tableData}
         isLoading={isLoadingEmployees}
         onPageChange={(page) => setParams((prev) => ({ ...prev, page }))}
         setLimit={(limit) => setParams((prev) => ({ ...prev, limit }))}

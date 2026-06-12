@@ -2,12 +2,16 @@ import { create } from 'zustand';
 import ociApplicationService from '../services/OCIApplicationService';
 import useAlertReducer from './AlertReducer';
 
+const initialOCIApplicationByIdState = {
+    editORviewOCIApplicationData: null,
+    isLoadingEditOrViewOCIApplication: false,
+    isLoadingPostChangeService: false,
+};
+
 const useOCIApplicationReducer = create((set) => ({
     isCreateOCIApplicationLoading: false,
     isUpdateOCIApplicationLoading: false,
     isDeleteOCIApplicationLoading: false,
-
-    editORviewOCIApplicationData: null, isLoadingEditOrViewOCIApplication: false,
 
     errorMessage: '',
     successMessage: '',
@@ -17,6 +21,8 @@ const useOCIApplicationReducer = create((set) => ({
 
     ociStatusList: [],
     isLoadingStatusList: false,
+
+    ...initialOCIApplicationByIdState,
 
     createOCIApplication: async (payload, cb) => {
         try {
@@ -58,6 +64,8 @@ const useOCIApplicationReducer = create((set) => ({
             error(err?.response?.data?.message ?? err.message);
         }
     },
+
+    resetOCIApplicationByIdState: () => set(initialOCIApplicationByIdState),
 
     getOCIApplicationById: async (id) => {
         try {
@@ -131,6 +139,25 @@ const useOCIApplicationReducer = create((set) => ({
 
             const { error } = useAlertReducer.getState();
             error(err?.response?.data?.message ?? err.message);
+        }
+    },
+
+    updateChangeService: async (payload, cb) => {
+        try {
+            set({ isLoadingPostChangeService: true });
+            const response = await ociApplicationService.updateChangeServiceFees(payload);
+            const responseData = response?.data;
+            const { success } = useAlertReducer.getState();
+            success(responseData?.message ?? 'Service updated successfully');
+            set({ isLoadingPostChangeService: false });
+            cb?.();
+            return true;
+        } catch (err) {
+            const message = err?.response?.data?.message ?? err?.message ?? 'Something went wrong';
+            const { error } = useAlertReducer.getState();
+            set({ isLoadingPostChangeService: false });
+            error(message);
+            return false;
         }
     },
 }));

@@ -10,6 +10,8 @@ const getReceipt = (attestation_application_id) => Gateway.post('attestation/rec
 const getBarcode = (attestation_application_id) => Gateway.post('attestation/barcode', { attestation_application_id });
 const getAttestationActivityLogs = (attestation_application_id) => Gateway.post('attestation/logs', { attestation_application_id });
 
+const updateChangeServiceFees = (payload) => Gateway.post('attestation/change-service', payload);
+
 export default {
   createAttestationApplication,
   getAttestationApplications,    
@@ -19,5 +21,7 @@ export default {
 
   getReceipt,
   getBarcode,
-  getAttestationActivityLogs
+  getAttestationActivityLogs,
+
+  updateChangeServiceFees
 };
