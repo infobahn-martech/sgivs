@@ -443,12 +443,14 @@ export default function ChangeServicesModal({ showModal, closeModal, onRefreshVi
         );
     };
 
+    const isLoading = isLoadingChangeService || isLoadingPostChangeService || isMetaLoading || isLaodingServicesByType;
+
     const renderFooter = () => (
         <div className="modal-footer bottom-btn-sec">
-            <button type="button" className="btn btn-cancel" onClick={closeModal} disabled={isLoadingPostChangeService}>
+            <button type="button" className="btn btn-cancel" onClick={closeModal} disabled={isLoading}>
                 Cancel
             </button>
-            <button type="button" className="btn btn-submit" onClick={handleSubmit(onSubmit)} disabled={isLoadingPostChangeService}>
+            <button type="button" className="btn btn-submit" onClick={handleSubmit(onSubmit)} disabled={isLoading}>
                 {isLoadingPostChangeService ? 'Saving...' : 'Save'}
             </button>
         </div>
