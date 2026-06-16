@@ -48,7 +48,7 @@ export const headerConfig = [
 
   // Visa Manager
   { title: 'Visa Applications', icon: transactionICo, path: '/visa-applications' },
-  { title: 'Deleted Application', icon: transactionICo, path: '/visa-delete-application' },
+  { title: 'Visa Deleted Applications', icon: transactionICo, path: '/visa-deleted-application' },
   { title: 'Inscan At Hub', icon: transactionICo, path: '/visa-inscan-hub' },
   { title: 'Outscan To Mission', icon: transactionICo, path: '/visa-outscan-to-mission' },
   { title: 'Inscan From Mission', icon: transactionICo, path: '/visa-inscan-from-mission' },

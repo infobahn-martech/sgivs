@@ -10,7 +10,7 @@ import CustomTable from '../../components/common/CustomTable';
 import useVisaOTMReducer from '../../stores/VisaOTMReducer';
 import { formatDate } from '../../config/config';
 import AddEditModal from './AddEditModal';
-
+import { useCascadingFilters } from '../../hooks/useCascadingFilters';
 
 function getEmployeeIdFromStorage() {
   try {
@@ -25,32 +25,63 @@ function getEmployeeIdFromStorage() {
 
 const VisaOTM = () => {
 
-
   const { getData, visaOTMData, isLoadingGet } = useVisaOTMReducer((state) => state);
 
+  const [addEditModal, setAddEditModal] = useState(false);
+
   const initialParams = {
-    fromDate: moment().startOf('month').format('YYYY-MM-DD'),
-    toDate: moment().endOf('month').format('YYYY-MM-DD'),
-    employeeId: getEmployeeIdFromStorage(),
     page: 1,
     limit: 10,
-    sortBy: 'date',
-    sortOrder: 'DESC',
+    sort_by: 'date',
+    sort_order: 'DESC',
+    employeeId: getEmployeeIdFromStorage(),
   };
 
   const [params, setParams] = useState(initialParams);
-  const [addEditModal, setAddEditModal] = useState(false);
-  const [selectedOTM, setSelectedOTM] = useState(null);
 
   useEffect(() => {
     getData(params);
-  }, [params.fromDate, params.toDate, params.employeeId, getData]);
+  }, [params]);
+
+  const onRefreshOTM = () => {
+    getData(params);
+  };
+
+  const debouncedSearch = useMemo(
+    () =>
+      debounce((searchValue) => {
+        setParams((prevParams) => ({
+          ...prevParams,
+          search: searchValue,
+          page: 1,
+        }));
+      }, 500),
+    []
+  );
+
+  useEffect(() => {
+    return () => {
+      debouncedSearch.cancel();
+    };
+  }, [debouncedSearch]);
+
+  // Filters
+  const { cascadingFilterOptions, dateRangeFilter, getCountries } = useCascadingFilters();
+
+  useEffect(() => {
+    getCountries();
+  }, []);
+
+  const filterOptions = useMemo(() => [
+    ...cascadingFilterOptions,
+    dateRangeFilter,
+  ], [cascadingFilterOptions]);
 
   const handleSortChange = (selector) => {
     setParams((prev) => ({
       ...prev,
-      sortBy: selector,
-      sortOrder: prev.sortOrder === 'ASC' ? 'DESC' : 'ASC',
+      sort_by: selector,
+      sort_order: prev.sort_order === 'ASC' ? 'DESC' : 'ASC',
     }));
   };
 
@@ -69,8 +100,6 @@ const VisaOTM = () => {
   const downloadDocumentFile = (row) => {
     console.log('Download Document File:', row);
   };
-
-
 
   const renderAction = (row) => {
     return (
@@ -147,28 +176,28 @@ const VisaOTM = () => {
     {
       name: 'Date',
       selector: 'date',
-      sortable: true,
+      sort: true,
       sortField: 'date',
       cell: (row) => <span>{row?.date ? formatDate(row?.date) : '-'}</span>,
     },
     {
       name: 'By',
       selector: 'by',
-      sortable: true,
+      sort: true,
       sortField: 'by',
       cell: (row) => <span>{row?.by || '-'}</span>,
     },
     {
       name: 'Total Application',
       selector: 'totalApplication',
-      sortable: true,
+      sort: true,
       sortField: 'totalApplication',
       cell: (row) => <span>{row?.totalApplication ?? 0}</span>,
     },
     {
       name: 'Manifest ID',
       selector: 'manifestId',
-      sortable: true,
+      sort: true,
       sortField: 'manifestId',
       cell: (row) => <span>{row?.manifestId || '-'}</span>,
     },
@@ -181,49 +210,7 @@ const VisaOTM = () => {
     },
   ];
 
-  const debouncedSearch = useMemo(
-    () =>
-      debounce(() => {
-        // Search is not supported in this API currently.
-        // Keep this to avoid breaking CommonHeader if it passes onSearch.
-      }, 500),
-    []
-  );
-
-  useEffect(() => {
-    return () => debouncedSearch.cancel();
-  }, [debouncedSearch]);
-
-  const sortedData = useMemo(() => {
-    const list = [...(visaOTMData?.data || [])];
-
-    if (!params.sortBy) return list;
-
-    return list.sort((a, b) => {
-      const aValue = a?.[params.sortBy];
-      const bValue = b?.[params.sortBy];
-
-      if (params.sortBy === 'date') {
-        const aDate = aValue ? new Date(aValue).getTime() : 0;
-        const bDate = bValue ? new Date(bValue).getTime() : 0;
-        return params.sortOrder === 'ASC' ? aDate - bDate : bDate - aDate;
-      }
-
-      if (typeof aValue === 'number' && typeof bValue === 'number') {
-        return params.sortOrder === 'ASC' ? aValue - bValue : bValue - aValue;
-      }
-
-      return params.sortOrder === 'ASC'
-        ? String(aValue ?? '').localeCompare(String(bValue ?? ''))
-        : String(bValue ?? '').localeCompare(String(aValue ?? ''));
-    });
-  }, [visaOTMData, params.sortBy, params.sortOrder]);
-
-  const paginatedData = useMemo(() => {
-    const startIndex = (params.page - 1) * params.limit;
-    const endIndex = startIndex + params.limit;
-    return sortedData.slice(startIndex, endIndex);
-  }, [sortedData, params.page, params.limit]);
+  const tableData = visaOTMData || [];
 
   return (
     <>
@@ -233,20 +220,18 @@ const VisaOTM = () => {
           type: 'button',
           action: () => {
             setAddEditModal(true);
-            setSelectedOTM(null);
           },
         }}
-        hideFilter
         onSearch={debouncedSearch}
+        filterOptions={filterOptions}
         submitFilter={(filters) => {
-          const { fromDate, toDate, employeeId, ...rest } = filters;
-
+          const { from_date, to_date, ...rest } = filters;
+          const formattedFromDate = from_date ? moment(from_date).format('YYYY-MM-DD') : null;
           setParams((prev) => ({
             ...prev,
             ...rest,
-            fromDate: fromDate ? moment(fromDate).format('YYYY-MM-DD') : null,
-            toDate: toDate ? moment(toDate).format('YYYY-MM-DD') : null,
-            employeeId: employeeId || null,
+            from_date: formattedFromDate,
+            to_date: to_date ? moment(to_date).format('YYYY-MM-DD') : formattedFromDate,
             page: 1,
           }));
         }}
@@ -255,9 +240,9 @@ const VisaOTM = () => {
 
       <CustomTable
         pagination={{ currentPage: params.page, limit: params.limit }}
-        count={sortedData?.length || 0}
+        count={tableData?.length || 0}
         columns={columns}
-        data={paginatedData || []}
+        data={tableData}
         isLoading={isLoadingGet}
         onPageChange={(page) => setParams((prev) => ({ ...prev, page }))}
         setLimit={(limit) => setParams((prev) => ({ ...prev, limit, page: 1 }))}
@@ -269,8 +254,7 @@ const VisaOTM = () => {
         <AddEditModal
           showModal={addEditModal}
           closeModal={() => setAddEditModal(false)}
-          onRefreshOTM={() => getData(params)}
-          selectedOTM={selectedOTM}
+          onRefreshOTM={onRefreshOTM}
         />
       )}
     </>

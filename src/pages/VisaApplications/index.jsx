@@ -20,7 +20,7 @@ import ActivityLog from './ActivityLog';
 import AddRemoveBiometric from './AddRemoveBiometric';
 import PrintReceiptModal from './PrintReceipt';
 import PrintBarcodeModal from './PrintBarcode';
-import useUserReducer from '../../stores/UserReducer';
+import { useCascadingFilters } from '../../hooks/useCascadingFilters';
 
 const VisaApplications = () => {
   const {
@@ -28,18 +28,6 @@ const VisaApplications = () => {
     deleteVisaApplication, isLoadingDelete,
     getVisaStatuses, visaStatusData, isMetaLoading,
   } = useVisaApplicationReducer((state) => state);
-
-  const {
-    countryList,
-    missionList,
-    centerList,
-    isLoadingCountries,
-    isLoadingMissions,
-    isLoadingCenters,
-    getCountries,
-    getMissionsByCountry,
-    getCentersByMission
-  } = useUserReducer();
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [modal, setModal] = useState(false);
@@ -54,68 +42,22 @@ const VisaApplications = () => {
   const initialParams = {
     page: 1,
     limit: 10,
-    sort_by: 'created_at', 
+    sort_by: 'created_at',
     sort_order: 'DESC',
   };
 
   const [params, setParams] = useState(initialParams);
 
   useEffect(() => {
-    getCountries();
+    getVisaApplications(params);
+  }, [params]);
+
+  useEffect(() => {
     getVisaStatuses();
   }, []);
 
-  const countryOptions = useMemo(
-    () =>
-      (countryList || []).map((item) => ({
-        value: item.country_id,
-        label: item.country_name,
-      })),
-    [countryList]
-  );
-
-  const statusOptions = useMemo(
-      () =>
-        (visaStatusData || []).map((item) => ({
-          label: item.status,
-          value: item.status_id,
-        })),
-      [visaStatusData]
-    );
-
-  const missionOptions = useMemo(
-    () =>
-      (missionList || []).map((item) => ({
-        value: item.mission_id,
-        label: item.mission_name,
-      })),
-    [missionList]
-  );
-
-  const centerOptions = useMemo(
-    () =>
-      (centerList || []).map((item) => ({
-        value: item.center_id,
-        label: item.center_name,
-      })),
-    [centerList]
-  );
-
-  const onCountryChange = (countryId) => {
-    if (countryId) {
-      getMissionsByCountry(countryId);
-    }
-  };
-
-  const onMissionChange = (missionId) => {
-    if (missionId) {
-      getCentersByMission(missionId);
-    }
-  };
-
   const onRefreshVisaApplications = () => {
     getVisaApplications(params);
-
     setModal(false);
     setPrintReceiptModal(false);
     setPrintBarcodeModal(false);
@@ -123,9 +65,48 @@ const VisaApplications = () => {
     setDeleteModalOpen(false);
   };
 
+  const debouncedSearch = useMemo(
+    () =>
+      debounce((searchValue) => {
+        setParams((prevParams) => ({
+          ...prevParams,
+          search: searchValue,
+          page: 1,
+        }));
+      }, 500),
+    []
+  );
+
   useEffect(() => {
-    getVisaApplications(params);
-  }, [params, getVisaApplications]);
+    return () => {
+      debouncedSearch.cancel();
+    };
+  }, [debouncedSearch]);
+
+  // Filters
+  const { cascadingFilterOptions, dateRangeFilter, getCountries } = useCascadingFilters();
+
+  useEffect(() => {
+    getCountries();
+  }, []);
+
+  const statusOptions = useMemo(
+    () => (visaStatusData || []).map((x) => ({ label: x.status, value: String(x.status_id) })),
+    [visaStatusData]
+  );
+
+  const filterOptions = useMemo(() => [
+    ...cascadingFilterOptions,
+    {
+      fieldName: 'Status',
+      BE_keyName: 'status_id',
+      fieldType: 'select',
+      placeholder: 'Select Status',
+      Options: statusOptions,
+      isLoading: isMetaLoading,
+    },
+    dateRangeFilter,
+  ], [cascadingFilterOptions, statusOptions, isMetaLoading]);
 
   const handleSortChange = (selector) => {
     setParams((prev) => ({
@@ -157,7 +138,7 @@ const VisaApplications = () => {
   const handleComment = (row) => {
     exportComments(
       row.visa_application_id,
-      `Comments_${row.appointment_reference_no}_${new Date().toISOString().slice(0,10)}`
+      `Comments_${row.appointment_reference_no}_${new Date().toISOString().slice(0, 10)}`
     );
   };
 
@@ -177,23 +158,32 @@ const VisaApplications = () => {
     setAddRemoveBiometricModal(row);
   };
 
+  const handleDelete = () => {
+    if (deleteModalOpen?.id) {
+      deleteVisaApplication(deleteModalOpen.id, () => {
+        onRefreshVisaApplications();
+      });
+    }
+  };
+
   const columns = [
-    { name: 'Reference No', selector: 'appointment_reference_no', sort:true },
+    { name: 'Reference No', selector: 'appointment_reference_no', sort: true, sortField: 'appointment_reference_no' },
     {
       name: 'Name',
       selector: 'first_name',
       cell: (row) => {
         return `${row?.first_name || ''} ${row?.surname || ''}`.trim();
       },
-      sort:true,
+      sort: true,
+      sortField: 'first_name'
     },
-    { name: 'Center', selector: 'center_name', sort:true },
-    { name: 'Consprom File No', selector: 'consprom_file_number', sort:true },
-    { name: 'Nationality', selector: 'nationality', sort:true },
-    { name: 'Passport No', selector: 'passport_no', sort:true },
-    { name: 'Application Type', selector: 'appointment_type', sort:true },
-    { name: 'Service Name', selector: 'service_name', sort:true },
-    { name: 'Delivery Type', selector: 'delivery_type', sort:true },
+    { name: 'Center', selector: 'center_name', sort: true, sortField: 'center_name' },
+    { name: 'Consprom File No', selector: 'consprom_file_number', sort: true, sortField: 'consprom_file_number' },
+    { name: 'Nationality', selector: 'nationality', sort: true, sortField: 'nationality' },
+    { name: 'Passport No', selector: 'passport_no', sort: true, sortField: 'passport_no' },
+    { name: 'Application Type', selector: 'appointment_type', sort: true, sortField: 'appointment_type' },
+    { name: 'Service Name', selector: 'service_name', sort: true, sortField: 'service_name' },
+    { name: 'Delivery Type', selector: 'delivery_type', sort: true, sortField: 'delivery_type' },
     {
       name: 'Status / By, On',
       selector: 'latest_comment',
@@ -209,6 +199,7 @@ const VisaApplications = () => {
         </div>
       ),
       sort: true,
+      sortField: 'latest_comment'
     },
     {
       name: 'Action',
@@ -232,70 +223,7 @@ const VisaApplications = () => {
     },
   ];
 
-  const debouncedSearch = useMemo(
-    () =>
-      debounce((searchValue) => {
-        setParams((prevParams) => ({
-          ...prevParams,
-          search: searchValue,
-          page: 1,
-        }));
-      }, 500),
-    []
-  );
-
-  useEffect(() => {
-    return () => {
-      debouncedSearch.cancel();
-    };
-  }, [debouncedSearch]);
-
-  const handleDelete = () => {
-    if (deleteModalOpen?.id) {
-      deleteVisaApplication(deleteModalOpen.id, () => {
-        onRefreshVisaApplications();
-      });
-    }
-  };
-
-  const filterOptions = [
-    {
-      fieldName: 'Country',
-      BE_keyName: 'country_id',
-      fieldType: 'select',
-      Options: countryOptions,
-      callBack: onCountryChange,
-      isLoading: isLoadingCountries,
-    },
-    {
-      fieldName: 'Mission',
-      BE_keyName: 'mission_id',
-      fieldType: 'select',
-      Options: missionOptions,
-      callBack: onMissionChange,
-      isLoading: isLoadingMissions,
-    },
-    {
-      fieldName: 'Center',
-      BE_keyName: 'center_id',
-      fieldType: 'select',
-      Options: centerOptions,
-      isLoading: isLoadingCenters,
-    },
-    {
-      fieldName: 'Status',
-      BE_keyName: 'status_id',
-      fieldType: 'select',
-      Options: statusOptions,
-      isLoading: isMetaLoading,
-    },
-    {
-      fieldName: 'Date Range',
-      fieldType: 'dateRangeCombined',
-      fromKey: 'from_date',
-      toKey: 'to_date',
-    },
-  ];
+  const tableData = visaApplicationsData || [];
 
   return (
     <>
@@ -325,21 +253,10 @@ const VisaApplications = () => {
         pagination={{ currentPage: params.page, limit: params.limit }}
         count={pagination?.total_records || 0}
         columns={columns}
-        data={visaApplicationsData || []}
+        data={tableData}
         isLoading={isLoadingGet}
-        onPageChange={(page) =>
-          setParams((prev) => ({
-            ...prev,
-            page,
-          }))
-        }
-        setLimit={(limit) =>
-          setParams((prev) => ({
-            ...prev,
-            limit,
-            page: 1,
-          }))
-        }
+        onPageChange={(page) => setParams((prev) => ({ ...prev, page }))}
+        setLimit={(limit) => setParams((prev) => ({ ...prev, limit, page: 1 }))}
         onSortChange={handleSortChange}
         wrapClasses="inventory-table-wrap"
       />

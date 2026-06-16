@@ -9,12 +9,14 @@ import CustomTable from '../../components/common/CustomTable';
 import useVisaOTSReducer from '../../stores/VisaOTSReducer';
 import { formatDate } from '../../config/config';
 import AddEditModal from './AddEditModal';
-import useUserReducer from '../../stores/UserReducer';
+import { useCascadingFilters } from '../../hooks/useCascadingFilters';
 
 const VisaOTS = () => {
 
   const { getData, visaOTSData, isLoadingGet } = useVisaOTSReducer((state) => state);
-  
+
+  const [showAddModal, setShowAddModal] = useState(false);
+
   const initialParams = {
     page: 1,
     limit: 10,
@@ -23,72 +25,48 @@ const VisaOTS = () => {
   };
 
   const [params, setParams] = useState(initialParams);
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [selectedOTS, setSelectedOTS] = useState(null);
 
-  const {
-    countryList,
-    missionList,
-    centerList,
-    isLoadingCountries,
-    isLoadingMissions,
-    isLoadingCenters,
-    getCountries,
-    getMissionsByCountry,
-    getCentersByMission
-  } = useUserReducer();
+  useEffect(() => {
+    getData(params);
+  }, [params]);
+
+  const onRefreshOTS = () => {
+    getData(params);
+  };
+
+  const debouncedSearch = useMemo(
+    () =>
+      debounce((searchValue) => {
+        setParams((prev) => ({
+          ...prev,
+          search: searchValue,
+          page: 1,
+        }));
+      }, 500),
+    []
+  );
+
+  useEffect(() => {
+    return () => debouncedSearch.cancel();
+  }, [debouncedSearch]);
+
+  // Filters
+  const { cascadingFilterOptions, dateRangeFilter, getCountries } = useCascadingFilters();
 
   useEffect(() => {
     getCountries();
   }, []);
 
-  const countryOptions = useMemo(
-    () =>
-      (countryList || []).map((item) => ({
-        value: item.country_id,
-        label: item.country_name,
-      })),
-    [countryList]
-  );
-  const missionOptions = useMemo(
-    () =>
-      (missionList || []).map((item) => ({
-        value: item.mission_id,
-        label: item.mission_name,
-      })),
-    [missionList]
-  );
-
-  const centerOptions = useMemo(
-    () =>
-      (centerList || []).map((item) => ({
-        value: item.center_id,
-        label: item.center_name,
-      })),
-    [centerList]
-  );
-
-  const onCountryChange = (countryId) => {
-    if (countryId) {
-      getMissionsByCountry(countryId);
-    }
-  };
-
-  const onMissionChange = (missionId) => {
-    if (missionId) {
-      getCentersByMission(missionId);
-    }
-  };
-
-  useEffect(() => {
-    getData(params);
-  }, [params, getData]);
+  const filterOptions = useMemo(() => [
+    ...cascadingFilterOptions,
+    dateRangeFilter,
+  ], [cascadingFilterOptions]);
 
   const handleSortChange = (selector) => {
     setParams((prev) => ({
       ...prev,
-      sortBy: selector,
-      sortOrder: prev.sortOrder === 'ASC' ? 'DESC' : 'ASC',
+      sort_by: selector,
+      sort_order: prev.sort_order === 'ASC' ? 'DESC' : 'ASC',
     }));
   };
 
@@ -108,63 +86,14 @@ const VisaOTS = () => {
     },
     {
       name: 'Total Application',
-      selector: 'totalApplication',
+      selector: 'total_application',
       sort: true,
-      sortField: 'totalApplication',
-      cell: (row) => <span>{row?.totalApplication ?? 0}</span>,
+      sortField: 'total_application',
+      cell: (row) => <span>{row?.total_application ?? 0}</span>,
     },
   ];
 
-  const debouncedSearch = useMemo(
-    () =>
-      debounce((searchValue) => {
-        setParams((prev) => ({
-          ...prev,
-          search: searchValue,
-          page: 1,
-        }));
-      }, 500),
-    []
-  );
-
-  useEffect(() => {
-    return () => debouncedSearch.cancel();
-  }, [debouncedSearch]);
-
-  const filterOptions = [
-    {
-      fieldName: 'Country',
-      BE_keyName: 'country_id',
-      fieldType: 'select',
-      Options: countryOptions,
-      callBack: onCountryChange,
-      isLoading: isLoadingCountries,
-    },
-    {
-      fieldName: 'Mission',
-      BE_keyName: 'mission_id',
-      fieldType: 'select',
-      Options: missionOptions,
-      callBack: onMissionChange,
-      isLoading: isLoadingMissions,
-    },
-    {
-      fieldName: 'Center',
-      BE_keyName: 'center_id',
-      fieldType: 'select',
-      Options: centerOptions,
-      isLoading: isLoadingCenters,
-    },
-    {
-      fieldName: 'Date Range',
-      fieldType: 'dateRangeCombined',
-      fromKey: 'from_date',
-      toKey: 'to_date',
-    },
-  ];
-
-  const tableData = visaOTSData;
-  const loading = isLoadingGet;
+  const tableData = visaOTSData || [];
 
   return (
     <>
@@ -196,14 +125,14 @@ const VisaOTS = () => {
         pagination={{ currentPage: params.page, limit: params.limit }}
         count={tableData?.total || 0}
         columns={columns}
-        data={tableData || []}
-        isLoading={loading}
-        onPageChange={(page) => setParams({ ...params, page })}
-        setLimit={(limit) => setParams({ ...params, limit })}
+        data={tableData}
+        isLoading={isLoadingGet}
+        onPageChange={(page) => setParams((prev) => ({ ...prev, page }))}
+        setLimit={(limit) => setParams((prev) => ({ ...prev, limit, page: 1 }))}
         onSortChange={handleSortChange}
         wrapClasses="inventory-table-wrap"
       />
-      {showAddModal && <AddEditModal showModal={showAddModal} closeModal={() => setShowAddModal(false)} onRefreshOTS={() => getData(params)} />}
+      {showAddModal && <AddEditModal showModal={showAddModal} closeModal={() => setShowAddModal(false)} onRefreshOTS={onRefreshOTS} />}
     </>
   );
 };

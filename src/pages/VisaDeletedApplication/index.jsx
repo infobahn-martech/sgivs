@@ -8,27 +8,31 @@ import '../../assets/scss/usermanagement.scss';
 import CommonHeader from '../../components/common/CommonHeader';
 import CustomTable from '../../components/common/CustomTable';
 import useVisaDeleteApplicationReducer from '../../stores/VisaDeleteApplicationReducer';
+import useVisaApplicationReducer from '../../stores/VisaApplicationReducer';
 import { formatDate } from '../../config/config';
 import CustomActionModal from '../../components/common/CustomActionModal';
+import { useCascadingFilters } from '../../hooks/useCascadingFilters';
 
-const VisaDeleteApplication = () => {
+const VisaDeletedApplication = () => {
   // ✅ Toggle this
   const USE_MOCK = true;
 
-  const { getData, visaDeleteApplicationData, isLoadingGet, deleteData, isLoadingDelete } =
-    useVisaDeleteApplicationReducer((state) => state);
+  const {
+    getData, visaDeleteApplicationData, isLoadingGet,
+    deleteData, isLoadingDelete,
+  } = useVisaDeleteApplicationReducer((state) => state);
+
+  const {
+    getVisaStatuses, visaStatusData, isMetaLoading,
+  } = useVisaApplicationReducer((state) => state);
 
   const [retrieveModalOpen, setRetrieveModalOpen] = useState(false);
 
   const initialParams = {
-    search: '',
     page: 1,
     limit: 10,
-    fromDate: null,
-    toDate: null,
-    sortBy: 'createdAt',
-    sortOrder: 'DESC',
-    isExcelExport: 'false',
+    sort_by: 'created_at',
+    sort_order: 'DESC',
   };
 
   const [params, setParams] = useState(initialParams);
@@ -95,21 +99,83 @@ const VisaDeleteApplication = () => {
     ],
   };
 
+  useEffect(() => {
+    if (!USE_MOCK) getData(params);
+  }, [params, USE_MOCK, getData]);
+
+  useEffect(() => {
+    getVisaStatuses();
+  }, []);
+
   const onRefreshCenter = () => {
     if (!USE_MOCK) getData(params);
     setRetrieveModalOpen(false);
   };
 
+  const debouncedSearch = useMemo(
+    () =>
+      debounce((searchValue) => {
+        setParams((prev) => ({
+          ...prev,
+          search: searchValue,
+          page: 1,
+        }));
+      }, 500),
+    []
+  );
+
   useEffect(() => {
-    if (!USE_MOCK) getData(params);
-  }, [params, USE_MOCK, getData]);
+    return () => debouncedSearch.cancel();
+  }, [debouncedSearch]);
+
+  // Filters
+  const { cascadingFilterOptions, dateRangeFilter, getCountries } = useCascadingFilters();
+
+  useEffect(() => {
+    getCountries();
+  }, []);
+
+  const statusOptions = useMemo(
+    () => (visaStatusData || []).map((x) => ({ label: x.status, value: String(x.status_id) })),
+    [visaStatusData]
+  );
+
+  const filterOptions = useMemo(() => [
+    ...cascadingFilterOptions,
+    {
+      fieldName: 'Status',
+      BE_keyName: 'status_id',
+      fieldType: 'select',
+      placeholder: 'Select Status',
+      Options: statusOptions,
+      isLoading: isMetaLoading,
+    },
+    dateRangeFilter,
+  ], [cascadingFilterOptions, statusOptions, isMetaLoading]);
 
   const handleSortChange = (selector) => {
     setParams((prev) => ({
       ...prev,
-      sortBy: selector,
-      sortOrder: prev.sortOrder === 'ASC' ? 'DESC' : 'ASC',
+      sort_by: selector,
+      sort_order: prev.sort_order === 'ASC' ? 'DESC' : 'ASC',
     }));
+  };
+
+  const handleRetrieve = () => {
+    if (USE_MOCK) {
+      setRetrieveModalOpen(false);
+      return;
+    }
+    // ✅ You can change API call name here if you have retrieve endpoint
+    // Example:
+    // retrieveData(retrieveModalOpen?.id, () => onRefreshCenter());
+
+    // Temporary: using deleteData placeholder (replace this!)
+    if (retrieveModalOpen?.id) {
+      deleteData(retrieveModalOpen?.id, () => {
+        onRefreshCenter();
+      });
+    }
   };
 
   // ✅ Retrieve action (instead of delete)
@@ -140,38 +206,38 @@ const VisaDeleteApplication = () => {
     {
       name: 'Reference No',
       selector: 'referenceNo',
-      sortable: true,
+      sort: true,
       sortField: 'referenceNo',
     },
     {
       name: 'Name',
       selector: 'name',
-      sortable: true,
+      sort: true,
       sortField: 'name',
     },
     {
       name: 'Gender',
       selector: 'gender',
-      sortable: true,
+      sort: true,
       sortField: 'gender',
     },
     {
       name: 'Date of Birth',
       selector: 'dob',
-      sortable: true,
+      sort: true,
       sortField: 'dob',
       cell: (row) => <span>{row?.dob ? formatDate(row?.dob) : '-'}</span>,
     },
     {
       name: 'Passport No',
       selector: 'passportNo',
-      sortable: true,
+      sort: true,
       sortField: 'passportNo',
     },
     {
       name: 'Status / By, On',
       selector: 'status',
-      sortable: true,
+      sort: true,
       sortField: 'status',
       cell: (row) => (
         <div className="d-flex flex-column">
@@ -179,8 +245,8 @@ const VisaDeleteApplication = () => {
             <b>{row?.status || '-'}</b>
           </span>
           <small className="text-muted">
-            {row?.actionBy ? `By: ${row.actionBy}` : 'By: -'}{' '}
-            {row?.actionOn ? `• On: ${formatDate(row.actionOn)}` : ''}
+            {row?.actionBy ? `${row.actionBy}` : '-'}
+            {row?.actionOn ? `, ${formatDate(row.actionOn)}` : ''}
           </small>
         </div>
       ),
@@ -194,58 +260,25 @@ const VisaDeleteApplication = () => {
     },
   ];
 
-  const debouncedSearch = useMemo(
-    () =>
-      debounce((searchValue) => {
-        setParams((prev) => ({
-          ...prev,
-          search: searchValue,
-          page: 1,
-        }));
-      }, 500),
-    []
-  );
-
-  useEffect(() => {
-    return () => debouncedSearch.cancel();
-  }, [debouncedSearch]);
-
-  const handleRetrieve = () => {
-    if (USE_MOCK) {
-      setRetrieveModalOpen(false);
-      return;
-    }
-
-    // ✅ You can change API call name here if you have retrieve endpoint
-    // Example:
-    // retrieveData(retrieveModalOpen?.id, () => onRefreshCenter());
-
-    // Temporary: using deleteData placeholder (replace this!)
-    if (retrieveModalOpen?.id) {
-      deleteData(retrieveModalOpen?.id, () => {
-        onRefreshCenter();
-      });
-    }
-  };
-
   // ✅ dataset
-  const tableData = USE_MOCK ? mockDeleteApplicationData : deleteApplicationData;
+  const tableData = USE_MOCK ? mockDeleteApplicationData : visaDeleteApplicationData;
   const loading = USE_MOCK ? false : isLoadingGet;
 
   return (
     <>
       <CommonHeader
-        hideFilter
         onSearch={debouncedSearch}
+        filterOptions={filterOptions}
         submitFilter={(filters) => {
-          const { fromDate, toDate, ...rest } = filters;
-          setParams({
-            ...params,
+          const { from_date, to_date, ...rest } = filters;
+          const formattedFromDate = from_date ? moment(from_date).format('YYYY-MM-DD') : null;
+          setParams((prev) => ({
+            ...prev,
             ...rest,
-            fromDate: fromDate ? moment(fromDate).format('YYYY-MM-DD') : null,
-            toDate: toDate ? moment(toDate).format('YYYY-MM-DD') : null,
+            from_date: formattedFromDate,
+            to_date: to_date ? moment(to_date).format('YYYY-MM-DD') : formattedFromDate,
             page: 1,
-          });
+          }));
         }}
         clearOptions={() => setParams(initialParams)}
       />
@@ -256,8 +289,8 @@ const VisaDeleteApplication = () => {
         columns={columns}
         data={tableData?.data || []}
         isLoading={loading}
-        onPageChange={(page) => setParams({ ...params, page })}
-        setLimit={(limit) => setParams({ ...params, limit })}
+        onPageChange={(page) => setParams((prev) => ({ ...prev, page }))}
+        setLimit={(limit) => setParams((prev) => ({ ...prev, limit, page: 1 }))}
         onSortChange={handleSortChange}
         wrapClasses="inventory-table-wrap"
       />
@@ -276,4 +309,4 @@ const VisaDeleteApplication = () => {
   );
 };
 
-export default VisaDeleteApplication;
+export default VisaDeletedApplication;

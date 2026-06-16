@@ -65,7 +65,7 @@ export default function AddEditModal({ showModal, closeModal, onRefreshOTS }) {
 
     const renderHeader = () => (
         <>
-            <h4 className="modal-title">Add Visa OutScan to Spoke</h4>
+            <h4 className="modal-title">Add Visa OutScan To Spoke</h4>
             <button
                 type="button"
                 className="btn-close"

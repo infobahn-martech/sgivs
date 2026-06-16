@@ -125,7 +125,7 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
       path: '/visa-applications',
       activeRoutes: [
         '/visa-applications',
-        '/visa-delete-application',
+        '/visa-deleted-application',
         '/visa-inscan-hub',
         '/visa-outscan-to-mission',
         '/visa-inscan-from-mission',
@@ -137,7 +137,7 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
       ],
       subMenu: [
         { name: 'Visa Applications', path: '/visa-applications', icon: MessagesIcon },
-        { name: 'Deleted Application', path: '/visa-delete-application', icon: MessagesIcon },
+        { name: 'Deleted Application', path: '/visa-deleted-application', icon: MessagesIcon },
         { name: 'Inscan At Hub', path: '/visa-inscan-hub', icon: MessagesIcon },
         { name: 'Outscan To Mission', path: '/visa-outscan-to-mission', icon: MessagesIcon },
         { name: 'Inscan From Mission', path: '/visa-inscan-from-mission', icon: MessagesIcon },

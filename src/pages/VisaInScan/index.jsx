@@ -9,35 +9,64 @@ import CustomTable from '../../components/common/CustomTable';
 import useVisaInScanReducer from '../../stores/VisaInScanReducer';
 import { formatDate } from '../../config/config';
 import AddEditModal from './AddEditModal';
+import { useCascadingFilters } from '../../hooks/useCascadingFilters';
 
 const VisaInScan = () => {
   const { getData, visaInScanData, isLoadingGet } = useVisaInScanReducer((state) => state);
 
+  const [addEditModal, setAddEditModal] = useState(false);
+
   const initialParams = {
-    search: '',
     page: 1,
     limit: 10,
-    fromDate: null,
-    toDate: null,
-    sortBy: 'date',
-    sortOrder: 'DESC',
-    isExcelExport: 'false',
-    status_id: 2,
+    sort_by: 'created_at',
+    sort_order: 'DESC',
+    status_id:2,
   };
 
   const [params, setParams] = useState(initialParams);
-  const [addEditModal, setAddEditModal] = useState(false);
-  const [selectedInScan, setSelectedInScan] = useState(null);
 
   useEffect(() => {
     getData(params);
-  }, [params, getData]);
+  }, [params]);
+
+  const onRefreshInScan = () => {
+    getData(params);
+  };
+
+  const debouncedSearch = useMemo(
+    () =>
+      debounce((searchValue) => {
+        setParams((prev) => ({
+          ...prev,
+          search: searchValue,
+          page: 1,
+        }));
+      }, 500),
+    []
+  );
+
+  useEffect(() => {
+    return () => debouncedSearch.cancel();
+  }, [debouncedSearch]);
+
+  // Filters
+  const { cascadingFilterOptions, dateRangeFilter, getCountries } = useCascadingFilters();
+
+  useEffect(() => {
+    getCountries();
+  }, []);
+
+  const filterOptions = useMemo(() => [
+    ...cascadingFilterOptions,
+    dateRangeFilter,
+  ], [cascadingFilterOptions]);
 
   const handleSortChange = (selector) => {
     setParams((prev) => ({
       ...prev,
-      sortBy: selector,
-      sortOrder: prev.sortOrder === 'ASC' ? 'DESC' : 'ASC',
+      sort_by: selector,
+      sort_order: prev.sort_order === 'ASC' ? 'DESC' : 'ASC',
     }));
   };
 
@@ -65,21 +94,7 @@ const VisaInScan = () => {
     },
   ];
 
-  const debouncedSearch = useMemo(
-    () =>
-      debounce((searchValue) => {
-        setParams((prev) => ({
-          ...prev,
-          search: searchValue,
-          page: 1,
-        }));
-      }, 500),
-    []
-  );
-
-  useEffect(() => {
-    return () => debouncedSearch.cancel();
-  }, [debouncedSearch]);
+  const tableData = visaInScanData || [];
 
   return (
     <>
@@ -89,19 +104,18 @@ const VisaInScan = () => {
           type: 'button',
           action: () => {
             setAddEditModal(true);
-            setSelectedInScan(null);
           },
         }}
-        hideFilter
         onSearch={debouncedSearch}
+        filterOptions={filterOptions}
         submitFilter={(filters) => {
-          const { fromDate, toDate, ...rest } = filters;
-
+          const { from_date, to_date, ...rest } = filters;
+          const formattedFromDate = from_date ? moment(from_date).format('YYYY-MM-DD') : null;
           setParams((prev) => ({
             ...prev,
             ...rest,
-            fromDate: fromDate ? moment(fromDate).format('YYYY-MM-DD') : null,
-            toDate: toDate ? moment(toDate).format('YYYY-MM-DD') : null,
+            from_date: formattedFromDate,
+            to_date: to_date ? moment(to_date).format('YYYY-MM-DD') : formattedFromDate,
             page: 1,
           }));
         }}
@@ -112,7 +126,7 @@ const VisaInScan = () => {
         pagination={{ currentPage: params.page, limit: params.limit }}
         count={visaInScanData?.total || visaInScanData?.data?.length || 0}
         columns={columns}
-        data={visaInScanData || []}
+        data={tableData}
         isLoading={isLoadingGet}
         onPageChange={(page) => setParams((prev) => ({ ...prev, page }))}
         setLimit={(limit) => setParams((prev) => ({ ...prev, limit, page: 1 }))}
@@ -124,8 +138,7 @@ const VisaInScan = () => {
         <AddEditModal
           showModal={addEditModal}
           closeModal={() => setAddEditModal(false)}
-          onRefreshInScan={() => getData(params)}
-          selectedInScan={selectedInScan}
+          onRefreshInScan={onRefreshInScan}
         />
       )}
     </>

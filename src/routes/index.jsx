@@ -44,7 +44,7 @@ import CounterDelivery from '../pages/CounterDelivery';
 import VisaOTC from '../pages/VisaOTC';
 import PassportTracking from '../pages/PassportTracking';
 import VisaApplications from '../pages/VisaApplications';
-import VisaDeleteApplication from '../pages/VisaDeleteApplication';
+import VisaDeletedApplication from '../pages/VisaDeletedApplication';
 import VisaInScan from '../pages/VisaInScan';
 import VisaOTM from '../pages/VisaOTM';
 import VisaIFM from '../pages/VisaIFM';
@@ -157,7 +157,7 @@ const router = createHashRouter([
               { path: '/outscan-to-courier', element: <OTC /> },
               { path: '/passport-tracking', element: <PassportTracking /> },
               { path: '/visa-applications', element: <VisaApplications /> },
-              { path: '/visa-delete-application', element: <VisaDeleteApplication /> },
+              { path: '/visa-deleted-application', element: <VisaDeletedApplication /> },
               { path: '/visa-inscan-hub', element: <VisaInScan /> },
               { path: '/visa-outscan-to-mission', element: <VisaOTM /> },
               { path: '/visa-inscan-from-mission', element: <VisaIFM /> },
