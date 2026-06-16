@@ -1,85 +1,20 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import CustomTable from '../../components/common/CustomTable';
 import '../../assets/scss/usermanagement.scss';
-import useAuthReducer from '../../stores/AuthReducer';
 import useUserReducer from '../../stores/UserReducer';
 import CustomActionModal from '../../components/common/CustomActionModal';
 import { debounce } from 'lodash';
-import moment from 'moment';
 import getUserTableColumns from './getUserTableColumns';
 import AddEditModal from './AddEditModal';
 import CommonHeader from '../../components/common/CommonHeader';
+import { useCascadingFilters } from '../../hooks/useCascadingFilters';
 
 const UserManagement = () => {
 
   const {
     getAllEmployees, employeeList, isLoadingEmployees, employeeCount,
     changeEmployeeStatus, isLoadingStatus,
-
-    countryList, missionList, centerList,
-    isLoadingCountries, isLoadingMissions, isLoadingCenters,
-    getCountries, getMissionsByCountry, getCentersByMission,
   } = useUserReducer((state) => state);
-
-  // load countries once
-  useEffect(() => {
-    getCountries();
-  }, []);
-
-  // option builders
-  const countryOptions = useMemo(
-    () => (countryList || []).map((x) => ({ label: x.country_name, value: String(x.country_id) })),
-    [countryList]
-  );
-  const missionOptions = useMemo(
-    () => (missionList || []).map((x) => ({ label: x.mission_name, value: String(x.mission_id) })),
-    [missionList]
-  );
-  const centerOptions = useMemo(
-    () => (centerList || []).map((x) => ({ label: x.center_name, value: String(x.center_id) })),
-    [centerList]
-  );
-
-  const filterOptions = useMemo(
-    () => [
-      {
-        fieldName: 'Country',
-        BE_keyName: 'country_id',
-        fieldType: 'select',
-        placeholder: 'Select Country',
-        Options: countryOptions,
-        isLoading: isLoadingCountries,
-        resetFields: ['mission_id', 'center_id'],
-        // 👇 when country changes, load that country's missions
-        callBack: (value) => {
-          getMissionsByCountry(value);
-          getCentersByMission(null);
-        },
-      },
-      {
-        fieldName: 'Mission',
-        BE_keyName: 'mission_id',
-        fieldType: 'select',
-        placeholder: 'Select Mission',
-        Options: missionOptions,
-        isLoading: isLoadingMissions,
-        resetFields: ['center_id'],
-        // 👇 when mission changes, load that mission's centers
-        callBack: (value) => {
-          getCentersByMission(value);
-        },
-      },
-      {
-        fieldName: 'Center',
-        BE_keyName: 'center_id',
-        fieldType: 'select',
-        placeholder: 'Select Center',
-        Options: centerOptions,
-        isLoading: isLoadingCenters,
-      },
-    ],
-    [countryOptions, missionOptions, centerOptions, isLoadingCountries, isLoadingMissions, isLoadingCenters]
-  );
 
   const [modal, setModal] = useState(false);
   const [statusModalOpen, setStatusModalOpen] = useState(false);
@@ -119,6 +54,18 @@ const UserManagement = () => {
     return () => debouncedSearch.cancel();
   }, [debouncedSearch]);
 
+  // Filters
+  const { cascadingFilterOptions, dateRangeFilter, getCountries } = useCascadingFilters();
+
+  useEffect(() => {
+    getCountries();
+  }, []);
+
+  const filterOptions = useMemo(() => [
+    ...cascadingFilterOptions,
+    dateRangeFilter,
+  ], [cascadingFilterOptions]);
+
   const handleSortChange = (selector) => {
     setParams((prev) => ({
       ...prev,
@@ -129,7 +76,6 @@ const UserManagement = () => {
 
   const handleNotification = (row) => {
     console.log("Notify:", row);
-    // notification API here
   };
 
   const handleEditClick = (row) => {
@@ -139,6 +85,7 @@ const UserManagement = () => {
   const handleStatusClick = (row) => {
     setStatusModalOpen(row);
   };
+
   const handleConfirmStatusChange = () => {
     if (!statusModalOpen) return;
 
@@ -161,7 +108,6 @@ const UserManagement = () => {
   });
 
   const tableData = employeeList || [];
-  const count = employeeCount || 0;
 
   return (
     <>
@@ -171,13 +117,12 @@ const UserManagement = () => {
           type: 'button',
           action: () => setModal(true),
         }}
-        filterOptions={filterOptions}
         onSearch={debouncedSearch}
+        filterOptions={filterOptions}
         submitFilter={(filters) => {
-          const { fromDate, toDate, ...rest } = filters;
           setParams((prev) => ({
             ...prev,
-            ...rest,   // country_id, mission_id, center_id flow through
+            ...filters,   // country_id, mission_id, center_id flow through
             page: 1,
           }));
         }}
@@ -186,12 +131,12 @@ const UserManagement = () => {
 
       <CustomTable
         pagination={{ currentPage: params.page, limit: params.limit }}
-        count={count}
+        count={employeeCount || 0}
         columns={columns}
         data={tableData}
         isLoading={isLoadingEmployees}
         onPageChange={(page) => setParams((prev) => ({ ...prev, page }))}
-        setLimit={(limit) => setParams((prev) => ({ ...prev, limit }))}
+        setLimit={(limit) => setParams((prev) => ({ ...prev, limit, page: 1 }))}
         onSortChange={handleSortChange}
       />
 

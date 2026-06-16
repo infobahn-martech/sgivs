@@ -35,12 +35,12 @@ export const headerConfig = [
 
   // Passport Manager
   { title: 'Passport Applications', icon: transactionICo, path: '/passport-applications' },
-  { title: 'Passport Deleted Applications', icon: transactionICo, path: '/delete-application' },
+  { title: 'Passport Deleted Applications', icon: transactionICo, path: '/passport-deleted-application' },
   { title: 'OutScanned From Spoke', icon: transactionICo, path: '/outscan-from-spoke' },
   { title: 'OutScan To Spoke', icon: transactionICo, path: '/outscan-to-spoke' },
   { title: 'InScan At Hub', icon: transactionICo, path: '/inscan-at-hub' },
   { title: 'InScan From Mission', icon: transactionICo, path: '/inscan-from-mission' },
-  { title: 'OutScan to Mission', icon: transactionICo, path: '/outscan-to-mission' },
+  { title: 'OutScan To Mission', icon: transactionICo, path: '/outscan-to-mission' },
   { title: 'Counter Delivery', icon: transactionICo, path: '/counter-delivery' },
   { title: 'OutScan To Courier', icon: transactionICo, path: '/outscan-to-courier' },
   { title: 'Passport Tracking', icon: transactionICo, path: '/passport-tracking' },

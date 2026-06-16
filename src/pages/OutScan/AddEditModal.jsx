@@ -9,8 +9,7 @@ const nameSchema = z.object({
     application_numbers: z
         .string()
         .trim()
-        .nonempty('Application Number(s) is required')
-        .max(5000, 'Too many characters'),
+        .nonempty('At least one Application Number is required'),
 });
 
 export default function AddEditModal({ showModal, closeModal, onRefreshOutScan }) {
@@ -48,7 +47,7 @@ export default function AddEditModal({ showModal, closeModal, onRefreshOutScan }
 
     const renderHeader = () => (
         <>
-            <h4 className="modal-title">Add Out Scan</h4>
+            <h4 className="modal-title">Add OutScanned To Hub</h4>
             <button
                 type="button"
                 className="btn-close"
@@ -70,9 +69,9 @@ export default function AddEditModal({ showModal, closeModal, onRefreshOutScan }
                         <textarea
                             id="application_numbers"
                             className="form-control"
-                            rows={6}
-                            placeholder={"APPT001"}
+                            placeholder="Enter one Application Number per line"
                             {...register('application_numbers')}
+                            style={{ minHeight: '120px' }}
                         />
 
                         {errors.application_numbers && (

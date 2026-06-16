@@ -1,5 +1,4 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { Tooltip } from 'react-tooltip';
 import moment from 'moment';
 import { debounce } from 'lodash';
 
@@ -10,63 +9,66 @@ import CustomTable from '../../components/common/CustomTable';
 import useIFMReducer from '../../stores/IFMReducer';
 import { formatDate } from '../../config/config';
 import AddEditModal from './AddEditModal';
-import editIcon from '../../assets/images/edit.svg';
+import { useCascadingFilters } from '../../hooks/useCascadingFilters';
 
 const IFM = () => {
+
   const { getData, ifmData, isLoadingGet } = useIFMReducer((state) => state);
+
+  const [addEditModal, setAddEditModal] = useState(false);
 
   const initialParams = {
     search: '',
     page: 1,
     limit: 10,
-    fromDate: null,
-    toDate: null,
-    sortBy: 'date',
-    sortOrder: 'DESC',
-    isExcelExport: 'false',
+    sort_by: 'created_on',
+    sort_order: 'DESC',
   };
 
   const [params, setParams] = useState(initialParams);
-  const [addEditModal, setAddEditModal] = useState(false);
-  const [selectedIFM, setSelectedIFM] = useState(null);
 
   useEffect(() => {
     getData(params);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params]);
+
+  const onRefreshIFM = () => {
+    getData(params);
+  };
+
+  const debouncedSearch = useMemo(
+    () =>
+      debounce((searchValue) => {
+        setParams((prev) => ({
+          ...prev,
+          search: searchValue,
+          page: 1,
+        }));
+      }, 500),
+    []
+  );
+
+  useEffect(() => {
+    return () => debouncedSearch.cancel();
+  }, [debouncedSearch]);
+
+  // Filters
+  const { cascadingFilterOptions, dateRangeFilter, getCountries } = useCascadingFilters();
+
+  useEffect(() => {
+    getCountries();
+  }, []);
+
+  const filterOptions = useMemo(() => [
+    ...cascadingFilterOptions,
+    dateRangeFilter,
+  ], [cascadingFilterOptions]);
 
   const handleSortChange = (selector) => {
     setParams((prev) => ({
       ...prev,
-      sortBy: selector,
-      sortOrder: prev.sortOrder === 'ASC' ? 'DESC' : 'ASC',
+      sort_by: selector,
+      sort_order: prev.sort_order === 'ASC' ? 'DESC' : 'ASC',
     }));
-  };
-
-  const onClickEdit = (row) => {
-    setSelectedIFM(row);
-    setAddEditModal(true);
-  };
-
-  const renderAction = (row) => {
-    return (
-      <div className="d-flex gap-2 align-items-center">
-        <Tooltip
-          id={`ifm-edit-${row?.id}`}
-          place="bottom"
-          content="Edit"
-          style={{ backgroundColor: '#051a53' }}
-        />
-
-        <img
-          src={editIcon}
-          alt="Edit"
-          data-tooltip-id={`ifm-edit-${row?.id}`}
-          onClick={() => onClickEdit(row)}
-          style={{ cursor: 'pointer' }}
-        />
-      </div>
-    );
   };
 
   const columns = [
@@ -92,21 +94,7 @@ const IFM = () => {
     },
   ];
 
-  const debouncedSearch = useMemo(
-    () =>
-      debounce((searchValue) => {
-        setParams((prev) => ({
-          ...prev,
-          search: searchValue,
-          page: 1,
-        }));
-      }, 500),
-    []
-  );
-
-  useEffect(() => {
-    return () => debouncedSearch.cancel();
-  }, [debouncedSearch]);
+  const tableData = ifmData || [];
 
   return (
     <>
@@ -116,21 +104,20 @@ const IFM = () => {
           type: 'button',
           action: () => {
             setAddEditModal(true);
-            setSelectedIFM(null);
           },
         }}
-        hideFilter
         onSearch={debouncedSearch}
+        filterOptions={filterOptions}
         submitFilter={(filters) => {
-          const { fromDate, toDate, ...rest } = filters;
-
-          setParams({
-            ...params,
+          const { from_date, to_date, ...rest } = filters;
+          const formattedFromDate = from_date ? moment(from_date).format('YYYY-MM-DD') : null;
+          setParams((prev) => ({
+            ...prev,
             ...rest,
-            fromDate: fromDate ? moment(fromDate).format('YYYY-MM-DD') : null,
-            toDate: toDate ? moment(toDate).format('YYYY-MM-DD') : null,
+            from_date: formattedFromDate,
+            to_date: to_date ? moment(to_date).format('YYYY-MM-DD') : formattedFromDate,
             page: 1,
-          });
+          }));
         }}
         clearOptions={() => setParams(initialParams)}
       />
@@ -139,10 +126,10 @@ const IFM = () => {
         pagination={{ currentPage: params.page, limit: params.limit }}
         count={ifmData?.total || 0}
         columns={columns}
-        data={ifmData || []}
+        data={tableData}
         isLoading={isLoadingGet}
-        onPageChange={(page) => setParams({ ...params, page })}
-        setLimit={(limit) => setParams({ ...params, limit })}
+        onPageChange={(page) => setParams((prev) => ({ ...prev, page }))}
+        setLimit={(limit) => setParams((prev) => ({ ...prev, limit, page: 1 }))}
         onSortChange={handleSortChange}
         wrapClasses="inventory-table-wrap"
       />
@@ -151,8 +138,7 @@ const IFM = () => {
         <AddEditModal
           showModal={addEditModal}
           closeModal={() => setAddEditModal(false)}
-          onRefreshIFM={() => getData(params)}
-          selectedIFM={selectedIFM}
+          onRefreshIFM={onRefreshIFM}
         />
       )}
     </>

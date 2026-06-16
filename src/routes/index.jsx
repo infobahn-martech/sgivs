@@ -34,7 +34,7 @@ import VisaServiceManagement from '../pages/VisaServices/Loader';
 import OptionalServices from '../pages/OptionalServices/Loader';
 import AppointmentSettings from '../pages/AppointmentSettings/Loader';
 import PassportApplications from '../pages/PassportApplications/Loader';
-import DeleteApplication from '../pages/DeleteApplication/Loader';
+import PassportDeletedApplication from '../pages/PassportDeletedApplication/Loader';
 import OutScan from '../pages/OutScan/Loader';
 import InScan from '../pages/InScan/Loader';
 import OTM from '../pages/OTM';
@@ -147,7 +147,7 @@ const router = createHashRouter([
               { path: '/optional-service-type', element: <OptionalServiceType /> },
               { path: '/appointment-settings', element: <AppointmentSettings /> },
               { path: '/passport-applications', element: <PassportApplications /> },
-              { path: '/delete-application', element: <DeleteApplication /> },
+              { path: '/passport-deleted-application', element: <PassportDeletedApplication /> },
               { path: '/outscan-from-spoke', element: <OutScan /> },
               { path: '/inscan-at-hub', element: <InScan /> },
               { path: '/outscan-to-mission', element: <OTM /> },

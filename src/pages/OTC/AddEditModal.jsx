@@ -46,7 +46,7 @@ export default function AddEditModal({ showModal, closeModal, onRefreshOTC }) {
 
     const renderHeader = () => (
         <>
-            <h4 className="modal-title">Add OutScan to Courier</h4>
+            <h4 className="modal-title">Add OutScan To Courier</h4>
             <button
                 type="button"
                 className="btn-close"

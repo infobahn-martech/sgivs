@@ -10,9 +10,9 @@ import CustomTable from '../../components/common/CustomTable';
 import useDeleteApplicationReducer from '../../stores/DeleteApplicationReducer';
 import { formatDate } from '../../config/config';
 import CustomActionModal from '../../components/common/CustomActionModal';
-import useUserReducer from '../../stores/UserReducer';
+import { useCascadingFilters } from '../../hooks/useCascadingFilters';
 
-const DeleteApplication = () => {
+const PassportDeletedApplication = () => {
 
   const {
     getData, deleteApplicationData, isLoadingGet, pagination,
@@ -31,63 +31,42 @@ const DeleteApplication = () => {
 
   const [params, setParams] = useState(initialParams);
 
-  const {
-    countryList, missionList, centerList,
-    isLoadingCountries, isLoadingMissions, isLoadingCenters,
-    getCountries, getMissionsByCountry, getCentersByMission
-  } = useUserReducer();
-
   useEffect(() => {
-    getCountries();
-  }, []);
-
-  const countryOptions = useMemo(
-    () =>
-      (countryList || []).map((item) => ({
-        value: item.country_id,
-        label: item.country_name,
-      })),
-    [countryList]
-  );
-
-  const missionOptions = useMemo(
-    () =>
-      (missionList || []).map((item) => ({
-        value: item.mission_id,
-        label: item.mission_name,
-      })),
-    [missionList]
-  );
-
-  const centerOptions = useMemo(
-    () =>
-      (centerList || []).map((item) => ({
-        value: item.center_id,
-        label: item.center_name,
-      })),
-    [centerList]
-  );
-
-  const onCountryChange = (countryId) => {
-    if (countryId) {
-      getMissionsByCountry(countryId);
-    }
-  };
-
-  const onMissionChange = (missionId) => {
-    if (missionId) {
-      getCentersByMission(missionId);
-    }
-  };
+    getData(params);
+  }, [params, getData]);
 
   const onRefreshDeletedPassportApplications = () => {
     getData(params);
     setRetrieveModalOpen(false);
   };
 
+  const debouncedSearch = useMemo(
+    () =>
+      debounce((searchValue) => {
+        setParams((prev) => ({
+          ...prev,
+          search: searchValue,
+          page: 1,
+        }));
+      }, 500),
+    []
+  );
+
   useEffect(() => {
-    getData(params);
-  }, [params, getData]);
+    return () => debouncedSearch.cancel();
+  }, [debouncedSearch]);
+
+  // Filters
+  const { cascadingFilterOptions, dateRangeFilter, getCountries } = useCascadingFilters();
+
+  useEffect(() => {
+    getCountries();
+  }, []);
+
+  const filterOptions = useMemo(() => [
+    ...cascadingFilterOptions,
+    dateRangeFilter,
+  ], [cascadingFilterOptions]);
 
   const handleSortChange = (selector) => {
     setParams((prev) => ({
@@ -96,6 +75,30 @@ const DeleteApplication = () => {
       sort_order: prev.sort_order === 'ASC' ? 'DESC' : 'ASC',
     }));
   };
+
+  const handleRetrieve = () => {
+    if (retrieveModalOpen?.passport_app_id) {
+      restoreData(retrieveModalOpen?.passport_app_id, () => {
+        onRefreshDeletedPassportApplications();
+      });
+    }
+  };
+
+  // const handleRetrieve = (comment) => {
+  //   if (retrieveModalOpen?.passport_app_id) {
+  //     const employeeId = localStorage.getItem('employee_id');
+  //     restoreData(
+  //       {
+  //         passport_app_id: retrieveModalOpen.passport_app_id,
+  //         comment: comment,
+  //         comment_by: employeeId,
+  //       },
+  //       () => {
+  //         onRefreshDeletedPassportApplications();
+  //       }
+  //     );
+  //   }
+  // };
 
   const renderAction = (row) => {
     return (
@@ -146,8 +149,19 @@ const DeleteApplication = () => {
       sortField: 'old_passport_no',
     },
     {
-      name: 'Status',
+      name: 'Status / By, On',
       selector: 'status_comment',
+      cell: (row) => (
+        <div className="d-flex flex-column">
+          <span>
+            <b>{row?.status_comment || '-'}</b>
+          </span>
+          <small className="text-muted">
+            {row?.comment_by_name || '-'}
+            {row?.comment_at ? `, ${formatDate(row.comment_at)}` : ''}
+          </small>
+        </div>
+      ),
       sort: true,
       sortField: 'status_comment',
     },
@@ -160,80 +174,7 @@ const DeleteApplication = () => {
     },
   ];
 
-  const debouncedSearch = useMemo(
-    () =>
-      debounce((searchValue) => {
-        setParams((prev) => ({
-          ...prev,
-          search: searchValue,
-          page: 1,
-        }));
-      }, 500),
-    []
-  );
-
-  useEffect(() => {
-    return () => debouncedSearch.cancel();
-  }, [debouncedSearch]);
-
-  const handleRetrieve = () => {
-    if (retrieveModalOpen?.passport_app_id) {
-      restoreData(retrieveModalOpen?.passport_app_id, () => {
-        onRefreshDeletedPassportApplications();
-      });
-    }
-  };
-
-  // const handleRetrieve = (comment) => {
-  //   if (retrieveModalOpen?.passport_app_id) {
-  //     const employeeId = localStorage.getItem('employee_id');
-  //     restoreData(
-  //       {
-  //         passport_app_id: retrieveModalOpen.passport_app_id,
-  //         comment: comment,
-  //         comment_by: employeeId,
-  //       },
-  //       () => {
-  //         onRefreshDeletedPassportApplications();
-  //       }
-  //     );
-  //   }
-  // };
-
-  const filterOptions = [
-    {
-      fieldName: 'Country',
-      BE_keyName: 'country_id',
-      fieldType: 'select',
-      Options: countryOptions,
-      callBack: onCountryChange,
-      isLoading: isLoadingCountries,
-    },
-    {
-      fieldName: 'Mission',
-      BE_keyName: 'mission_id',
-      fieldType: 'select',
-      Options: missionOptions,
-      callBack: onMissionChange,
-      isLoading: isLoadingMissions,
-    },
-    {
-      fieldName: 'Center',
-      BE_keyName: 'center_id',
-      fieldType: 'select',
-      Options: centerOptions,
-      isLoading: isLoadingCenters,
-    },
-    {
-      fieldName: 'Date Range',
-      fieldType: 'dateRangeCombined',
-      fromKey: 'from_date',
-      toKey: 'to_date',
-    },
-  ];
-
   const tableData = deleteApplicationData || [];
-  const loading = isLoadingGet;
 
   return (
     <>
@@ -258,9 +199,9 @@ const DeleteApplication = () => {
         count={pagination?.total || 0}
         columns={columns}
         data={tableData}
-        isLoading={loading}
-        onPageChange={(page) => setParams({ ...params, page })}
-        setLimit={(limit) => setParams({ ...params, limit })}
+        isLoading={isLoadingGet}
+        onPageChange={(page) => setParams((prev) => ({ ...prev, page }))}
+        setLimit={(limit) => setParams((prev) => ({ ...prev, limit, page: 1 }))}
         onSortChange={handleSortChange}
         wrapClasses="inventory-table-wrap"
       />
@@ -271,7 +212,6 @@ const DeleteApplication = () => {
           showModal={retrieveModalOpen}
           closeModal={() => setRetrieveModalOpen(false)}
           isLoading={isLoadingRestore}
-          // message={`Are you sure you want to retrieve ${retrieveModalOpen?.applicant_name}?`}
           message={
             <>
               Are you sure you want to restore{" "}
@@ -291,4 +231,4 @@ const DeleteApplication = () => {
   );
 };
 
-export default DeleteApplication;
+export default PassportDeletedApplication;

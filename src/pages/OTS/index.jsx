@@ -9,34 +9,65 @@ import CustomTable from '../../components/common/CustomTable';
 import useOTSReducer from '../../stores/OTSReducer';
 import { formatDate } from '../../config/config';
 import AddEditModal from './AddEditModal';
+import { useCascadingFilters } from '../../hooks/useCascadingFilters';
 
 const OTS = () => {
+
   const { getData, otsData, isLoadingGet } = useOTSReducer((state) => state);
+
+  const [showAddModal, setShowAddModal] = useState(false);
 
   const initialParams = {
     search: '',
     page: 1,
     limit: 10,
-    fromDate: null,
-    toDate: null,
-    sortBy: 'date',
-    sortOrder: 'DESC',
-    isExcelExport: 'false',
+    sort_by: 'created_on',
+    sort_order: 'DESC',
   };
 
   const [params, setParams] = useState(initialParams);
-  const [showAddModal, setShowAddModal] = useState(false);
 
   useEffect(() => {
     getData(params);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params]);
+
+  const onRefreshOTS = () => {
+    getData(params);
+  };
+
+  const debouncedSearch = useMemo(
+    () =>
+      debounce((searchValue) => {
+        setParams((prev) => ({
+          ...prev,
+          search: searchValue,
+          page: 1,
+        }));
+      }, 500),
+    []
+  );
+
+  useEffect(() => {
+    return () => debouncedSearch.cancel();
+  }, [debouncedSearch]);
+
+  // Filters
+  const { cascadingFilterOptions, dateRangeFilter, getCountries } = useCascadingFilters();
+
+  useEffect(() => {
+    getCountries();
+  }, []);
+
+  const filterOptions = useMemo(() => [
+    ...cascadingFilterOptions,
+    dateRangeFilter,
+  ], [cascadingFilterOptions]);
 
   const handleSortChange = (selector) => {
     setParams((prev) => ({
       ...prev,
-      sortBy: selector,
-      sortOrder: prev.sortOrder === 'ASC' ? 'DESC' : 'ASC',
+      sort_by: selector,
+      sort_order: prev.sort_order === 'ASC' ? 'DESC' : 'ASC',
     }));
   };
 
@@ -63,21 +94,7 @@ const OTS = () => {
     },
   ];
 
-  const debouncedSearch = useMemo(
-    () =>
-      debounce((searchValue) => {
-        setParams((prev) => ({
-          ...prev,
-          search: searchValue,
-          page: 1,
-        }));
-      }, 500),
-    []
-  );
-
-  useEffect(() => {
-    return () => debouncedSearch.cancel();
-  }, [debouncedSearch]);
+  const tableData = otsData || [];
 
   return (
     <>
@@ -89,18 +106,18 @@ const OTS = () => {
             setShowAddModal(true);
           }
         }}
-        hideFilter
         onSearch={debouncedSearch}
+        filterOptions={filterOptions}
         submitFilter={(filters) => {
-          const { fromDate, toDate, ...rest } = filters;
-
-          setParams({
-            ...params,
+          const { from_date, to_date, ...rest } = filters;
+          const formattedFromDate = from_date ? moment(from_date).format('YYYY-MM-DD') : null;
+          setParams((prev) => ({
+            ...prev,
             ...rest,
-            fromDate: fromDate ? moment(fromDate).format('YYYY-MM-DD') : null,
-            toDate: toDate ? moment(toDate).format('YYYY-MM-DD') : null,
+            from_date: formattedFromDate,
+            to_date: to_date ? moment(to_date).format('YYYY-MM-DD') : formattedFromDate,
             page: 1,
-          });
+          }));
         }}
         clearOptions={() => setParams(initialParams)}
       />
@@ -109,14 +126,14 @@ const OTS = () => {
         pagination={{ currentPage: params.page, limit: params.limit }}
         count={otsData?.total || 0}
         columns={columns}
-        data={otsData || []}
+        data={tableData}
         isLoading={isLoadingGet}
-        onPageChange={(page) => setParams({ ...params, page })}
-        setLimit={(limit) => setParams({ ...params, limit })}
+        onPageChange={(page) => setParams((prev) => ({ ...prev, page }))}
+        setLimit={(limit) => setParams((prev) => ({ ...prev, limit, page: 1 }))}
         onSortChange={handleSortChange}
         wrapClasses="inventory-table-wrap"
       />
-      {showAddModal && <AddEditModal showModal={showAddModal} closeModal={() => setShowAddModal(false)} onRefreshOTS={() => getData(params)} />}
+      {showAddModal && <AddEditModal showModal={showAddModal} closeModal={() => setShowAddModal(false)} onRefreshOTS={onRefreshOTS} />}
     </>
   );
 };

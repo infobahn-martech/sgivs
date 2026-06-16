@@ -19,19 +19,13 @@ import ChangeServicesModal from './ChangeServices';
 import ActivityLog from './ActivityLog';
 import PrintReceiptModal from './PrintReceipt';
 import PrintBarcodeModal from './PrintBarcode';
-import useUserReducer from '../../stores/UserReducer';
+import { useCascadingFilters } from '../../hooks/useCascadingFilters';
 
 const PassportApplications = () => {
   const {
     getPassportApplications, passportApplicationsData, isLoadingGet, pagination,
     deleteData, isLoadingDelete
   } = usePassportApplicationReducer((state) => state);
-
-  const {
-    countryList, missionList, centerList,
-    isLoadingCountries, isLoadingMissions, isLoadingCenters,
-    getCountries, getMissionsByCountry, getCentersByMission,
-  } = useUserReducer((state) => state);
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [modal, setModal] = useState(false);
@@ -52,6 +46,10 @@ const PassportApplications = () => {
 
   const [params, setParams] = useState(initialParams);
 
+  useEffect(() => {
+    getPassportApplications(params);
+  }, [params]);
+
   const onRefreshPassportApplications = () => {
     getPassportApplications(params);
     setModal(false);
@@ -63,20 +61,43 @@ const PassportApplications = () => {
     setFeeValues(null);
   };
 
+  // ✅ Stable debounce for search
+  const debouncedSearch = useMemo(
+    () =>
+      debounce((searchValue) => {
+        setParams((prev) => ({
+          ...prev,
+          search: searchValue,
+          page: 1,
+        }));
+      }, 500),
+    []
+  );
+
+  // ✅ Cleanup debounce on unmount
   useEffect(() => {
-    getPassportApplications(params);
-  }, [params]);
+    return () => {
+      debouncedSearch.cancel?.();
+    };
+  }, [debouncedSearch]);
+
+  // Filters
+  const { cascadingFilterOptions, dateRangeFilter, getCountries } = useCascadingFilters();
 
   useEffect(() => {
     getCountries();
   }, []);
 
+  const filterOptions = useMemo(() => [
+    ...cascadingFilterOptions,
+    dateRangeFilter,
+  ], [cascadingFilterOptions]);
+
   const handleSortChange = (selector) => {
     setParams((prev) => ({
       ...prev,
-      sortBy: selector,
-      sortOrder: prev.sortOrder === 'ASC' ? 'DESC' : 'ASC',
-      page: 1,
+      sort_by: selector,
+      sort_order: prev.sort_order === 'ASC' ? 'DESC' : 'ASC',
     }));
   };
 
@@ -100,16 +121,25 @@ const PassportApplications = () => {
   const handleEditApplication = (row) => setModal(row);
   const handleChangeServiceFee = (row) => setChangeServicesModal(row);
 
+  const handleDelete = () => {
+    const id = deleteModalOpen?.id;
+    if (!id) return;
+
+    deleteData(id, () => {
+      onRefreshPassportApplications();
+    });
+  };
+
   const columns = [
-    { name: 'Reference No', selector: 'appointment_ref_no', sort: true, },
-    { name: 'Name', selector: 'applicant_name', sort: true, },
-    { name: 'Center', selector: 'center_name', sort: true, },
-    { name: 'ARN', selector: 'arn_number', sort: true, },
-    { name: 'PP No / Old PP No', selector: 'old_passport_no', sort: true, },
-    { name: 'Date of Birth', selector: 'date_of_birth', sort: true, },
-    { name: 'Application Type', selector: 'appointment_type', sort: true, },
-    { name: 'Service Name', selector: 'service_name', sort: true, },
-    { name: 'Delivery Type', selector: 'delivery_type', sort: true, },
+    { name: 'Reference No', selector: 'appointment_ref_no', sort: true, sortField: 'appointment_ref_no' },
+    { name: 'Name', selector: 'applicant_name', sort: true, sortField: 'applicant_name' },
+    { name: 'Center', selector: 'center_name', sort: true, sortField: 'center_name' },
+    { name: 'ARN', selector: 'arn_number', sort: true, sortField: 'arn_number' },
+    { name: 'PP No / Old PP No', selector: 'old_passport_no', sort: true, sortField: 'old_passport_no' },
+    { name: 'Date of Birth', selector: 'date_of_birth', sort: true, sortField: 'date_of_birth' },
+    { name: 'Application Type', selector: 'appointment_type', sort: true, sortField: 'appointment_type' },
+    { name: 'Service Name', selector: 'service_name', sort: true, sortField: 'service_name' },
+    { name: 'Delivery Type', selector: 'delivery_type', sort: true, sortField: 'delivery_type' },
     {
       name: 'Status / By, On',
       selector: 'status_comment',
@@ -125,6 +155,7 @@ const PassportApplications = () => {
         </div>
       ),
       sort: true,
+      sortField: 'status_comment'
     },
     {
       name: 'Action',
@@ -147,98 +178,7 @@ const PassportApplications = () => {
     },
   ];
 
-  // ✅ Stable debounce for search
-  const debouncedSearch = useMemo(
-    () =>
-      debounce((searchValue) => {
-        setParams((prev) => ({
-          ...prev,
-          search: searchValue,
-          page: 1,
-        }));
-      }, 500),
-    []
-  );
-
-  // ✅ Cleanup debounce on unmount
-  useEffect(() => {
-    return () => {
-      debouncedSearch.cancel?.();
-    };
-  }, [debouncedSearch]);
-
-  const handleDelete = () => {
-    const id = deleteModalOpen?.id;
-    if (!id) return;
-
-    deleteData(id, () => {
-      onRefreshPassportApplications();
-    });
-  };
-
-  // option builders
-  const countryOptions = useMemo(
-    () => (countryList || []).map((x) => ({ label: x.country_name, value: String(x.country_id) })),
-    [countryList]
-  );
-  const missionOptions = useMemo(
-    () => (missionList || []).map((x) => ({ label: x.mission_name, value: String(x.mission_id) })),
-    [missionList]
-  );
-  const centerOptions = useMemo(
-    () => (centerList || []).map((x) => ({ label: x.center_name, value: String(x.center_id) })),
-    [centerList]
-  );
-
-  const filterOptions = useMemo(
-    () => [
-      {
-        fieldName: 'Country',
-        BE_keyName: 'country_id',
-        fieldType: 'select',
-        placeholder: 'Select Country',
-        Options: countryOptions,
-        isLoading: isLoadingCountries,
-        resetFields: ['mission_id', 'center_id'],
-        // 👇 when country changes, load that country's missions
-        callBack: (value) => {
-          getMissionsByCountry(value);
-          getCentersByMission(null);
-        },
-      },
-      {
-        fieldName: 'Mission',
-        BE_keyName: 'mission_id',
-        fieldType: 'select',
-        placeholder: 'Select Mission',
-        Options: missionOptions,
-        isLoading: isLoadingMissions,
-        resetFields: ['center_id'],
-        // 👇 when mission changes, load that mission's centers
-        callBack: (value) => {
-          getCentersByMission(value);
-        },
-      },
-      {
-        fieldName: 'Center',
-        BE_keyName: 'center_id',
-        fieldType: 'select',
-        placeholder: 'Select Center',
-        Options: centerOptions,
-        isLoading: isLoadingCenters,
-      },
-      {
-        fieldName: 'Date Range',
-        fieldType: 'dateRangeCombined',
-        fromKey: 'from_date',
-        toKey: 'to_date',
-      },
-    ],
-    [countryOptions, missionOptions, centerOptions, isLoadingCountries, isLoadingMissions, isLoadingCenters]
-  );
-
   const tableData = passportApplicationsData || [];
-  const loading = isLoadingGet;
 
   return (
     <>
@@ -248,16 +188,16 @@ const PassportApplications = () => {
           type: 'button',
           action: () => setModal(true),
         }}
-        filterOptions={filterOptions}
         onSearch={debouncedSearch}
+        filterOptions={filterOptions}
         submitFilter={(filters) => {
-          const { fromDate, toDate, ...rest } = filters;
-
+          const { from_date, to_date, ...rest } = filters;
+          const formattedFromDate = from_date ? moment(from_date).format('YYYY-MM-DD') : null;
           setParams((prev) => ({
             ...prev,
             ...rest,
-            fromDate: fromDate ? moment(fromDate).format('YYYY-MM-DD') : null,
-            toDate: toDate ? moment(toDate).format('YYYY-MM-DD') : null,
+            from_date: formattedFromDate,
+            to_date: to_date ? moment(to_date).format('YYYY-MM-DD') : formattedFromDate,
             page: 1,
           }));
         }}
@@ -269,7 +209,7 @@ const PassportApplications = () => {
         count={pagination?.total || 0}
         columns={columns}
         data={tableData}
-        isLoading={loading}
+        isLoading={isLoadingGet}
         onPageChange={(page) => setParams((prev) => ({ ...prev, page }))}
         setLimit={(limit) => setParams((prev) => ({ ...prev, limit, page: 1 }))}
         onSortChange={handleSortChange}
