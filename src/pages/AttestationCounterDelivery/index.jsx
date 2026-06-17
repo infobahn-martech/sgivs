@@ -1,21 +1,21 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { Tooltip } from 'react-tooltip';
 import moment from 'moment';
 import { debounce } from 'lodash';
 
 import '../../assets/scss/usermanagement.scss';
-import editIcon from '../../assets/images/edit.svg';
 
 import CommonHeader from '../../components/common/CommonHeader';
 import CustomTable from '../../components/common/CustomTable';
 import useAttestationCounterDeliveryReducer from '../../stores/AttestationCounterDeliveryReducer';
 import { formatDate } from '../../config/config';
 import AddEditModal from './AddEditModal';
-import useUserReducer from '../../stores/UserReducer';
+import { useCascadingFilters } from '../../hooks/useCascadingFilters';
 
 const AttestationCounterDelivery = () => {
 
   const { getData, attestationCounterDeliveryData, isLoadingGet, pagination } = useAttestationCounterDeliveryReducer((state) => state);
+
+  const [addEditModal, setAddEditModal] = useState(false);
 
   const initialParams = {
     page: 1,
@@ -25,103 +25,14 @@ const AttestationCounterDelivery = () => {
   };
 
   const [params, setParams] = useState(initialParams);
-  const [addEditModal, setAddEditModal] = useState(false);
-  const [selectedAttestationCounterDelivery, setSelectedAttestationCounterDelivery] = useState(null);
-
-  const {
-    countryList,
-    missionList,
-    centerList,
-    isLoadingCountries,
-    isLoadingMissions,
-    isLoadingCenters,
-    getCountries,
-    getMissionsByCountry,
-    getCentersByMission
-  } = useUserReducer();
-
-  useEffect(() => {
-    getCountries();
-  }, []);
-
-  const countryOptions = useMemo(
-    () =>
-      (countryList || []).map((item) => ({
-        value: item.country_id,
-        label: item.country_name,
-      })),
-    [countryList]
-  );
-  const missionOptions = useMemo(
-    () =>
-      (missionList || []).map((item) => ({
-        value: item.mission_id,
-        label: item.mission_name,
-      })),
-    [missionList]
-  );
-
-  const centerOptions = useMemo(
-    () =>
-      (centerList || []).map((item) => ({
-        value: item.center_id,
-        label: item.center_name,
-      })),
-    [centerList]
-  );
-
-  const onCountryChange = (countryId) => {
-    if (countryId) {
-      getMissionsByCountry(countryId);
-    }
-  };
-
-  const onMissionChange = (missionId) => {
-    if (missionId) {
-      getCentersByMission(missionId);
-    }
-  };
 
   useEffect(() => {
     getData(params);
   }, [params, getData]);
 
-  const handleSortChange = (selector) => {
-    setParams((prev) => ({
-      ...prev,
-      sort_by: selector,
-      sort_order: prev.sort_order === 'ASC' ? 'DESC' : 'ASC',
-    }));
+  const onRefreshAttestationCounterDelivery = () => {
+    getData(params);
   };
-  const columns = [
-    {
-      name: 'Date',
-      selector: 'date',
-      sortable: true,
-      sortField: 'date',
-      cell: (row) => <span>{row?.date ? formatDate(row?.date) : '-'}</span>,
-    },
-    {
-      name: 'By',
-      selector: 'by',
-      sortable: true,
-      sortField: 'by',
-    },
-    {
-      name: 'Total Application',
-      selector: 'totalApplication',
-      sortable: true,
-      sortField: 'totalApplication',
-      cell: (row) => <span>{row?.totalApplication ?? 0}</span>,
-    },
-    {
-      name: 'Action',
-      contentClass: 'action-wrap',
-      disableViewClick: true,
-      thclass: 'actions-edit employee-actn-edit',
-      cell: (row) => renderAction(row),
-    },
-  ];
 
   const debouncedSearch = useMemo(
     () =>
@@ -139,40 +50,50 @@ const AttestationCounterDelivery = () => {
     return () => debouncedSearch.cancel();
   }, [debouncedSearch]);
 
-  const tableData = attestationCounterDeliveryData || [];
-  const loading = isLoadingGet;
+  // Filters
+  const { cascadingFilterOptions, dateRangeFilter, getCountries } = useCascadingFilters();
 
-  const filterOptions = [
+  useEffect(() => {
+    getCountries();
+  }, []);
+
+  const filterOptions = useMemo(() => [
+    ...cascadingFilterOptions,
+    dateRangeFilter,
+  ], [cascadingFilterOptions]);
+
+  const handleSortChange = (selector) => {
+    setParams((prev) => ({
+      ...prev,
+      sort_by: selector,
+      sort_order: prev.sort_order === 'ASC' ? 'DESC' : 'ASC',
+    }));
+  };
+
+  const columns = [
     {
-      fieldName: 'Country',
-      BE_keyName: 'country_id',
-      fieldType: 'select',
-      Options: countryOptions,
-      callBack: onCountryChange,
-      isLoading: isLoadingCountries,
+      name: 'Date',
+      selector: 'date',
+      sort: true,
+      sortField: 'date',
+      cell: (row) => <span>{row?.date ? formatDate(row?.date) : '-'}</span>,
     },
     {
-      fieldName: 'Mission',
-      BE_keyName: 'mission_id',
-      fieldType: 'select',
-      Options: missionOptions,
-      callBack: onMissionChange,
-      isLoading: isLoadingMissions,
+      name: 'By',
+      selector: 'by',
+      sort: true,
+      sortField: 'by',
     },
     {
-      fieldName: 'Center',
-      BE_keyName: 'center_id',
-      fieldType: 'select',
-      Options: centerOptions,
-      isLoading: isLoadingCenters,
-    },
-    {
-      fieldName: 'Date Range',
-      fieldType: 'dateRangeCombined',
-      fromKey: 'from_date',
-      toKey: 'to_date',
+      name: 'Total Application',
+      selector: 'totalApplication',
+      sort: true,
+      sortField: 'totalApplication',
+      cell: (row) => <span>{row?.totalApplication ?? 0}</span>,
     },
   ];
+
+  const tableData = attestationCounterDeliveryData || [];
 
   return (
     <>
@@ -182,7 +103,6 @@ const AttestationCounterDelivery = () => {
           type: 'button',
           action: () => {
             setAddEditModal(true);
-            setSelectedAttestationCounterDelivery(null);
           },
         }}
         onSearch={debouncedSearch}
@@ -206,9 +126,9 @@ const AttestationCounterDelivery = () => {
         count={pagination?.total_count || 0}
         columns={columns}
         data={tableData}
-        isLoading={loading}
-        onPageChange={(page) => setParams({ ...params, page })}
-        setLimit={(limit) => setParams({ ...params, limit })}
+        isLoading={isLoadingGet}
+        onPageChange={(page) => setParams((prev) => ({ ...prev, page }))}
+        setLimit={(limit) => setParams((prev) => ({ ...prev, limit: Number(limit), page: 1 }))}
         onSortChange={handleSortChange}
         wrapClasses="inventory-table-wrap"
       />
@@ -217,8 +137,7 @@ const AttestationCounterDelivery = () => {
         <AddEditModal
           showModal={addEditModal}
           closeModal={() => setAddEditModal(false)}
-          onRefreshAttestationCounterDelivery={() => getData(params)}
-          selectedAttestationCounterDelivery={selectedAttestationCounterDelivery}
+          onRefreshAttestationCounterDelivery={onRefreshAttestationCounterDelivery}
         />
       )}
     </>

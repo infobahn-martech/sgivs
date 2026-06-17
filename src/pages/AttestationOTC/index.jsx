@@ -1,5 +1,4 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { Tooltip } from 'react-tooltip';
 import moment from 'moment';
 import { debounce } from 'lodash';
 
@@ -10,11 +9,13 @@ import CustomTable from '../../components/common/CustomTable';
 import useAttestationOTCReducer from '../../stores/AttestationOTCReducer';
 import { formatDate } from '../../config/config';
 import AddEditModal from './AddEditModal';
-import useUserReducer from '../../stores/UserReducer';
+import { useCascadingFilters } from '../../hooks/useCascadingFilters';
 
 const AttestationOTC = () => {
 
   const { getData, attestationOTCData, isLoadingGet, pagination } = useAttestationOTCReducer((state) => state);
+
+  const [addEditModal, setAddEditModal] = useState(false);
 
   const initialParams = {
     page: 1,
@@ -24,104 +25,14 @@ const AttestationOTC = () => {
   };
 
   const [params, setParams] = useState(initialParams);
-  const [addEditModal, setAddEditModal] = useState(false);
-  const [selectedAttestationOTC, setSelectedAttestationOTC] = useState(null);
-
-  const {
-    countryList,
-    missionList,
-    centerList,
-    isLoadingCountries,
-    isLoadingMissions,
-    isLoadingCenters,
-    getCountries,
-    getMissionsByCountry,
-    getCentersByMission
-  } = useUserReducer();
-
-  useEffect(() => {
-    getCountries();
-  }, []);
-
-  const countryOptions = useMemo(
-    () =>
-      (countryList || []).map((item) => ({
-        value: item.country_id,
-        label: item.country_name,
-      })),
-    [countryList]
-  );
-  const missionOptions = useMemo(
-    () =>
-      (missionList || []).map((item) => ({
-        value: item.mission_id,
-        label: item.mission_name,
-      })),
-    [missionList]
-  );
-
-  const centerOptions = useMemo(
-    () =>
-      (centerList || []).map((item) => ({
-        value: item.center_id,
-        label: item.center_name,
-      })),
-    [centerList]
-  );
-
-  const onCountryChange = (countryId) => {
-    if (countryId) {
-      getMissionsByCountry(countryId);
-    }
-  };
-
-  const onMissionChange = (missionId) => {
-    if (missionId) {
-      getCentersByMission(missionId);
-    }
-  };
 
   useEffect(() => {
     getData(params);
   }, [params, getData]);
 
-  const handleSortChange = (selector) => {
-    setParams((prev) => ({
-      ...prev,
-      sort_by: selector,
-      sort_order: prev.sort_order === 'ASC' ? 'DESC' : 'ASC',
-    }));
+  const onRefreshAttestationOTC = () => {
+    getData(params);
   };
-
-  const columns = [
-    {
-      name: 'Date',
-      selector: 'date',
-      sortable: true,
-      sortField: 'date',
-      cell: (row) => <span>{row?.date ? formatDate(row?.date) : '-'}</span>,
-    },
-    {
-      name: 'By',
-      selector: 'by',
-      sortable: true,
-      sortField: 'by',
-    },
-    {
-      name: 'Total Application',
-      selector: 'totalApplication',
-      sortable: true,
-      sortField: 'totalApplication',
-      cell: (row) => <span>{row?.totalApplication ?? 0}</span>,
-    },
-    {
-      name: 'Action',
-      contentClass: 'action-wrap',
-      disableViewClick: true,
-      thclass: 'actions-edit employee-actn-edit',
-      cell: (row) => renderAction(row),
-    },
-  ];
 
   const debouncedSearch = useMemo(
     () =>
@@ -139,40 +50,50 @@ const AttestationOTC = () => {
     return () => debouncedSearch.cancel();
   }, [debouncedSearch]);
 
-  const filterOptions = [
+  // Filters
+  const { cascadingFilterOptions, dateRangeFilter, getCountries } = useCascadingFilters();
+
+  useEffect(() => {
+    getCountries();
+  }, []);
+
+  const filterOptions = useMemo(() => [
+    ...cascadingFilterOptions,
+    dateRangeFilter,
+  ], [cascadingFilterOptions]);
+
+  const handleSortChange = (selector) => {
+    setParams((prev) => ({
+      ...prev,
+      sort_by: selector,
+      sort_order: prev.sort_order === 'ASC' ? 'DESC' : 'ASC',
+    }));
+  };
+
+  const columns = [
     {
-      fieldName: 'Country',
-      BE_keyName: 'country_id',
-      fieldType: 'select',
-      Options: countryOptions,
-      callBack: onCountryChange,
-      isLoading: isLoadingCountries,
+      name: 'Date',
+      selector: 'date',
+      sort: true,
+      sortField: 'date',
+      cell: (row) => <span>{row?.date ? formatDate(row?.date) : '-'}</span>,
     },
     {
-      fieldName: 'Mission',
-      BE_keyName: 'mission_id',
-      fieldType: 'select',
-      Options: missionOptions,
-      callBack: onMissionChange,
-      isLoading: isLoadingMissions,
+      name: 'By',
+      selector: 'by',
+      sort: true,
+      sortField: 'by',
     },
     {
-      fieldName: 'Center',
-      BE_keyName: 'center_id',
-      fieldType: 'select',
-      Options: centerOptions,
-      isLoading: isLoadingCenters,
-    },
-    {
-      fieldName: 'Date Range',
-      fieldType: 'dateRangeCombined',
-      fromKey: 'from_date',
-      toKey: 'to_date',
+      name: 'Total Application',
+      selector: 'totalApplication',
+      sort: true,
+      sortField: 'totalApplication',
+      cell: (row) => <span>{row?.totalApplication ?? 0}</span>,
     },
   ];
 
   const tableData = attestationOTCData || [];
-  const loading = isLoadingGet;
 
   return (
     <>
@@ -182,10 +103,8 @@ const AttestationOTC = () => {
           type: 'button',
           action: () => {
             setAddEditModal(true);
-            setSelectedAttestationC(null);
           },
         }}
-        //hideFilter
         onSearch={debouncedSearch}
         filterOptions={filterOptions}
         submitFilter={(filters) => {
@@ -207,9 +126,9 @@ const AttestationOTC = () => {
         count={pagination?.total_count || 0}
         columns={columns}
         data={tableData}
-        isLoading={loading}
-        onPageChange={(page) => setParams({ ...params, page })}
-        setLimit={(limit) => setParams({ ...params, limit })}
+        isLoading={isLoadingGet}
+        onPageChange={(page) => setParams((prev) => ({ ...prev, page }))}
+        setLimit={(limit) => setParams((prev) => ({ ...prev, limit, page: 1 }))}
         onSortChange={handleSortChange}
         wrapClasses="inventory-table-wrap"
       />
@@ -218,8 +137,7 @@ const AttestationOTC = () => {
         <AddEditModal
           showModal={addEditModal}
           closeModal={() => setAddEditModal(false)}
-          onRefreshAttestationOTC={() => getData(params)}
-          selectedAttestationOTC={selectedAttestationOTC}
+          onRefreshAttestationOTC={onRefreshAttestationOTC}
         />
       )}
     </>

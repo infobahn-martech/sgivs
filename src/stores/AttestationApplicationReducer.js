@@ -11,7 +11,7 @@ const initialAttestationApplicationByIdState = {
 const useAttestationApplicationReducer = create((set) => ({
   isCreateAttestationApplicationLoading: false,
   isUpdateAttestationApplicationLoading: false,
-  isDeleteAttestationApplicationLoading: false,
+  isLoadingDelete: false,
 
   errorMessage: '',
   successMessage: '',
@@ -58,7 +58,7 @@ const useAttestationApplicationReducer = create((set) => ({
       const { error } = useAlertReducer.getState();
       set({
         errorMessage: err?.response?.data?.message ?? err?.message,
-        isDeleteAttestationApplicationLoading: false,
+        isUpdateAttestationApplicationLoading: false,
       });
       error(err?.response?.data?.message ?? err.message);
     }
@@ -66,19 +66,19 @@ const useAttestationApplicationReducer = create((set) => ({
 
   deleteAttestationApplication: async (id) => {
     try {
-      set({ isDeleteAttestationApplicationLoading: true });
+      set({ isLoadingDelete: true });
       const { data } = await attestationApplicationService.deleteAttestationApplication(id);
       const { success } = useAlertReducer.getState();
       success(data?.response?.data?.message ?? data?.message);
       set({
         successMessage: data?.response?.data?.message ?? data?.message,
-        isDeleteAttestationApplicationLoading: false,
+        isLoadingDelete: false,
       });
     } catch (err) {
       const { error } = useAlertReducer.getState();
       set({
         errorMessage: err?.response?.data?.message ?? err?.message,
-        isDeleteAttestationApplicationLoading: false,
+        isLoadingDelete: false,
       });
       error(err?.response?.data?.message ?? err.message);
     }

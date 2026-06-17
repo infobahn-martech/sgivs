@@ -20,25 +20,14 @@ import CommentModal from './CommentModal';
 import ChangeServicesModal from './ChangeServices';
 import ActivityLog from './ActivityLog';
 import AddRemoveBiometric from './AddRemoveBiometric';
-import useUserReducer from '../../stores/UserReducer';
+import { useCascadingFilters } from '../../hooks/useCascadingFilters';
 
 const AttestationApplications = () => {
 
-  const { getAttestationApplications, attestationApplicationsData, isLoadingGet, pagination,
-    deleteAttestationApplication, isDeleteAttesttaionApplicationLoading
-  } = useAttestationApplicationReducer((state) => state);
-
   const {
-    countryList,
-    missionList,
-    centerList,
-    isLoadingCountries,
-    isLoadingMissions,
-    isLoadingCenters,
-    getCountries,
-    getMissionsByCountry,
-    getCentersByMission
-  } = useUserReducer();
+    getAttestationApplications, attestationApplicationsData, isLoadingGet, pagination,
+    deleteAttestationApplication, isLoadingDelete
+  } = useAttestationApplicationReducer((state) => state);
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [modal, setModal] = useState(false);
@@ -50,70 +39,59 @@ const AttestationApplications = () => {
   const [addRemoveBiometricModal, setAddRemoveBiometricModal] = useState(false);
   const [activityLogModal, setActivityLogModal] = useState(false);
   const [feeValues, setFeeValues] = useState(null);
-  
+
   const initialParams = {
     page: 1,
     limit: 10,
-    sort_by: 'created_at', 
+    sort_by: 'created_at',
     sort_order: 'DESC',
   };
 
   const [params, setParams] = useState(initialParams);
 
   useEffect(() => {
-      getCountries();
-    }, []);
-  
-    const countryOptions = useMemo(
-      () =>
-        (countryList || []).map((item) => ({
-          value: item.country_id,
-          label: item.country_name,
-        })),
-      [countryList]
-    );
-    const missionOptions = useMemo(
-      () =>
-        (missionList || []).map((item) => ({
-          value: item.mission_id,
-          label: item.mission_name,
-        })),
-      [missionList]
-    );
-  
-    const centerOptions = useMemo(
-      () =>
-        (centerList || []).map((item) => ({
-          value: item.center_id,
-          label: item.center_name,
-        })),
-      [centerList]
-    );
-  
-    const onCountryChange = (countryId) => {
-      if (countryId) {
-        getMissionsByCountry(countryId);
-      }
-    };
-  
-    const onMissionChange = (missionId) => {
-      if (missionId) {
-        getCentersByMission(missionId);
-      }
-    };
+    getAttestationApplications(params);
+  }, [params]);
 
   const onRefreshAttestationApplications = () => {
     getAttestationApplications(params);
-
     setModal(false);
     setViewModal(false);
     setPrintReceiptModal(false);
     setDeleteModalOpen(false);
   };
 
+  // ✅ Stable debounce
+  const debouncedSearch = useMemo(
+    () =>
+      debounce((searchValue) => {
+        setParams((prevParams) => ({
+          ...prevParams,
+          search: searchValue,
+          page: 1,
+        }));
+      }, 500),
+    []
+  );
+
+  // ✅ Cleanup debounce on unmount
   useEffect(() => {
-    getAttestationApplications(params);
-  }, [params]);
+    return () => {
+      debouncedSearch.cancel?.();
+    };
+  }, [debouncedSearch]);
+
+  // Filters
+  const { cascadingFilterOptions, dateRangeFilter, getCountries } = useCascadingFilters();
+
+  useEffect(() => {
+    getCountries();
+  }, []);
+
+  const filterOptions = useMemo(() => [
+    ...cascadingFilterOptions,
+    dateRangeFilter,
+  ], [cascadingFilterOptions]);
 
   const handleSortChange = (selector) => {
     setParams((prev) => ({
@@ -124,10 +102,13 @@ const AttestationApplications = () => {
   };
 
   const openDeleteModal = (row) => {
-    setDeleteModalOpen({ id: row?.id, name: row?.name });
+    setDeleteModalOpen({
+      id: row?.attestation_application_id,
+      name: `${row?.first_name || ''} ${row?.surname || ''}`.trim(),
+      reference_no: row?.appointment_reference_no,
+    });
   };
 
-  // ✅ action handlers (replace with your actual flows)
   const handlePrintReceipt = (row) => {
     setPrintReceiptModal(row);
   };
@@ -149,22 +130,35 @@ const AttestationApplications = () => {
   };
 
   const handleEditApplication = (row) => {
-    console.log('Edit application:', row);
-    setModal(row); // if you want to open modal in edit mode, you can store editRow state
+    setModal(row);
   };
 
   const handleChangeServiceFee = (row) => {
-    console.log('Change service/fee:', row);
     setChangeServicesModal(row);
   };
 
   const handleAddRemoveBiometric = (row) => {
-    console.log('Add/Remove Biometric:', row);
     setAddRemoveBiometricModal(row);
   };
 
+  const handleDelete = (comment) => {
+    if (!deleteModalOpen?.id) return;
+
+    const employeeId = localStorage.getItem('employee_id');
+
+    const payload = {
+      attesation_application_id: deleteModalOpen.id,
+      comment: comment,
+      comment_by: employeeId,
+    };
+
+    deleteAttestationApplication(payload, () => {
+      onRefreshAttestationApplications();
+    });
+  };
+
   const columns = [
-    { name: 'Reference No', selector: 'appointment_reference_no', sort: true, },
+    { name: 'Reference No', selector: 'appointment_reference_no', sort: true, sortField: 'appointment_reference_no' },
     {
       name: 'Name',
       selector: 'name',
@@ -176,17 +170,19 @@ const AttestationApplications = () => {
         return <span>{fullName || '-'}</span>;
       },
       sort: true,
+      sortField: 'name'
     },
-    { name: 'Center', selector: 'center_name', sort: true, },
-    { name: 'Gender', selector: 'gender', sort: true, },
-    { name: 'Passport No', selector: 'passport_no', sort: true, },
-    { name: 'Application Type', selector: 'appointment_type', sort: true, },
-    { name: 'Service Name', selector: 'service_name', sort: true, },
+    { name: 'Center', selector: 'center_name', sort: true, sortField: 'center_name' },
+    { name: 'Gender', selector: 'gender', sort: true, sortField: 'gender' },
+    { name: 'Passport No', selector: 'passport_no', sort: true, sortField: 'passport_no' },
+    { name: 'Application Type', selector: 'appointment_type', sort: true, sortField: 'appointment_type' },
+    { name: 'Service Name', selector: 'service_name', sort: true, sortField: 'service_name' },
     {
       name: 'Delivery Type',
       selector: 'delivery_type',
       cell: (row) => <span>{row?.deliveryType || 'Counter Delivery'}</span>,
       sort: true,
+      sortField: 'delivery_type'
     },
     {
       name: 'Status / By, On',
@@ -203,6 +199,7 @@ const AttestationApplications = () => {
         </div>
       ),
       sort: true,
+      sortField: 'status_name'
     },
     {
       name: 'Action',
@@ -226,78 +223,7 @@ const AttestationApplications = () => {
     },
   ];
 
-  // ✅ Stable debounce
-  const debouncedSearch = useMemo(
-    () =>
-      debounce((searchValue) => {
-        setParams((prevParams) => ({
-          ...prevParams,
-          search: searchValue,
-          page: 1,
-        }));
-      }, 500),
-    []
-  );
-
-  const handleDelete = (comment) => {
-    if (!deleteModalOpen?.id) return;
-
-    const employeeId = localStorage.getItem('employee_id');
-
-    const payload = {
-      attesation_application_id: deleteModalOpen.id,
-      comment: comment,
-      comment_by:employeeId,
-    };
-
-    deleteAttestationApplication(payload, () => {
-      onRefreshAttestationApplications();
-    });
-  };
-
-  const filterOptions = [
-    {
-      fieldName: 'Country',
-      BE_keyName: 'country_id',
-      fieldType: 'select',
-      Options: countryOptions,
-      callBack: onCountryChange,
-      isLoading: isLoadingCountries,
-    },
-    {
-      fieldName: 'Mission',
-      BE_keyName: 'mission_id',
-      fieldType: 'select',
-      Options: missionOptions,
-      callBack: onMissionChange,
-      isLoading: isLoadingMissions,
-    },
-    {
-      fieldName: 'Center',
-      BE_keyName: 'center_id',
-      fieldType: 'select',
-      Options: centerOptions,
-      isLoading: isLoadingCenters,
-    },
-    {
-      fieldName: 'Status',
-      BE_keyName: 'status',
-      fieldType: 'select',
-      Options: [
-        { label: 'Active', value: 1 },
-        { label: 'Blocked', value: 2 },
-      ],
-    },
-    {
-      fieldName: 'Date Range',
-      fieldType: 'dateRangeCombined',
-      fromKey: 'from_date',
-      toKey: 'to_date',
-    },
-  ];
-
   const tableData = attestationApplicationsData || [];
-  const loading = isLoadingGet;
 
   return (
     <>
@@ -328,9 +254,9 @@ const AttestationApplications = () => {
         count={pagination?.total_records || 0}
         columns={columns}
         data={tableData}
-        isLoading={loading}
-        onPageChange={(page) => setParams({ ...params, page })}
-        setLimit={(limit) => setParams({ ...params, limit })}
+        isLoading={isLoadingGet}
+        onPageChange={(page) => setParams((prev) => ({ ...prev, page }))}
+        setLimit={(limit) => setParams((prev) => ({ ...prev, limit: Number(limit), page: 1 }))}
         onSortChange={handleSortChange}
         wrapClasses="inventory-table-wrap"
       />
@@ -372,12 +298,19 @@ const AttestationApplications = () => {
       {deleteModalOpen && (
         <CustomActionModal
           isDelete
+          showCommentBox
           isLoading={isLoadingDelete}
           showModal={deleteModalOpen}
           closeModal={() => setDeleteModalOpen(false)}
-          message={`Are you sure you want to delete this ${deleteModalOpen?.name}?`}
+          message={
+            <>
+              Are you sure you want to delete <b>{deleteModalOpen?.name}</b>?
+              <br />
+              <span>[ Ref: {deleteModalOpen?.reference_no || '-'} ]</span>
+            </>
+          }
           onCancel={() => setDeleteModalOpen(false)}
-          onSubmit={handleDelete}
+          onSubmit={({ comment }) => handleDelete(comment)}
         />
       )}
 

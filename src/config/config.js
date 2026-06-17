@@ -71,7 +71,7 @@ export const headerConfig = [
 
   // Attestation Manager
   { title: 'Attestation Applications', icon: transactionICo, path: '/attestation-applications' },
-  { title: 'Attestation Deleted Application', icon: transactionICo, path: '/attestation-deleted-application' },
+  { title: 'Attestation Deleted Applications', icon: transactionICo, path: '/attestation-deleted-application' },
   { title: 'Attestation InScan At Hub', icon: transactionICo, path: '/attestation-in-scan' },
   { title: 'Attestation OutScan To Mission', icon: transactionICo, path: '/attestation-outscan-to-mission' },
   { title: 'Attestation InScan From Mission', icon: transactionICo, path: '/attestation-inscan-from-mission' },
