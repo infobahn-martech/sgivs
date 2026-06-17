@@ -7,7 +7,7 @@ import inventoryCountIcon from '../../assets/images/inventory-count.svg';
 import returnedCountIcon from '../../assets/images/returned-count.svg';
 import downloadCountIcon from '../../assets/images/download-count.svg';
 
-import DashboardSectionTable from './DashboardTable';
+// import DashboardSectionTable from './DashboardTable';
 import CountBlock from './CountBlock';
 import StatCard from './StatCard';
 
@@ -17,19 +17,21 @@ const Dashboard = () => {
 
   // ✅ STATIC counters (top cards)
   const dashLoading = false;
+
   const counters = [
-    { icon: userCountIcon, label: 'Employee count', count: 24, className: 'user' },
-    { icon: inventoryCountIcon, label: 'Applications MTD count', count: 128, className: 'inventory' },
-    { icon: returnedCountIcon, label: 'Applications MTD count', count: 7, className: 'returned' },
-    { icon: downloadCountIcon, label: 'Walk-in Applicants', count: 19, className: 'borrowed' },
+    { icon: userCountIcon, label: 'Today\'s Users', count: 24, trend: '+3%', className: 'user' },
+    { icon: inventoryCountIcon, label: 'Total Applications MTD', count: 128, trend: '+12%', className: 'inventory' },
+    { icon: returnedCountIcon, label: 'Total Applications YTD', count: 7, trend: '-2%', className: 'returned' },
+    { icon: downloadCountIcon, label: 'Walk-in Applicants', count: 19, trend: '+5%', className: 'borrowed' },
   ];
 
   // ✅ Appointments For Current Day (orange header boxes)
   const appointmentsToday = [
     { label: 'Visa', value: 14 },
     { label: 'Passport', value: 259 },
-    { label: 'Attestation', value: "130 (127)" },
+    { label: 'Attestation', value: '130 (127)' },
     { label: 'OCI', value: 0 },
+    { label: 'Total', value: 403 },  // ← total for appointments
   ];
 
   // ✅ Number Of applications accepted Today (green header; Walk-in has red header)
@@ -38,15 +40,12 @@ const Dashboard = () => {
     { label: 'Passport', value: 63 },
     { label: 'Attestation', value: '31 (28)' },
     { label: 'OCI', value: 0 },
+    { label: 'Total', value: 96 },  // ← total for accepted
   ];
-
-  // ✅ Summary MTD / YTD
-  const totalApplicationsMTD = 4067;
-  const totalApplicationsYTD = 11588;
 
   return (
     <>
-      <div className="content-wrp-outer">
+      <div className="content-wrp-outer" style={{background:"#e7e7e7",}}>
         <div className="dash-top">
           <div className="panel-wrp">
             <div className="greetings-blk">
@@ -59,7 +58,7 @@ const Dashboard = () => {
           </div>
 
           <div className="count-blks-wrp">
-            {counters?.map((item, idx) => (
+            {/* {counters?.map((item, idx) => (
               <CountBlock
                 key={idx}
                 icon={item.icon}
@@ -68,13 +67,24 @@ const Dashboard = () => {
                 className={item.className}
                 isLoading={dashLoading}
               />
+            ))} */}
+            {counters?.map((item, idx) => (
+              <CountBlock
+                key={idx}
+                icon={item.icon}
+                label={item.label}
+                count={item.count}
+                trend={item.trend}
+                className={item.className}
+                isLoading={dashLoading}
+              />
             ))}
           </div>
         </div>
 
-        <div className="dash-table-wrp">
+        {/* <div className="dash-table-wrp">
           <DashboardSectionTable />
-        </div>
+        </div> */}
 
         {/* All Centers dropdown + left/right counter sections (same style as 1st image KPI cards) */}
         <div className="dash-stats-sections">
@@ -94,7 +104,8 @@ const Dashboard = () => {
                       key={idx}
                       label={item.label}
                       value={item.value}
-                      initial={item.label.charAt(0)}
+                      initial={item.label === 'Total' ? 'T' : item.label.charAt(0)}
+                      variant="orange"
                     />
                   ))}
                 </div>
@@ -102,14 +113,15 @@ const Dashboard = () => {
             </div>
             <div className="dash-stats-col dash-stats-col--right">
               <div className="dash-stat-row">
-                <div className="dash-stat-row-title">Number Of applications accepted Today</div>
+                <div className="dash-stat-row-title">Applications Accepted Today</div>
                 <div className="dash-stat-cards">
                   {applicationsAcceptedToday.map((item, idx) => (
                     <StatCard
                       key={idx}
                       label={item.label}
                       value={item.value}
-                      initial={item.label.charAt(0)}
+                      initial={item.label === 'Total' ? 'T' : item.label.charAt(0)}
+                      variant="green"
                     />
                   ))}
                 </div>
@@ -117,20 +129,6 @@ const Dashboard = () => {
             </div>
           </div>
 
-          <div className="dash-stat-summary">
-            <StatCard
-              label="Totals"
-              value={totalApplicationsMTD}
-              initial="M"
-              size="large"
-            />
-            <StatCard
-              label="Totals"
-              value={totalApplicationsYTD}
-              initial="Y"
-              size="large"
-            />
-          </div>
         </div>
       </div>
     </>

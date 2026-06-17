@@ -297,167 +297,329 @@
                     gap: 14px;
                 }
 
+                // .count-blk {
+                //     width: calc((100% / 2) - 14px);
+                //     border-radius: 17px;
+                //     padding: 30px 26px;
+                //     margin: 7px;
+                //     background-color: #F0F9FD;
+                //     position: relative;
+                //     overflow: hidden;
+
+                //     @media ($sm-1679) {
+                //         padding: 24px 22px;
+                //     }
+
+                //     @media ($sm-1441) {
+                //         padding: 20px 18px;
+                //     }
+
+                //     @media ($sm-991) {
+                //         width: calc((100% / 2) - 7px);
+                //         margin: 0px;
+                //     }
+
+                //     @media (max-width:700px) {
+                //         width: 100%;
+                //     }
+
+                //     // Faint background icon (watermark)
+                //     &::before {
+                //         content: '';
+                //         position: absolute;
+                //         right: 12%;
+                //         bottom: 8%;
+                //         width: 120px;
+                //         height: 120px;
+                //         opacity: 0.12;
+                //         pointer-events: none;
+
+                //         @media ($sm-1679) {
+                //             width: 90px;
+                //             height: 90px;
+                //         }
+
+                //         @media ($sm-1199) {
+                //             width: 70px;
+                //             height: 70px;
+                //             right: 8%;
+                //             bottom: 5%;
+                //         }
+                //     }
+
+                //     &.user::before {
+                //         background: url(../images/dating_dash.svg) no-repeat center;
+                //         background-size: contain;
+                //     }
+
+                //     &.inventory::before {
+                //         background: url(../images/inventory_ic.svg) no-repeat center;
+                //         background-size: contain;
+                //     }
+
+                //     &.returned::before {
+                //         background: url(../images/retun_ic.svg) no-repeat center;
+                //         background-size: contain;
+                //     }
+
+                //     &.borrowed::before {
+                //         background: url(../images/cuurently.svg) no-repeat center;
+                //         background-size: contain;
+                //     }
+
+                //     &.count-blk--kpi {
+                //         display: flex;
+                //         flex-direction: column;
+                //         align-items: flex-start;
+                //     }
+
+                //     .count-blk-inner {
+                //         display: flex;
+                //         flex-direction: column;
+                //         align-items: flex-start;
+                //         position: relative;
+                //         z-index: 1;
+                //         width: 100%;
+                //     }
+
+                //     .icon-blk {
+                //         width: 56px;
+                //         height: 56px;
+                //         border-radius: 50%;
+                //         background-color: #BFDBFE;
+                //         border: 1px solid rgba(5, 26, 83, 0.2);
+                //         margin-bottom: 16px;
+                //         padding: 14px;
+                //         display: flex;
+                //         align-items: center;
+                //         justify-content: center;
+
+                //         @media ($sm-1679) {
+                //             width: 50px;
+                //             height: 50px;
+                //             padding: 12px;
+                //             margin-bottom: 12px;
+                //         }
+
+                //         @media ($sm-1199) {
+                //             width: 46px;
+                //             height: 46px;
+                //             padding: 10px;
+                //             margin-bottom: 10px;
+                //         }
+
+                //         img {
+                //             max-width: 28px;
+                //             height: auto;
+                //             filter: none;
+
+                //             @media ($sm-1679) {
+                //                 max-width: 24px;
+                //             }
+
+                //             @media ($sm-1199) {
+                //                 max-width: 22px;
+                //             }
+                //         }
+                //     }
+
+                //     .info {
+                //         font-size: 14px;
+                //         line-height: 1.35;
+                //         color: $primaryColor;
+                //         margin-bottom: 8px;
+                //         font-weight: 500;
+
+                //         @media ($sm-1679) {
+                //             font-size: 13px;
+                //             margin-bottom: 6px;
+                //         }
+
+                //         @media ($sm-1199) {
+                //             font-size: 12px;
+                //             margin-bottom: 4px;
+                //         }
+                //     }
+
+                //     .count {
+                //         font-weight: 700;
+                //         font-size: 32px;
+                //         line-height: 1.15;
+                //         color: $primaryColor;
+
+                //         @media ($sm-1679) {
+                //             font-size: 28px;
+                //         }
+
+                //         @media ($sm-1441) {
+                //             font-size: 26px;
+                //         }
+
+                //         @media ($sm-1199) {
+                //             font-size: 24px;
+                //         }
+                //     }
+                // }
+
                 .count-blk {
                     width: calc((100% / 2) - 14px);
-                    border-radius: 17px;
-                    padding: 30px 26px;
+                    border-radius: 20px;
+                    padding: 20px 20px 16px;
                     margin: 7px;
-                    background-color: #F0F9FD;
+                    background: #ffffff;
+                    border: 1px solid #e8edf5;
+                    box-shadow: 0 2px 12px rgba(5, 26, 83, 0.08);
                     position: relative;
                     overflow: hidden;
+                    transition: box-shadow 0.25s ease, transform 0.25s ease;
 
-                    @media ($sm-1679) {
-                        padding: 24px 22px;
-                    }
-
-                    @media ($sm-1441) {
-                        padding: 20px 18px;
+                    &:hover {
+                        box-shadow: 0 6px 24px rgba(5, 26, 83, 0.13);
+                        transform: translateY(-2px);
                     }
 
                     @media ($sm-991) {
                         width: calc((100% / 2) - 7px);
-                        margin: 0px;
+                        margin: 0;
                     }
 
-                    @media (max-width:700px) {
+                    @media (max-width: 700px) {
                         width: 100%;
                     }
 
-                    // Faint background icon (watermark)
-                    &::before {
-                        content: '';
-                        position: absolute;
-                        right: 12%;
-                        bottom: 8%;
-                        width: 120px;
-                        height: 120px;
-                        opacity: 0.12;
-                        pointer-events: none;
-
-                        @media ($sm-1679) {
-                            width: 90px;
-                            height: 90px;
-                        }
-
-                        @media ($sm-1199) {
-                            width: 70px;
-                            height: 70px;
-                            right: 8%;
-                            bottom: 5%;
-                        }
-                    }
-
-                    &.user::before {
-                        background: url(../images/dating_dash.svg) no-repeat center;
-                        background-size: contain;
-                    }
-
-                    &.inventory::before {
-                        background: url(../images/inventory_ic.svg) no-repeat center;
-                        background-size: contain;
-                    }
-
-                    &.returned::before {
-                        background: url(../images/retun_ic.svg) no-repeat center;
-                        background-size: contain;
-                    }
-
-                    &.borrowed::before {
-                        background: url(../images/cuurently.svg) no-repeat center;
-                        background-size: contain;
-                    }
-
-                    &.count-blk--kpi {
-                        display: flex;
-                        flex-direction: column;
-                        align-items: flex-start;
-                    }
+                    // watermark icons unchanged...
 
                     .count-blk-inner {
                         display: flex;
                         flex-direction: column;
-                        align-items: flex-start;
                         position: relative;
                         z-index: 1;
                         width: 100%;
                     }
 
+                    // ✅ Top row — icon left, label+count right
+                    .count-blk-top {
+                        display: flex;
+                        align-items: center;
+                        gap: 16px;
+
+                        @media ($sm-1679) {
+                            gap: 12px;
+                        }
+                    }
+
                     .icon-blk {
-                        width: 56px;
-                        height: 56px;
-                        border-radius: 50%;
-                        background-color: #BFDBFE;
-                        border: 1px solid rgba(5, 26, 83, 0.2);
-                        margin-bottom: 16px;
-                        padding: 14px;
+                        width: 52px;
+                        height: 52px;
+                        border-radius: 14px;
+                        background: linear-gradient(135deg, #4f8ef7, #2956bf);
+                        box-shadow: 0 4px 12px rgba(41, 86, 191, 0.35);
+                        flex-shrink: 0;
                         display: flex;
                         align-items: center;
                         justify-content: center;
 
                         @media ($sm-1679) {
-                            width: 50px;
-                            height: 50px;
-                            padding: 12px;
-                            margin-bottom: 12px;
+                            width: 46px;
+                            height: 46px;
+                            border-radius: 12px;
                         }
 
                         @media ($sm-1199) {
-                            width: 46px;
-                            height: 46px;
-                            padding: 10px;
-                            margin-bottom: 10px;
+                            width: 42px;
+                            height: 42px;
                         }
 
                         img {
-                            max-width: 28px;
-                            height: auto;
-                            filter: none;
+                            max-width: 24px;
+                            filter: brightness(0) invert(1);
 
                             @media ($sm-1679) {
-                                max-width: 24px;
-                            }
-
-                            @media ($sm-1199) {
-                                max-width: 22px;
+                                max-width: 20px;
                             }
                         }
                     }
 
-                    .info {
-                        font-size: 14px;
-                        line-height: 1.35;
-                        color: $primaryColor;
-                        margin-bottom: 8px;
-                        font-weight: 500;
+                    .count-blk-detail {
+                        display: flex;
+                        flex-direction: column;
+                        align-items: flex-end;
+                        flex: 1;
+                    }
 
-                        @media ($sm-1679) {
-                            font-size: 13px;
-                            margin-bottom: 6px;
-                        }
+                    .info {
+                        font-size: 13px;
+                        color: #64748b;
+                        font-weight: 500;
+                        margin-bottom: 2px;
+                        text-align: right;
 
                         @media ($sm-1199) {
                             font-size: 12px;
-                            margin-bottom: 4px;
                         }
                     }
 
                     .count {
                         font-weight: 700;
-                        font-size: 32px;
-                        line-height: 1.15;
+                        font-size: 28px;
+                        line-height: 1.1;
                         color: $primaryColor;
+                        letter-spacing: -0.5px;
+                        text-align: right;
 
                         @media ($sm-1679) {
-                            font-size: 28px;
-                        }
-
-                        @media ($sm-1441) {
-                            font-size: 26px;
+                            font-size: 24px;
                         }
 
                         @media ($sm-1199) {
-                            font-size: 24px;
+                            font-size: 22px;
                         }
+                    }
+
+                    // ✅ Divider
+                    .count-blk-divider {
+                        flex-shrink: 0;
+                        border: none;
+                        height: 1px;
+                        margin: 14px 0 10px;
+                        opacity: 0.25;
+                        background-image: linear-gradient(to right,
+                                rgba(52, 71, 103, 0),
+                                rgba(52, 71, 103, 0.4),
+                                rgba(52, 71, 103, 0));
+                    }
+
+                    // ✅ Footer
+                    .count-blk-footer {
+                        display: flex;
+                        align-items: center;
+                        gap: 6px;
+                        font-size: 13px;
+
+                        @media ($sm-1199) {
+                            font-size: 12px;
+                        }
+                    }
+
+                    .trend {
+                        font-weight: 600;
+
+                        &--up {
+                            color: #22c55e;
+                        }
+
+                        &--down {
+                            color: #ef4444;
+                        }
+                    }
+
+                    .trend-label {
+                        color: #94a3b8;
+                        font-weight: 400;
+                    }
+
+                    .trend-placeholder {
+                        color: #94a3b8;
                     }
                 }
             }
@@ -517,6 +679,11 @@
                         font-weight: 600;
                         color: $primaryColor;
                         margin-bottom: 14px;
+                        padding: 10px 10px 10px 20px;
+                        border-left: 3px solid $primaryColor;
+
+                        background: #d9d9d9;
+                        border-radius: 20px;
                     }
 
                     // 2x2 grid like top KPI counters (2 per row), same card size as count-blk
@@ -525,182 +692,332 @@
                         grid-template-columns: 1fr 1fr;
                         gap: 14px;
 
+                        >*:last-child {
+                            grid-column: 1 / -1; // ← add this
+                        }
+
                         @media (max-width: 700px) {
                             grid-template-columns: 1fr;
+
+                            >*:last-child {
+                                grid-column: unset;
+                            }
                         }
                     }
                 }
 
                 // Stat cards: same style and size as 1st image (Employee count / Applications MTD KPI cards)
+                // .dash-stat-card {
+                //     border-radius: 17px;
+                //     padding: 30px 26px;
+                //     background-color: #F0F9FD;
+                //     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+                //     position: relative;
+                //     overflow: hidden;
+
+                //     @media ($sm-1679) {
+                //         padding: 24px 22px;
+                //     }
+
+                //     @media ($sm-1441) {
+                //         padding: 20px 18px;
+                //     }
+
+                //     @media ($sm-1199) {
+                //         padding: 20px 18px;
+                //     }
+
+                //     // Faded background initial (same as 1st image background icon effect)
+                //     &::after {
+                //         // content: attr(data-initial);
+                //         position: absolute;
+                //         right: 12%;
+                //         bottom: 8%;
+                //         font-size: 72px;
+                //         font-weight: 700;
+                //         color: $primaryColor;
+                //         opacity: 0.12;
+                //         line-height: 1;
+                //         pointer-events: none;
+
+                //         @media ($sm-1679) {
+                //             font-size: 56px;
+                //         }
+
+                //         @media ($sm-1199) {
+                //             font-size: 48px;
+                //             right: 8%;
+                //             bottom: 5%;
+                //         }
+                //     }
+
+                //     &.dash-stat-card--large {
+                //         flex: 1;
+                //         min-width: 220px;
+
+                //         .dash-stat-card-inner {
+                //             align-items: flex-start;
+                //         }
+
+                //         .dash-stat-card-icon {
+                //             width: 52px;
+                //             height: 52px;
+                //             margin-bottom: 14px;
+
+                //             .dash-stat-card-initial {
+                //                 font-size: 22px;
+                //             }
+                //         }
+
+                //         .dash-stat-card-info {
+                //             font-size: 13px;
+                //             margin-bottom: 8px;
+                //         }
+
+                //         .dash-stat-card-count {
+                //             font-size: 28px;
+
+                //             @media ($sm-1199) {
+                //                 font-size: 24px;
+                //             }
+                //         }
+                //     }
+                // }
                 .dash-stat-card {
-                    border-radius: 17px;
-                    padding: 30px 26px;
-                    background-color: #F0F9FD;
-                    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+                    border-radius: 20px;
+                    padding: 18px 20px;
+                    background: #ffffff;
+                    border: 1px solid #e8edf5;
+                    box-shadow: 0 2px 12px rgba(5, 26, 83, 0.08);
+                    transition: box-shadow 0.25s ease, transform 0.25s ease;
                     position: relative;
                     overflow: hidden;
 
-                    @media ($sm-1679) {
-                        padding: 24px 22px;
-                    }
-
-                    @media ($sm-1441) {
-                        padding: 20px 18px;
-                    }
-
-                    @media ($sm-1199) {
-                        padding: 20px 18px;
-                    }
-
-                    // Faded background initial (same as 1st image background icon effect)
-                    &::after {
-                        // content: attr(data-initial);
-                        position: absolute;
-                        right: 12%;
-                        bottom: 8%;
-                        font-size: 72px;
-                        font-weight: 700;
-                        color: $primaryColor;
-                        opacity: 0.12;
-                        line-height: 1;
-                        pointer-events: none;
-
-                        @media ($sm-1679) {
-                            font-size: 56px;
-                        }
-
-                        @media ($sm-1199) {
-                            font-size: 48px;
-                            right: 8%;
-                            bottom: 5%;
-                        }
+                    &:hover {
+                        box-shadow: 0 6px 24px rgba(5, 26, 83, 0.13);
+                        transform: translateY(-2px);
                     }
 
                     &.dash-stat-card--large {
                         flex: 1;
                         min-width: 220px;
 
-                        .dash-stat-card-inner {
-                            align-items: flex-start;
-                        }
-
                         .dash-stat-card-icon {
                             width: 52px;
                             height: 52px;
-                            margin-bottom: 14px;
+                            border-radius: 14px;
+                        }
 
-                            .dash-stat-card-initial {
-                                font-size: 22px;
+                        .dash-stat-card-count {
+                            font-size: 32px;
+
+                            @media ($sm-1199) {
+                                font-size: 26px;
                             }
                         }
 
                         .dash-stat-card-info {
-                            font-size: 13px;
-                            margin-bottom: 8px;
-                        }
-
-                        .dash-stat-card-count {
-                            font-size: 28px;
-
-                            @media ($sm-1199) {
-                                font-size: 24px;
-                            }
+                            font-size: 14px;
                         }
                     }
                 }
 
-                .dash-stat-card-inner {
-                    display: flex;
-                    flex-direction: column;
-                    align-items: flex-start;
-                    position: relative;
-                    z-index: 1;
-                    width: 100%;
+                // ✅ Orange — Appointments For Current Day
+                .dash-stat-card--orange {
+                    .dash-stat-card-icon {
+                        background: linear-gradient(135deg, #fbbf24, #f97316);
+                        box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
+                    }
                 }
 
-                // Same icon circle size as count-blk (1st image)
+                // ✅ Green — Accepted Today
+                .dash-stat-card--green {
+                    .dash-stat-card-icon {
+                        background: linear-gradient(135deg, #4ade80, #16a34a);
+                        box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3);
+                    }
+                }
+
+
+                .dash-stat-card--orange,
+                .dash-stat-card--green {
+                    &:last-child {
+                        .dash-stat-card-count {
+                            font-size: 28px;
+                        }
+
+                        .dash-stat-card-info {
+                            font-weight: 600;
+                            text-transform: uppercase;
+                            font-size: 11px;
+                            letter-spacing: 0.05em;
+                        }
+                    }
+                }
+
+                // .dash-stat-card-inner {
+                //     display: flex;
+                //     flex-direction: column;
+                //     align-items: flex-start;
+                //     position: relative;
+                //     z-index: 1;
+                //     width: 100%;
+                // }
+
+                // // Same icon circle size as count-blk (1st image)
+                // .dash-stat-card-icon {
+                //     width: 56px;
+                //     height: 56px;
+                //     border-radius: 50%;
+                //     background-color: #BFDBFE;
+                //     border: 1px solid rgba(5, 26, 83, 0.2);
+                //     margin-bottom: 16px;
+                //     padding: 14px;
+                //     display: flex;
+                //     align-items: center;
+                //     justify-content: center;
+
+                //     @media ($sm-1679) {
+                //         width: 50px;
+                //         height: 50px;
+                //         padding: 12px;
+                //         margin-bottom: 12px;
+                //     }
+
+                //     @media ($sm-1199) {
+                //         width: 46px;
+                //         height: 46px;
+                //         padding: 10px;
+                //         margin-bottom: 10px;
+                //     }
+                // }
+
+                // .dash-stat-card-initial {
+                //     font-size: 18px;
+                //     font-weight: 700;
+                //     color: $primaryColor;
+
+                //     @media ($sm-1199) {
+                //         font-size: 16px;
+                //     }
+                // }
+
+                // // Same label style as count-blk .info
+                // .dash-stat-card-info {
+                //     font-size: 14px;
+                //     line-height: 1.35;
+                //     color: $primaryColor;
+                //     margin-bottom: 8px;
+                //     font-weight: 500;
+
+                //     @media ($sm-1679) {
+                //         font-size: 13px;
+                //         margin-bottom: 6px;
+                //     }
+
+                //     @media ($sm-1199) {
+                //         font-size: 12px;
+                //         margin-bottom: 4px;
+                //     }
+                // }
+
+                // // Same count size as count-blk .count
+                // .dash-stat-card-count {
+                //     font-weight: 700;
+                //     font-size: 32px;
+                //     line-height: 1.15;
+                //     color: $primaryColor;
+
+                //     @media ($sm-1679) {
+                //         font-size: 28px;
+                //     }
+
+                //     @media ($sm-1441) {
+                //         font-size: 26px;
+                //     }
+
+                //     @media ($sm-1199) {
+                //         font-size: 24px;
+                //     }
+                // }
+                .dash-stat-card-inner {
+                    position: relative;
+                    z-index: 1;
+                }
+
+                // ✅ icon left, label+count right
+                .dash-stat-card-top {
+                    display: flex;
+                    align-items: center;
+                    gap: 14px;
+                }
+
                 .dash-stat-card-icon {
-                    width: 56px;
-                    height: 56px;
-                    border-radius: 50%;
-                    background-color: #BFDBFE;
-                    border: 1px solid rgba(5, 26, 83, 0.2);
-                    margin-bottom: 16px;
-                    padding: 14px;
+                    width: 46px;
+                    height: 46px;
+                    border-radius: 13px;
+                    background: linear-gradient(135deg, #4f8ef7, #2956bf);
+                    box-shadow: 0 4px 12px rgba(41, 86, 191, 0.3);
+                    flex-shrink: 0;
                     display: flex;
                     align-items: center;
                     justify-content: center;
 
                     @media ($sm-1679) {
-                        width: 50px;
-                        height: 50px;
-                        padding: 12px;
-                        margin-bottom: 12px;
+                        width: 42px;
+                        height: 42px;
                     }
 
                     @media ($sm-1199) {
-                        width: 46px;
-                        height: 46px;
-                        padding: 10px;
-                        margin-bottom: 10px;
+                        width: 38px;
+                        height: 38px;
+                        border-radius: 11px;
                     }
                 }
 
                 .dash-stat-card-initial {
-                    font-size: 18px;
+                    font-size: 17px;
                     font-weight: 700;
-                    color: $primaryColor;
+                    color: #ffffff;
 
                     @media ($sm-1199) {
-                        font-size: 16px;
+                        font-size: 15px;
                     }
                 }
 
-                // Same label style as count-blk .info
+                .dash-stat-card-detail {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: flex-end;
+                    flex: 1;
+                }
+
                 .dash-stat-card-info {
-                    font-size: 14px;
-                    line-height: 1.35;
-                    color: $primaryColor;
-                    margin-bottom: 8px;
+                    font-size: 12px;
+                    color: #64748b;
                     font-weight: 500;
-
-                    @media ($sm-1679) {
-                        font-size: 13px;
-                        margin-bottom: 6px;
-                    }
-
-                    @media ($sm-1199) {
-                        font-size: 12px;
-                        margin-bottom: 4px;
-                    }
+                    margin-bottom: 2px;
+                    text-align: right;
+                    letter-spacing: 0.01em;
                 }
 
-                // Same count size as count-blk .count
                 .dash-stat-card-count {
                     font-weight: 700;
-                    font-size: 32px;
-                    line-height: 1.15;
+                    font-size: 26px;
+                    line-height: 1.1;
                     color: $primaryColor;
+                    letter-spacing: -0.5px;
+                    text-align: right;
 
                     @media ($sm-1679) {
-                        font-size: 28px;
-                    }
-
-                    @media ($sm-1441) {
-                        font-size: 26px;
+                        font-size: 22px;
                     }
 
                     @media ($sm-1199) {
-                        font-size: 24px;
+                        font-size: 20px;
                     }
                 }
 
-                .dash-stat-summary {
-                    display: flex;
-                    flex-wrap: wrap;
-                    gap: 16px;
-                    margin-top: 24px;
-                }
             }
 
             .dash-table-wrp {
