@@ -1,5 +1,4 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { Tooltip } from 'react-tooltip';
 import moment from 'moment';
 import { debounce } from 'lodash';
 
@@ -10,11 +9,13 @@ import CustomTable from '../../components/common/CustomTable';
 import useOCIOTMReducer from '../../stores/OCIOTMReducer';
 import { formatDate } from '../../config/config';
 import AddEditModal from './AddEditModal';
-import useUserReducer from '../../stores/UserReducer';
+import { useCascadingFilters } from '../../hooks/useCascadingFilters';
 
 const OCIOTM = () => {
 
   const { getData, ociOTMData, isLoadingGet, pagination } = useOCIOTMReducer((state) => state);
+
+  const [addEditModal, setAddEditModal] = useState(false);
 
   const initialParams = {
     page: 1,
@@ -25,66 +26,42 @@ const OCIOTM = () => {
   };
 
   const [params, setParams] = useState(initialParams);
-  const [addEditModal, setAddEditModal] = useState(false);
-  const [selectedOTM, setSelectedOTM] = useState(null);
 
-  const {
-    countryList,
-    missionList,
-    centerList,
-    isLoadingCountries,
-    isLoadingMissions,
-    isLoadingCenters,
-    getCountries,
-    getMissionsByCountry,
-    getCentersByMission
-  } = useUserReducer();
+  useEffect(() => {
+    getData(params);
+  }, [params, getData]);
+
+  const onRefreshOTM = () => {
+    getData(params);
+  };
+
+  const debouncedSearch = useMemo(
+    () =>
+      debounce((searchValue) => {
+        setParams((prev) => ({
+          ...prev,
+          search: searchValue,
+          page: 1,
+        }));
+      }, 500),
+    []
+  );
+
+  useEffect(() => {
+    return () => debouncedSearch.cancel();
+  }, [debouncedSearch]);
+
+  // Filters
+  const { cascadingFilterOptions, dateRangeFilter, getCountries } = useCascadingFilters();
 
   useEffect(() => {
     getCountries();
   }, []);
 
-  const countryOptions = useMemo(
-    () =>
-      (countryList || []).map((item) => ({
-        value: item.country_id,
-        label: item.country_name,
-      })),
-    [countryList]
-  );
-  const missionOptions = useMemo(
-    () =>
-      (missionList || []).map((item) => ({
-        value: item.mission_id,
-        label: item.mission_name,
-      })),
-    [missionList]
-  );
-
-  const centerOptions = useMemo(
-    () =>
-      (centerList || []).map((item) => ({
-        value: item.center_id,
-        label: item.center_name,
-      })),
-    [centerList]
-  );
-
-  const onCountryChange = (countryId) => {
-    if (countryId) {
-      getMissionsByCountry(countryId);
-    }
-  };
-
-  const onMissionChange = (missionId) => {
-    if (missionId) {
-      getCentersByMission(missionId);
-    }
-  };
-
-  useEffect(() => {
-    getData(params);
-  }, [params, getData]);
+  const filterOptions = useMemo(() => [
+    ...cascadingFilterOptions,
+    dateRangeFilter,
+  ], [cascadingFilterOptions]);
 
   const handleSortChange = (selector) => {
     setParams((prev) => ({
@@ -147,56 +124,7 @@ const OCIOTM = () => {
     },
   ];
 
-  const debouncedSearch = useMemo(
-    () =>
-      debounce((searchValue) => {
-        setParams((prev) => ({
-          ...prev,
-          search: searchValue,
-          page: 1,
-        }));
-      }, 500),
-    []
-  );
-
-  useEffect(() => {
-    return () => debouncedSearch.cancel();
-  }, [debouncedSearch]);
-
-  const filterOptions = [
-    {
-      fieldName: 'Country',
-      BE_keyName: 'country_id',
-      fieldType: 'select',
-      Options: countryOptions,
-      callBack: onCountryChange,
-      isLoading: isLoadingCountries,
-    },
-    {
-      fieldName: 'Mission',
-      BE_keyName: 'mission_id',
-      fieldType: 'select',
-      Options: missionOptions,
-      callBack: onMissionChange,
-      isLoading: isLoadingMissions,
-    },
-    {
-      fieldName: 'Center',
-      BE_keyName: 'center_id',
-      fieldType: 'select',
-      Options: centerOptions,
-      isLoading: isLoadingCenters,
-    },
-    {
-      fieldName: 'Date Range',
-      fieldType: 'dateRangeCombined',
-      fromKey: 'from_date',
-      toKey: 'to_date',
-    },
-  ];
-
   const tableData = ociOTMData || [];
-  const loading = isLoadingGet;
 
   return (
     <>
@@ -206,17 +134,14 @@ const OCIOTM = () => {
           type: 'button',
           action: () => {
             setAddEditModal(true);
-            setSelectedOTM(null);
           },
         }}
-
         exportExcel={{
           name: 'Export Mission Data',
           action: handleExportMissionData,
         }}
-        
-        filterOptions={filterOptions}
         onSearch={debouncedSearch}
+        filterOptions={filterOptions}
         submitFilter={(filters) => {
           const { from_date, to_date, ...rest } = filters;
           const formattedFromDate = from_date ? moment(from_date).format('YYYY-MM-DD') : null;
@@ -236,9 +161,9 @@ const OCIOTM = () => {
         count={pagination?.total_count || 0}
         columns={columns}
         data={tableData}
-        isLoading={loading}
-        onPageChange={(page) => setParams({ ...params, page })}
-        setLimit={(limit) => setParams({ ...params, limit })}
+        isLoading={isLoadingGet}
+        onPageChange={(page) => setParams((prev) => ({ ...prev, page }))}
+        setLimit={(limit) => setParams((prev) => ({ ...prev, limit, page: 1 }))}
         onSortChange={handleSortChange}
         wrapClasses="inventory-table-wrap"
       />
@@ -247,8 +172,7 @@ const OCIOTM = () => {
         <AddEditModal
           showModal={addEditModal}
           closeModal={() => setAddEditModal(false)}
-          onRefreshOTM={() => getData(params)}
-          selectedOTM={selectedOTM}
+          onRefreshOTM={onRefreshOTM}
         />
       )}
     </>

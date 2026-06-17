@@ -10,17 +10,17 @@ import CustomTable from '../../components/common/CustomTable';
 import useOCIDeletedApplicationReducer from '../../stores/OCIDeletedApplicationReducer';
 import { formatDate } from '../../config/config';
 import CustomActionModal from '../../components/common/CustomActionModal';
-import useUserReducer from '../../stores/UserReducer';
 import useOCIApplicationReducer from '../../stores/OCIApplicationReducer';
+import { useCascadingFilters } from '../../hooks/useCascadingFilters';
 
 const OCIDeletedApplication = () => {
 
-  const { 
+  const {
     getData, deletedOCIApplicationData, isLoadingGet, pagination,
     restoreApplication, isLoadingRestore,
   } = useOCIDeletedApplicationReducer((state) => state);
 
-  const { 
+  const {
     getOCIStatusList, ociStatusList, isLoadingStatusList,
   } = useOCIApplicationReducer((state) => state);
 
@@ -35,79 +35,61 @@ const OCIDeletedApplication = () => {
 
   const [params, setParams] = useState(initialParams);
 
-  const {
-    countryList,
-    missionList,
-    centerList,
-    isLoadingCountries,
-    isLoadingMissions,
-    isLoadingCenters,
-    getCountries,
-    getMissionsByCountry,
-    getCentersByMission
-  } = useUserReducer();
-
   useEffect(() => {
-    getCountries();
-    getOCIStatusList();
-  }, []);
-
-  const countryOptions = useMemo(
-    () =>
-      (countryList || []).map((item) => ({
-        value: item.country_id,
-        label: item.country_name,
-      })),
-    [countryList]
-  );
-
-  const statusOptions = useMemo(
-    () =>
-      (ociStatusList || []).map((item) => ({
-        label: item.status,
-        value: item.status_id,
-      })),
-    [ociStatusList]
-  );
-
-  const missionOptions = useMemo(
-    () =>
-      (missionList || []).map((item) => ({
-        value: item.mission_id,
-        label: item.mission_name,
-      })),
-    [missionList]
-  );
-
-  const centerOptions = useMemo(
-    () =>
-      (centerList || []).map((item) => ({
-        value: item.center_id,
-        label: item.center_name,
-      })),
-    [centerList]
-  );
-
-  const onCountryChange = (countryId) => {
-    if (countryId) {
-      getMissionsByCountry(countryId);
-    }
-  };
-
-  const onMissionChange = (missionId) => {
-    if (missionId) {
-      getCentersByMission(missionId);
-    }
-  };
+    getData(params);
+  }, [params, getData]);
 
   const onRefreshDeletedOCIApplications = () => {
     getData(params);
     setRetrieveModalOpen(false);
   };
 
+  const debouncedSearch = useMemo(
+    () =>
+      debounce((searchValue) => {
+        setParams((prevParams) => ({
+          ...prevParams,
+          search: searchValue,
+          page: 1,
+        }));
+      }, 500),
+    []
+  );
+
   useEffect(() => {
-    getData(params);
-  }, [params, getData]);
+    return () => {
+      debouncedSearch.cancel();
+    };
+  }, [debouncedSearch]);
+
+  // Filters
+  const { cascadingFilterOptions, dateRangeFilter, getCountries } = useCascadingFilters();
+
+  useEffect(() => {
+    getCountries();
+  }, []);
+
+  useEffect(() => {
+    getOCIStatusList();
+  }, []);
+
+  const statusOptions = useMemo(
+    () => (ociStatusList || []).map((x) => ({ label: x.status, value: String(x.status_id) })),
+    [ociStatusList]
+  );
+
+  const filterOptions = useMemo(() => [
+    ...cascadingFilterOptions,
+    {
+      fieldName: 'Status',
+      BE_keyName: 'status_id',
+      fieldType: 'select',
+      placeholder: 'Select Status',
+      Options: statusOptions,
+      isLoading: isLoadingStatusList,
+    },
+    dateRangeFilter,
+  ], [cascadingFilterOptions, statusOptions, isLoadingStatusList]);
 
   const handleSortChange = (selector) => {
     setParams((prev) => ({
@@ -115,6 +97,22 @@ const OCIDeletedApplication = () => {
       sort_by: selector,
       sort_order: prev.sort_order === 'ASC' ? 'DESC' : 'ASC',
     }));
+  };
+
+  const handleRetrieve = (comment) => {
+    if (retrieveModalOpen?.oci_application_id) {
+      const employeeId = localStorage.getItem('employee_id');
+      restoreApplication(
+        {
+          oci_application_id: retrieveModalOpen.oci_application_id,
+          comment: comment,
+          comment_by: employeeId,
+        },
+        () => {
+          onRefreshDeletedOCIApplications();
+        }
+      );
+    }
   };
 
   // ✅ Retrieve action (instead of delete)
@@ -146,28 +144,33 @@ const OCIDeletedApplication = () => {
       name: 'Reference No',
       selector: 'appointment_reference_no',
       sort: true,
+      sortField: 'appointment_reference_no',
     },
     {
       name: 'Name',
       selector: 'first_name',
       cell: (row) => `${row.first_name || ''} ${row.surname || ''}`,
       sort: true,
+      sortField: 'first_name',
     },
     {
       name: 'Gender',
       selector: 'gender',
       sort: true,
+      sortField: 'gender',
     },
     {
       name: 'Date of Birth',
       selector: 'dob',
       cell: (row) => (row?.dob ? formatDate(row.dob) : '-'),
       sort: true,
+      sortField: 'dob',
     },
     {
       name: 'Passport No',
       selector: 'passport_no',
       sort: true,
+      sortField: 'passport_no',
     },
     {
       name: 'Status / By, On',
@@ -195,86 +198,14 @@ const OCIDeletedApplication = () => {
     },
   ];
 
-  const debouncedSearch = useMemo(
-    () =>
-      debounce((searchValue) => {
-        setParams((prev) => ({
-          ...prev,
-          search: searchValue,
-          page: 1,
-        }));
-      }, 500),
-    []
-  );
-
-  useEffect(() => {
-    return () => debouncedSearch.cancel();
-  }, [debouncedSearch]);
-
-  const handleRetrieve = (comment) => {
-    if (retrieveModalOpen?.oci_application_id) {
-      const employeeId = localStorage.getItem('employee_id');
-      restoreApplication(
-        {
-          oci_application_id: retrieveModalOpen.oci_application_id,
-          comment: comment,
-          comment_by: employeeId,
-        },
-        () => {
-          onRefreshDeletedOCIApplications();
-        }
-      );
-    }
-  };
-
-  const filterOptions = [
-    {
-      fieldName: 'Country',
-      BE_keyName: 'country_id',
-      fieldType: 'select',
-      Options: countryOptions,
-      callBack: onCountryChange,
-      isLoading: isLoadingCountries,
-    },
-    {
-      fieldName: 'Mission',
-      BE_keyName: 'mission_id',
-      fieldType: 'select',
-      Options: missionOptions,
-      callBack: onMissionChange,
-      isLoading: isLoadingMissions,
-    },
-    {
-      fieldName: 'Center',
-      BE_keyName: 'center_id',
-      fieldType: 'select',
-      Options: centerOptions,
-      isLoading: isLoadingCenters,
-    },
-     {
-      fieldName: 'Status',
-      BE_keyName: 'status_id',
-      fieldType: 'select',
-      Options: statusOptions,
-      isLoading: isLoadingStatusList,
-    },
-    {
-      fieldName: 'Date Range',
-      fieldType: 'dateRangeCombined',
-      fromKey: 'from_date',
-      toKey: 'to_date',
-    },
-  ];
-
   // ✅ dataset
   const tableData = deletedOCIApplicationData || [];
-  const loading = isLoadingGet;
 
   return (
     <>
       <CommonHeader
-        filterOptions={filterOptions}
         onSearch={debouncedSearch}
+        filterOptions={filterOptions}
         submitFilter={(filters) => {
           const { from_date, to_date, ...rest } = filters;
           const formattedFromDate = from_date ? moment(from_date).format('YYYY-MM-DD') : null;
@@ -294,9 +225,9 @@ const OCIDeletedApplication = () => {
         count={pagination?.total_records || 0}
         columns={columns}
         data={tableData}
-        isLoading={loading}
-        onPageChange={(page) => setParams({ ...params, page })}
-        setLimit={(limit) => setParams({ ...params, limit })}
+        isLoading={isLoadingGet}
+        onPageChange={(page) => setParams((prev) => ({ ...prev, page }))}
+        setLimit={(limit) => setParams((prev) => ({ ...prev, limit, page: 1 }))}
         onSortChange={handleSortChange}
         wrapClasses="inventory-table-wrap"
       />

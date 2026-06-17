@@ -52,10 +52,6 @@ const VisaApplications = () => {
     getVisaApplications(params);
   }, [params]);
 
-  useEffect(() => {
-    getVisaStatuses();
-  }, []);
-
   const onRefreshVisaApplications = () => {
     getVisaApplications(params);
     setModal(false);
@@ -88,6 +84,10 @@ const VisaApplications = () => {
 
   useEffect(() => {
     getCountries();
+  }, []);
+
+  useEffect(() => {
+    getVisaStatuses();
   }, []);
 
   const statusOptions = useMemo(
