@@ -13,7 +13,7 @@ const Footer = () => {
 
   return (
     <footer className="ftr">
-      <p className="copy">© {yearDisplay} @ SGIVS Global</p>
+      <p className="copy">© {yearDisplay} SGIVS Global</p>
     </footer>
   );
 };

@@ -74,7 +74,7 @@ export function AddEditModal({ showModal, closeModal, onRefreshRole }) {
           <div className="col-12">
             <div className="form-group">
               <label htmlFor="employee_role" className="form-label">
-                Employee Role<span className="text-danger">*</span>
+                Employee Role <span className="text-danger">*</span>
               </label>
               <input
                 type="text"

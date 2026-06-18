@@ -16,7 +16,7 @@ import { debounce } from 'lodash';
 import CustomActionModal from '../../components/common/CustomActionModal';
 
 const Role = () => {
-  const { getData, roleData, isLoadingRole, deleteData, isLoadingDelete } = useRoleRudcer((state) => state);
+  const { getData, roleData, isLoadingGet, deleteData, isLoadingDelete } = useRoleRudcer((state) => state);
 
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [modal, setModal] = useState(false);
@@ -132,7 +132,6 @@ const Role = () => {
 
   // ✅ Decide dataset (dynamic)
   const tableData = roleData;
-  const loading = isLoadingRole;
 
   return (
     <>
@@ -165,7 +164,7 @@ const Role = () => {
         count={tableData?.total ?? tableData?.count ?? tableData?.length ?? 0}
         columns={columns}
         data={tableData?.data ?? tableData ?? []}
-        isLoading={loading}
+        isLoading={isLoadingGet}
         onPageChange={(page) => setParams((prev) => ({ ...prev, page }))}
         setLimit={(limit) => setParams((prev) => ({ ...prev, limit }))}
         onSortChange={handleSortChange}

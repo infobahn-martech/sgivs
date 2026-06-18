@@ -32,8 +32,8 @@ const ForgotPassword = () => {
   };
 
   return (
-    <div class="user-log-wrp">
-      <div class="inner-wrp">
+    <div className="user-log-wrp">
+      <div className="inner-wrp">
         {/* LEFT PANEL */}
         <div className="panel-left login-v2__left" aria-hidden="true">
           <div className="login-v2__left-card">
@@ -45,8 +45,8 @@ const ForgotPassword = () => {
             </div>
           </div>
         </div>
-        <div class="panel-right">
-          <div class="form-wrp-center login">
+        <div className="panel-right">
+          <div className="form-wrp-center login">
             <div className="top-blk reset">
               <div className="login-v2__logo-wrap">
                 <img src={logoImg} alt="SGIVS GLOBAL" className="login-v2__logo" />
@@ -59,14 +59,14 @@ const ForgotPassword = () => {
                 </div>
               </div>
             </div>
-            <div class="form-sec-wrp">
-              <div class="form-group">
-                <label class="form-label" for="">
+            <div className="form-sec-wrp">
+              <div className="form-group">
+                <label className="form-label" for="">
                   Email
                 </label>
                 <input
                   type="text"
-                  class="form-control"
+                  className="form-control"
                   placeholder="Enter your email"
                   {...register('email')}
                 />
@@ -77,14 +77,14 @@ const ForgotPassword = () => {
                 )}
               </div>
               <Link
-                class="link"
+                className="link"
                 onClick={() => {
                   navigate('/login');
                 }}
               >
                 Back to login?
               </Link>
-              <button class="btn btn-rounded" onClick={handleSubmit(onSubmit)}>
+              <button className="btn btn-rounded" onClick={handleSubmit(onSubmit)}>
                 {isForgotLoading ? (
                   <Spinner
                     size="sm"
@@ -100,8 +100,8 @@ const ForgotPassword = () => {
               </button>
             </div>
           </div>
-          <footer class="ftr">
-            <p class="copy">© 2026ALL RIGHTS RESERVED</p>
+          <footer className="ftr">
+            <p className="copy">© 2025 - {new Date().getFullYear()} SGIVS Global. All Rights Reserved.</p>
           </footer>
         </div>
       </div>
