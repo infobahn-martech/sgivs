@@ -93,6 +93,16 @@ export const headerConfig = [
   // Cash Collection
   { title: 'Daily Cash Collection', icon: transactionICo, path: '/daily-cash-collection' },
 
+  // MIS Manager
+  { title: 'Financial Report', icon: transactionICo, path: '/mis-financial-report' },
+  { title: 'Date Wise Center Revenue Report', icon: transactionICo, path: '/mis-date-wise-center-revenue-report' },
+  { title: 'Daily Collection Report', icon: transactionICo, path: '/mis-daily-collection-report' },
+  { title: 'Daily Comprehensive Collection Report', icon: transactionICo, path: '/mis-daily-comprehensive-collection-report' },
+  { title: 'Mission Monthly Report', icon: transactionICo, path: '/mis-mission-monthly-report' },
+  { title: 'Daily User Report', icon: transactionICo, path: '/mis-daily-user-report' },
+  { title: 'Status Wise Report', icon: transactionICo, path: '/mis-status-wise-report' },
+  { title: 'Collection Report', icon: transactionICo, path: '/mis-collection-report' },
+
   // VAS Manager
   { title: 'Passport VAS Applications', icon: transactionICo, path: '/passport-vas-applications' },
   { title: 'Visa VAS Applications', icon: transactionICo, path: '/visa-vas-applications' },

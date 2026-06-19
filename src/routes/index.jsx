@@ -77,6 +77,14 @@ import ChargeAndRefunds from '../pages/ChargeAndRefunds';
 import ReturnFromMission from '../pages/ReturnFromMission';
 import ReturnToMission from '../pages/ReturnToMission';
 import DailyCashCollection from '../pages/DailyCashCollection';
+import MISFinancialReport from '../pages/MisManager/FinancialReport';
+import MISDateWiseCenterRevenueReport from '../pages/MisManager/DateWiseCenterRevenueReport';
+import MISDailyCollectionReport from '../pages/MisManager/DailyCollectionReport';
+import MISDailyComprehensiveCollectionReport from '../pages/MisManager/DailyComprehensiveCollectionReport';
+import MISMissionMonthlyReport from '../pages/MisManager/MissionMonthlyReport';
+import MISDailyUserReport from '../pages/MisManager/DailyUserReport';
+import MISStatusWiseReport from '../pages/MisManager/StatusWiseReport';
+import MISCollectionReport from '../pages/MisManager/CollectionReport';
 import PassportVasApplications from '../pages/PassportVasApplications';
 import VisaVasApplications from '../pages/VisaVasApplications';
 import AttestationVasApplications from '../pages/AttestationVasApplications';
@@ -190,6 +198,14 @@ const router = createHashRouter([
               { path: '/return-from-mission', element: <ReturnFromMission /> },
               { path: '/return-to-mission', element: <ReturnToMission /> },
               { path: '/daily-cash-collection', element: <DailyCashCollection /> },
+              { path: '/mis-financial-report', element: <MISFinancialReport /> },
+              { path: '/mis-date-wise-center-revenue-report', element: <MISDateWiseCenterRevenueReport /> },
+              { path: '/mis-daily-collection-report', element: <MISDailyCollectionReport /> },
+              { path: '/mis-daily-comprehensive-collection-report', element: <MISDailyComprehensiveCollectionReport /> },
+              { path: '/mis-mission-monthly-report', element: <MISMissionMonthlyReport /> },
+              { path: '/mis-daily-user-report', element: <MISDailyUserReport /> },
+              { path: '/mis-status-wise-report', element: <MISStatusWiseReport /> },
+              { path: '/mis-collection-report', element: <MISCollectionReport /> },
               { path: '/passport-vas-applications', element: <PassportVasApplications /> },
               { path: '/visa-vas-applications', element: <VisaVasApplications /> },
               { path: '/attestation-vas-applications', element: <AttestationVasApplications /> },

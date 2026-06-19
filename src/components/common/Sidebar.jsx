@@ -225,7 +225,33 @@ const Sidebar = ({ collapsed, setCollapsed }) => {
         { name: 'Daily Cash Collection', path: '/daily-cash-collection', icon: MessagesIcon },
       ],
     },
-    // Passport VAS Applications
+    // MIS Manager
+    {
+      name: 'MIS Manager',
+      icon: EZIcon,
+      path: '/mis-financial-report',
+      activeRoutes: [
+        '/mis-financial-report',
+        '/mis-date-wise-center-revenue-report',
+        '/mis-daily-collection-report',
+        '/mis-daily-comprehensive-collection-report',
+        '/mis-mission-monthly-report',
+        '/mis-daily-user-report',
+        '/mis-status-wise-report',
+        '/mis-collection-report',
+      ],
+      subMenu: [
+        { name: 'Financial Report', path: '/mis-financial-report', icon: MessagesIcon },
+        { name: 'Date Wise Center Revenue Report', path: '/mis-date-wise-center-revenue-report', icon: MessagesIcon },
+        { name: 'Daily Collection Report', path: '/mis-daily-collection-report', icon: MessagesIcon },
+        { name: 'Daily Comprehensive Collection Report', path: '/mis-daily-comprehensive-collection-report', icon: MessagesIcon },
+        { name: 'Mission Monthly Report', path: '/mis-mission-monthly-report', icon: MessagesIcon },
+        { name: 'Daily User Report', path: '/mis-daily-user-report', icon: MessagesIcon },
+        { name: 'Status Wise Report', path: '/mis-status-wise-report', icon: MessagesIcon },
+        { name: 'Collection Report', path: '/mis-collection-report', icon: MessagesIcon },
+      ],
+    },
+    // VAS Manager
     {
       name: 'VAS Manager',
       icon: EZIcon, // change icon if needed

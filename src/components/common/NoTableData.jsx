@@ -8,7 +8,7 @@ function NoTableData({ columns, noColspan, noBody }) {
         <div className="no-data-img">
           <img src={noImgpic} alt="no-data" />
         </div>
-        <div className="no-data-txt">NO DATA FOUND</div>
+        <div className="no-data-txt">NO DATA FOUND..!</div>
       </div>
     </div>
   );

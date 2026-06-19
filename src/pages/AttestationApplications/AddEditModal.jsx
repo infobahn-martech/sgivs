@@ -298,7 +298,6 @@ export function AddEditModal({ showModal, closeModal, onRefreshAttestationApplic
 
       courierRequired: false,
 
-      courierRequired: false,
       residenceCountry: '',
       addressLine1: '',
       addressLine2: '',

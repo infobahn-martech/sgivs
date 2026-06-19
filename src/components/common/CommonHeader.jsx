@@ -24,6 +24,7 @@ const CommonHeader = ({
   addButton,
   hideRightSide = false,
   onSearch,
+  hideSearch = false,
   uploadTitle = '',
   exportLoading,
   hideFilter,
@@ -159,6 +160,7 @@ const CommonHeader = ({
         )}
         {!hideRightSide && (
           <div className="right-wrap">
+            {!hideSearch && (
             <div className="search-wrap">
               <input
                 type="text"
@@ -171,6 +173,7 @@ const CommonHeader = ({
                 <img src={searchIcon} alt="" />
               </button>
             </div>
+            )}
             {!hideFilter && (
               <div className="filter-wrap dropdown" ref={filterContainerRef}>
                 <a
