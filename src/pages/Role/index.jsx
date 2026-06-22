@@ -1,6 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { Tooltip } from 'react-tooltip';
-import moment from 'moment';
 
 import '../../assets/scss/usermanagement.scss';
 
@@ -10,26 +9,25 @@ import editIcon from '../../assets/images/edit.svg';
 import CommonHeader from '../../components/common/CommonHeader';
 import CustomTable from '../../components/common/CustomTable';
 import useRoleRudcer from '../../stores/RoleReducer';
-import { formatDate } from '../../config/config';
 import { AddEditModal } from './AddEditModal';
 import { debounce } from 'lodash';
 import CustomActionModal from '../../components/common/CustomActionModal';
 
 const Role = () => {
-  const { getData, roleData, isLoadingGet, deleteData, isLoadingDelete } = useRoleRudcer((state) => state);
+  const {
+    getData, roleData, isLoadingGet, pagination,
+    deleteData, isLoadingDelete
+  } = useRoleRudcer((state) => state);
 
-  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [modal, setModal] = useState(false);
-
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
 
   const initialParams = useMemo(
     () => ({
       search: '',
       page: 1,
       limit: 10,
-      fromDate: null,
-      toDate: null,
-      sortBy: 'createdAt',
+      sortBy: 'employee_role',
       sortOrder: 'DESC',
     }),
     []
@@ -43,11 +41,28 @@ const Role = () => {
     setDeleteModalOpen(false);
   };
 
-  // ✅ Always dynamic
   useEffect(() => {
     getData(params);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params]);
+
+  // ✅ Stable debounce + cleanup
+  const debouncedSearch = useMemo(
+    () =>
+      debounce((searchValue) => {
+        setParams((prevParams) => ({
+          ...prevParams,
+          search: searchValue,
+          page: 1,
+        }));
+      }, 500),
+    []
+  );
+
+  useEffect(() => {
+    return () => {
+      debouncedSearch.cancel();
+    };
+  }, [debouncedSearch]);
 
   const handleSortChange = (selector) => {
     setParams((prevParams) => ({
@@ -57,8 +72,17 @@ const Role = () => {
     }));
   };
 
+  const handleDelete = () => {
+    const id = deleteModalOpen?.employee_role_id;
+
+    if (!id) return;
+
+    deleteData(id, () => {
+      onRefreshRole();
+    });
+  };
+
   const renderAction = (row) => {
-    const roleName = row?.employee_role || row?.employeeRole || row?.role || 'role';
     return (
       <>
         <Tooltip id="edit" place="bottom" content="Edit" style={{ backgroundColor: '#051a53' }} />
@@ -97,41 +121,7 @@ const Role = () => {
     },
   ];
 
-  // ✅ Stable debounce + cleanup
-  const debouncedSearch = useMemo(
-    () =>
-      debounce((searchValue) => {
-        setParams((prevParams) => ({
-          ...prevParams,
-          search: searchValue,
-          page: 1,
-        }));
-      }, 500),
-    []
-  );
-
-  useEffect(() => {
-    return () => {
-      debouncedSearch.cancel();
-    };
-  }, [debouncedSearch]);
-
-  const handleDelete = () => {
-    const id =
-      deleteModalOpen?.employee_role_id ??
-      deleteModalOpen?.id ??
-      deleteModalOpen?.role_id ??
-      deleteModalOpen?.employeeRoleId;
-
-    if (!id) return;
-
-    deleteData(id, () => {
-      onRefreshRole();
-    });
-  };
-
-  // ✅ Decide dataset (dynamic)
-  const tableData = roleData;
+  const tableData = roleData ?? [];
 
   return (
     <>
@@ -143,30 +133,16 @@ const Role = () => {
         }}
         hideFilter
         onSearch={debouncedSearch}
-        submitFilter={(filters) => {
-          const { fromDate, toDate, ...rest } = filters;
-
-          setParams((prev) => ({
-            ...prev,
-            ...rest,
-            fromDate: fromDate ? moment(fromDate).format('YYYY-MM-DD') : null,
-            toDate: toDate ? moment(toDate).format('YYYY-MM-DD') : null,
-            page: 1,
-          }));
-        }}
-        clearOptions={() => {
-          setParams(initialParams);
-        }}
       />
 
       <CustomTable
         pagination={{ currentPage: params.page, limit: params.limit }}
-        count={tableData?.total ?? tableData?.count ?? tableData?.length ?? 0}
+        count={pagination?.total ?? 0}
         columns={columns}
-        data={tableData?.data ?? tableData ?? []}
+        data={tableData}
         isLoading={isLoadingGet}
         onPageChange={(page) => setParams((prev) => ({ ...prev, page }))}
-        setLimit={(limit) => setParams((prev) => ({ ...prev, limit }))}
+        setLimit={(limit) => setParams((prev) => ({ ...prev, limit: Number(limit), page: 1 }))}
         onSortChange={handleSortChange}
         wrapClasses="inventory-table-wrap"
       />

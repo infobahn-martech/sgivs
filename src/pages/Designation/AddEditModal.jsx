@@ -31,7 +31,6 @@ export function AddEditModal({ showModal, closeModal, onRefreshDesignation }) {
       employee_role_id: '',
     },
   });
-  console.log("showModal", showModal);
 
   const { postData, patchData, isLoading } = useDesignationReducer((state) => state);
 
@@ -66,17 +65,10 @@ export function AddEditModal({ showModal, closeModal, onRefreshDesignation }) {
 
       // role id could be in different keys depending on your list API
       // try these common ones safely
-      setValue(
-        'employee_role_id',
-        String(
-          showModal?.employee_role_id ||
-          showModal?.roleId ||
-          showModal?.employeeRoleId ||
-          showModal?.role?.employee_role_id ||
-          ''
-        ),
-        { shouldDirty: true, shouldValidate: true }
-      );
+      setValue('employee_role_id', String(showModal?.employee_role_id || ''), {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
     } else {
       reset({ employee_designation: '', employee_role_id: '' });
     }
@@ -106,7 +98,7 @@ export function AddEditModal({ showModal, closeModal, onRefreshDesignation }) {
   const renderHeader = () => (
     <>
       <h4 className="modal-title">
-        {showModal?.id ? 'Edit Designation' : 'Add Designation'}
+        {showModal?.employee_designation_id ? 'Edit Designation' : 'Add Designation'}
       </h4>
       <button
         type="button"
@@ -123,10 +115,9 @@ export function AddEditModal({ showModal, closeModal, onRefreshDesignation }) {
       <div className="row">
         <div className="col-sm-6">
           <div className="form-group forms-custom">
-            <label htmlFor="employee_role_id" className="label">
-              Select Role<span className="text-danger">*</span>
+            <label htmlFor="employee_role_id" className="form-label">
+              Select Role <span className="text-danger">*</span>
             </label>
-
             <CustomSelect
               options={roleOptions}
               value={
@@ -144,15 +135,14 @@ export function AddEditModal({ showModal, closeModal, onRefreshDesignation }) {
               showIndicator={false}
               className="form-select form-control"
             />
-
             {errors.employee_role_id && <span className="error">{errors.employee_role_id.message}</span>}
           </div>
         </div>
 
         <div className="col-sm-6">
           <div className="form-group forms-custom">
-            <label htmlFor="employee_designation" className="label">
-              Designation Name<span className="text-danger">*</span>
+            <label htmlFor="employee_designation" className="form-label">
+              Designation Name <span className="text-danger">*</span>
             </label>
             <input
               type="text"

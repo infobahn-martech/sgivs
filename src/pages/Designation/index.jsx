@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Tooltip } from 'react-tooltip';
-import moment from 'moment';
 
 import '../../assets/scss/usermanagement.scss';
 
@@ -9,7 +8,6 @@ import editIcon from '../../assets/images/edit.svg';
 
 import CommonHeader from '../../components/common/CommonHeader';
 import CustomTable from '../../components/common/CustomTable';
-import { formatDate } from '../../config/config';
 import { AddEditModal } from './AddEditModal';
 import { debounce } from 'lodash';
 import CustomActionModal from '../../components/common/CustomActionModal';
@@ -17,23 +15,18 @@ import useDesignationReducer from '../../stores/DesignationReducer';
 
 const DesignationManagement = () => {
   const {
-    getData,
-    designationData,
-    isLoadingGet,
-    deleteData,
-    isLoadingDelete,
+    getData, designationData, isLoadingGet, pagination,
+    deleteData, isLoadingDelete,
   } = useDesignationReducer((state) => state);
 
-  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [modal, setModal] = useState(false);
-
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  
   const initialParams = {
     search: '',
     page: 1,
     limit: 10,
-    fromDate: null,
-    toDate: null,
-    sortBy: 'createdAt',
+    sortBy: 'employee_designation',
     sortOrder: 'DESC',
   };
 
@@ -45,11 +38,29 @@ const DesignationManagement = () => {
     setDeleteModalOpen(false);
   };
 
-  // ✅ Call API always (dynamic)
   useEffect(() => {
     getData(params);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params]);
+
+  // ✅ stable debounce
+  const debouncedSearch = useMemo(
+    () =>
+      debounce((searchValue) => {
+        setParams((prevParams) => ({
+          ...prevParams,
+          search: searchValue,
+          page: 1,
+        }));
+      }, 500),
+    []
+  );
+
+  // ✅ cleanup debounce on unmount
+  useEffect(() => {
+    return () => {
+      debouncedSearch.cancel();
+    };
+  }, [debouncedSearch]);
 
   const handleSortChange = (selector) => {
     setParams((prevParams) => ({
@@ -57,6 +68,14 @@ const DesignationManagement = () => {
       sortBy: selector,
       sortOrder: prevParams.sortOrder === 'ASC' ? 'DESC' : 'ASC',
     }));
+  };
+
+  const handleDelete = () => {
+    if (deleteModalOpen?.id) {
+      deleteData(deleteModalOpen?.id, () => {
+        onRefreshDesignation();
+      });
+    }
   };
 
   const renderAction = (row) => {
@@ -91,11 +110,13 @@ const DesignationManagement = () => {
       name: 'Designation',
       selector: 'employee_designation',
       contentClass: 'user-pic',
+      sort: true,
     },
     {
       name: 'Role',
       selector: 'employee_role',
       contentClass: 'user-pic',
+      sort: true,
     },
     {
       name: 'Action',
@@ -106,36 +127,7 @@ const DesignationManagement = () => {
     },
   ];
 
-  // ✅ stable debounce
-  const debouncedSearch = useMemo(
-    () =>
-      debounce((searchValue) => {
-        setParams((prevParams) => ({
-          ...prevParams,
-          search: searchValue,
-          page: 1,
-        }));
-      }, 500),
-    []
-  );
-
-  // ✅ cleanup debounce on unmount
-  useEffect(() => {
-    return () => {
-      debouncedSearch.cancel();
-    };
-  }, [debouncedSearch]);
-
-  const handleDelete = () => {
-    if (deleteModalOpen?.id) {
-      deleteData(deleteModalOpen?.id, () => {
-        onRefreshDesignation();
-      });
-    }
-  };
-
-  const tableData = designationData;
-  const loading = isLoadingGet;
+  const tableData = designationData ?? [];
 
   return (
     <>
@@ -146,29 +138,17 @@ const DesignationManagement = () => {
           action: () => setModal(true),
         }}
         hideFilter
-        submitFilter={(filters) => {
-          const { fromDate, toDate, ...rest } = filters;
-
-          setParams({
-            ...params,
-            ...rest,
-            fromDate: fromDate ? moment(fromDate).format('YYYY-MM-DD') : null,
-            toDate: toDate ? moment(toDate).format('YYYY-MM-DD') : null,
-            page: 1,
-          });
-        }}
-        clearOptions={() => setParams(initialParams)}
         onSearch={debouncedSearch}
       />
 
       <CustomTable
         pagination={{ currentPage: params.page, limit: params.limit }}
-        count={tableData?.total || 0}
+        count={pagination?.total ?? 0}
         columns={columns}
-        data={tableData?.data || []}
-        isLoading={loading}
-        onPageChange={(page) => setParams({ ...params, page })}
-        setLimit={(limit) => setParams({ ...params, limit })}
+        data={tableData}
+        isLoading={isLoadingGet}
+        onPageChange={(page) => setParams((prev) => ({ ...prev, page }))}
+        setLimit={(limit) => setParams((prev) => ({ ...prev, limit: Number(limit), page: 1 }))}
         onSortChange={handleSortChange}
         wrapClasses="inventory-table-wrap"
       />
@@ -187,8 +167,7 @@ const DesignationManagement = () => {
           isLoading={isLoadingDelete}
           showModal={deleteModalOpen}
           closeModal={() => setDeleteModalOpen(false)}
-          message={`Are you sure you want to delete this ${deleteModalOpen?.employee_designation || deleteModalOpen?.employee_designation || ''
-            }?`}
+          message={`Are you sure you want to delete this ${deleteModalOpen?.employee_designation || deleteModalOpen?.employee_designation || ''}?`}
           onCancel={() => setDeleteModalOpen(false)}
           onSubmit={handleDelete}
         />

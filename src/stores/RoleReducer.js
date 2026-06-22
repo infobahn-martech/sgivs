@@ -9,6 +9,7 @@ const useRoleRudcer = create((set) => ({
   errorMessage: '',
   successMessage: '',
   roleData: null,
+  pagination: null,
 
   postData: async (payload, cb) => {
     try {
@@ -30,6 +31,7 @@ const useRoleRudcer = create((set) => ({
       error(err?.response?.data?.message ?? err.message);
     }
   },
+
   patchData: async (payload, cb) => {
     try {
       set({ isLoading: true });
@@ -58,6 +60,7 @@ const useRoleRudcer = create((set) => ({
       const { data } = await roleService.getData(params);
       set({
         roleData: data?.data,
+        pagination: data?.pagination ?? null,
         isLoadingGet: false,
       });
     } catch (err) {
@@ -69,6 +72,7 @@ const useRoleRudcer = create((set) => ({
       error(err?.response?.data?.message ?? err.message);
     }
   },
+
   deleteData: async (id, cb) => {
     try {
       set({ isLoadingDelete: true });

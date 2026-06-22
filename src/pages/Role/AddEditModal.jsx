@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+
 import CustomModal from '../../components/common/CustomModal';
 import useRoleRudcer from '../../stores/RoleReducer';
 
@@ -9,8 +10,8 @@ const roleSchema = z.object({
   employee_role: z
     .string()
     .trim()
-    .min(1, 'Employee role is required')
-    .max(20, 'Employee role must be 20 characters or less'),
+    .min(1, 'Employee Role is required')
+    .max(20, 'Employee Role must be 20 characters or less'),
 });
 
 export function AddEditModal({ showModal, closeModal, onRefreshRole }) {
@@ -27,9 +28,7 @@ export function AddEditModal({ showModal, closeModal, onRefreshRole }) {
     },
   });
 
-  const { postData, patchData, isLoading } = useRoleRudcer(
-    (state) => state
-  );
+  const { postData, patchData, isLoading } = useRoleRudcer((state) => state);
 
   // Prefill form when editing
   useEffect(() => {

@@ -63,7 +63,6 @@ const UserManagement = () => {
 
   const filterOptions = useMemo(() => [
     ...cascadingFilterOptions,
-    dateRangeFilter,
   ], [cascadingFilterOptions]);
 
   const handleSortChange = (selector) => {

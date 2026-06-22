@@ -10,6 +10,7 @@ const useDesignationReducer = create((set) => ({
   errorMessage: '',
   successMessage: '',
   designationData: [],
+  pagination: null,
 
   postData: async (payload, cb) => {
     try {
@@ -31,15 +32,13 @@ const useDesignationReducer = create((set) => ({
       error(err?.response?.data?.message ?? err.message);
     }
   },
+
   patchData: async (payload, cb) => {
     try {
       set({ isLoading: true });
-
-      const { data } = await designationService.patchData(payload); // Updated call
-
+      const { data } = await designationService.patchData(payload); 
       const { success } = useAlertReducer.getState();
       success(data?.response?.data?.message ?? data?.message);
-
       set({
         successMessage: data?.response?.data?.message ?? data?.message,
         isLoading: false,
@@ -59,11 +58,10 @@ const useDesignationReducer = create((set) => ({
     try {
       set({ isLoadingGet: true, successMessage: '' });
       const { data } = await designationService.getData(params);
-      const list = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [];
-      const total = data?.total ?? list?.length ?? 0;
       set({
-        designationData: { data: list, total },
+        designationData: data?.data,
         // successMessage: data?.response?.data?.message ?? data?.message,
+        agination: data?.pagination ?? null,
         isLoadingGet: false,
       });
     } catch (err) {
@@ -75,6 +73,7 @@ const useDesignationReducer = create((set) => ({
       error(err?.response?.data?.message ?? err.message);
     }
   },
+
   clearCounterData: () => {
     set({
       designationData: [],
@@ -82,6 +81,7 @@ const useDesignationReducer = create((set) => ({
       successMessage: '',
     });
   },
+
   deleteData: async (id, cb) => {
     try {
       set({ isLoadingDelete: true });
@@ -103,6 +103,7 @@ const useDesignationReducer = create((set) => ({
       error(err?.response?.data?.message ?? err.message);
     }
   },
+
 }));
 
 export default useDesignationReducer;

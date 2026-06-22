@@ -67,14 +67,20 @@ const getUserTableColumns = ({
       sort: true,
     },
     {
-      name: 'Role',
-      selector: row => `${row.role || ''} - ${row.designation || ''}`,
-      sort: true,
-      cell: (row) => {
-        const value = [row.role, row.designation].filter(Boolean).join(' - ');
-        return <span>{value}</span>;
-      },
-    },
+  name: 'Role',
+  selector: row => row.role,
+  sort: true,
+  cell: (row) => (
+    <div>
+      <div>{row.role}</div>
+      {row.designation && (
+        <div className="text-muted">
+          {row.designation}
+        </div>
+      )}
+    </div>
+  ),
+},
     {
       name: 'Center',
       selector: row => row.center,
@@ -86,9 +92,9 @@ const getUserTableColumns = ({
 
         return (
           <div>
-            <div style={{ fontWeight: 600 }}>{row.center}</div>
+            <div>{row.center}</div>
             {subLine && (
-              <div style={{ fontSize: '12px', color: '#666' }}>
+              <div className="text-muted">
                 {subLine}
               </div>
             )}
