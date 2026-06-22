@@ -14,6 +14,7 @@ const useCenterReducer = create((set) => ({
   missionList: [],
   isLoadingCountries: false,
   isLoadingMissions: false,
+  pagination: null,
 
   postData: async (payload, cb) => {
     try {
@@ -35,6 +36,7 @@ const useCenterReducer = create((set) => ({
       error(err?.response?.data?.message ?? err.message);
     }
   },
+
   patchData: async (payload, cb) => {
     try {
       set({ isLoading: true });
@@ -62,26 +64,9 @@ const useCenterReducer = create((set) => ({
     try {
       set({ isLoadingGet: true });
       const { data } = await centerService.getData(params);
-      const list = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [];
-      const pag = data?.pagination;
-      const limit = params?.limit ?? 10;
-      const pagination = pag
-        ? {
-          total: pag.total ?? 0,
-          page: pag.page ?? params?.page ?? 1,
-          limit: pag.limit ?? limit,
-          total_pages:
-            pag.total_pages ??
-            Math.ceil((pag.total ?? 0) / ((pag.limit ?? limit) || 1)),
-        }
-        : {
-          total: data?.total ?? list?.length ?? 0,
-          page: params?.page ?? 1,
-          limit,
-          total_pages: Math.ceil((data?.total ?? list?.length ?? 0) / (limit || 1)),
-        };
       set({
-        centerData: { data: list, pagination },
+        centerData: data?.data || [],
+        pagination: data?.pagination ?? null,
         isLoadingGet: false,
       });
     } catch (err) {
@@ -93,6 +78,7 @@ const useCenterReducer = create((set) => ({
       error(err?.response?.data?.message ?? err.message);
     }
   },
+
   deleteData: async (id, cb) => {
     try {
       set({ isLoadingDelete: true });

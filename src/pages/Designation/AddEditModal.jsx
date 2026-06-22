@@ -44,9 +44,6 @@ export function AddEditModal({ showModal, closeModal, onRefreshDesignation }) {
     getData();
   }, [getData]);
 
-  // ✅ Convert API roles to select options
-  // API role object:
-  // { employee_role_id: "3", employee_role: "TEST" }
   const roleOptions = useMemo(() => {
     return (roleData || []).map((item) => ({
       label: item?.employee_role,
@@ -57,14 +54,10 @@ export function AddEditModal({ showModal, closeModal, onRefreshDesignation }) {
   // ✅ Fill form for edit / clear for add
   useEffect(() => {
     if (showModal?.employee_designation_id) {
-      // name key might be "name" or "designation_name" depending on your API
-      setValue('employee_designation', showModal?.employee_designation || showModal?.designation_name || '', {
+      setValue('employee_designation', showModal?.employee_designation || '', {
         shouldDirty: true,
         shouldValidate: true,
       });
-
-      // role id could be in different keys depending on your list API
-      // try these common ones safely
       setValue('employee_role_id', String(showModal?.employee_role_id || ''), {
         shouldDirty: true,
         shouldValidate: true,
@@ -164,7 +157,6 @@ export function AddEditModal({ showModal, closeModal, onRefreshDesignation }) {
       <button type="button" className="btn btn-cancel" onClick={closeModal}>
         Cancel
       </button>
-
       <button
         type="button"
         className="btn btn-submit"

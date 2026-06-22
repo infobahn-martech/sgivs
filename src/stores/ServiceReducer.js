@@ -14,9 +14,10 @@ const useServiceReducer = create((set) => ({
   successMessage: '',
 
   serviceData: null,
+  pagination: null,
 
    // Service Types
-  serviceTypes: [],
+  serviceTypes: [], isLoadingServiceTypes: false,
 
   // Services by service_type_id
   servicesByType: [],
@@ -75,6 +76,7 @@ const useServiceReducer = create((set) => ({
       set({
         serviceData: datas?.data,
         // successMessage: data?.response?.data?.message ?? data?.message,
+        pagination: data?.pagination ?? null,
         isLoadingGet: false,
       });
     } catch (err) {
@@ -89,17 +91,17 @@ const useServiceReducer = create((set) => ({
 
   getAllServiceType: async () => {
     try {
-      set({ isLoadingGet: true });
+      set({ isLoadingServiceTypes: true });
       const {
         data: { data },
       } = await serviceService.getAllServiceType();
       set({
         serviceTypes: data,
-        isLoadingGet: false,
+        isLoadingServiceTypes: false,
       });
     } catch (err) {
       set({
-        isLoadingGet: false,
+        isLoadingServiceTypes: false,
       });
     }
   },

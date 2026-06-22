@@ -26,7 +26,7 @@ const DesignationManagement = () => {
     search: '',
     page: 1,
     limit: 10,
-    sortBy: 'employee_designation',
+    sortBy: 'employee_designation_id',
     sortOrder: 'DESC',
   };
 
@@ -71,8 +71,8 @@ const DesignationManagement = () => {
   };
 
   const handleDelete = () => {
-    if (deleteModalOpen?.id) {
-      deleteData(deleteModalOpen?.id, () => {
+    if (deleteModalOpen?.employee_designation_id) {
+      deleteData(deleteModalOpen?.employee_designation_id, () => {
         onRefreshDesignation();
       });
     }
@@ -167,7 +167,7 @@ const DesignationManagement = () => {
           isLoading={isLoadingDelete}
           showModal={deleteModalOpen}
           closeModal={() => setDeleteModalOpen(false)}
-          message={`Are you sure you want to delete this ${deleteModalOpen?.employee_designation || deleteModalOpen?.employee_designation || ''}?`}
+          message={`Are you sure you want to delete this ${deleteModalOpen?.employee_designation || ''}?`}
           onCancel={() => setDeleteModalOpen(false)}
           onSubmit={handleDelete}
         />

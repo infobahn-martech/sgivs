@@ -9,7 +9,7 @@ const centerSchema = z.object({
   center_name: z
     .string()
     .trim()
-    .min(1, 'Center name is required')
+    .min(1, 'Center Name is required')
     .max(100, 'Center name must be 100 characters or less'),
   country_id: z
     .union([z.string(), z.number()])
@@ -150,7 +150,7 @@ export function AddEditModal({ showModal, closeModal, onRefreshCenter }) {
           <div className="col-12">
             <div className="form-group">
               <label htmlFor="center_name" className="form-label">
-                Center Name<span className="text-danger">*</span>
+                Center Name <span className="text-danger">*</span>
               </label>
               <input
                 type="text"
@@ -168,7 +168,7 @@ export function AddEditModal({ showModal, closeModal, onRefreshCenter }) {
           <div className="col-12">
             <div className="form-group">
               <label htmlFor="country_id" className="form-label">
-                Country<span className="text-danger">*</span>
+                Country <span className="text-danger">*</span>
               </label>
               <select
                 id="country_id"
@@ -191,7 +191,7 @@ export function AddEditModal({ showModal, closeModal, onRefreshCenter }) {
           <div className="col-12">
             <div className="form-group">
               <label htmlFor="mission_id" className="form-label">
-                Mission<span className="text-danger">*</span>
+                Mission <span className="text-danger">*</span>
               </label>
               <select
                 id="mission_id"

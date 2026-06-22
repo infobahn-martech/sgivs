@@ -27,7 +27,7 @@ const Role = () => {
       search: '',
       page: 1,
       limit: 10,
-      sortBy: 'employee_role',
+      sortBy: 'employee_role_id',
       sortOrder: 'DESC',
     }),
     []

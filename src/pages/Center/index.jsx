@@ -15,67 +15,53 @@ import { debounce } from 'lodash';
 import CustomActionModal from '../../components/common/CustomActionModal';
 
 const Center = () => {
-  // ✅ Toggle this (VERY useful for large admin projects)
-  const USE_MOCK = false;
+  const {
+    getData, centerData, isLoadingGet, pagination,
+    deleteData, isLoadingDelete
+  } = useCenterReducer((state) => state);
 
-  const { getData, centerData, isLoadingGet, deleteData, isLoadingDelete } =
-    useCenterReducer((state) => state);
-
-  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [modal, setModal] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
 
   const initialParams = {
     search: '',
     page: 1,
     limit: 10,
-    fromDate: null,
-    toDate: null,
-    sort_by: 'createdAt',
+    sort_by: 'center_id',
     sortOrder: 'DESC',
   };
 
   const [params, setParams] = useState(initialParams);
 
-  // Mock data matching API shape: center_id, center_name, country_id, country_name, mission_id, mission_name
-  const mockCenterData = {
-    pagination: { total: 5, page: 1, limit: 10, total_pages: 1 },
-    data: [
-      { center_id: 1, center_name: 'Center 1', country_id: 1, country_name: 'Country A', mission_id: 1, mission_name: 'Mission 1' },
-      { center_id: 2, center_name: 'Monitors', country_id: 1, country_name: 'Country A', mission_id: 2, mission_name: 'Mission 2' },
-      { center_id: 3, center_name: 'Center 3', country_id: 2, country_name: 'Country B', mission_id: 3, mission_name: 'Mission 3' },
-      { center_id: 4, center_name: 'Center 4', country_id: 2, country_name: 'Country B', mission_id: 4, mission_name: 'Mission 4' },
-      { center_id: 5, center_name: 'Center 5', country_id: 1, country_name: 'Country A', mission_id: 1, mission_name: 'Mission 1' },
-    ],
-  };
-
   const onRefreshCenter = () => {
-    if (!USE_MOCK) {
-      getData(params);
-    }
+    getData(params);
     setModal(false);
     setDeleteModalOpen(false);
   };
 
-  // ✅ Call API only if not mock
   useEffect(() => {
-    if (!USE_MOCK) {
-      getData(params);
-    }
+    getData(params);
   }, [params]);
 
-  const tableData = USE_MOCK ? mockCenterData : centerData;
+  // ✅ Stable debounce
+  const debouncedSearch = useMemo(
+    () =>
+      debounce((searchValue) => {
+        setParams((prevParams) => ({
+          ...prevParams,
+          search: searchValue,
+          page: 1,
+        }));
+      }, 500),
+    []
+  );
 
+  // ✅ cleanup debounce on unmount
   useEffect(() => {
-    if (USE_MOCK) return;
-    const totalPages = tableData?.pagination?.total_pages;
-    const currentPage = params.page;
-    if (typeof totalPages !== 'number') return;
-    const outOfRange =
-      totalPages === 0 ? currentPage > 1 : currentPage > totalPages;
-    if (outOfRange) {
-      setParams((prev) => ({ ...prev, page: 1 }));
-    }
-  }, [USE_MOCK, tableData?.pagination?.total_pages, params.page]);
+    return () => {
+      debouncedSearch.cancel();
+    };
+  }, [debouncedSearch]);
 
   const handleSortChange = (selector) => {
     setParams((prevParams) => ({
@@ -83,6 +69,14 @@ const Center = () => {
       sort_by: selector,
       sortOrder: prevParams.sortOrder === 'ASC' ? 'DESC' : 'ASC',
     }));
+  };
+
+  const handleDelete = () => {
+    if (deleteModalOpen?.center_id) {
+      deleteData(deleteModalOpen?.center_id, () => {
+        onRefreshCenter();
+      });
+    }
   };
 
   const renderAction = (row) => {
@@ -134,33 +128,7 @@ const Center = () => {
     },
   ];
 
-  // ✅ Stable debounce
-  const debouncedSearch = useMemo(
-    () =>
-      debounce((searchValue) => {
-        setParams((prevParams) => ({
-          ...prevParams,
-          search: searchValue,
-          page: 1,
-        }));
-      }, 500),
-    []
-  );
-
-  const handleDelete = () => {
-    if (USE_MOCK) {
-      setDeleteModalOpen(false);
-      return;
-    }
-
-    if (deleteModalOpen?.center_id) {
-      deleteData(deleteModalOpen?.center_id, () => {
-        onRefreshCenter();
-      });
-    }
-  };
-
-  const loading = USE_MOCK ? false : isLoadingGet;
+  const tableData = centerData || [];
 
   return (
     <>
@@ -172,41 +140,16 @@ const Center = () => {
         }}
         hideFilter
         onSearch={debouncedSearch}
-        submitFilter={(filters) => {
-          const { fromDate, toDate, ...rest } = filters;
-
-          setParams((prev) => ({
-            ...prev,
-            ...rest,
-            fromDate: fromDate ? moment(fromDate).format('YYYY-MM-DD') : null,
-            toDate: toDate ? moment(toDate).format('YYYY-MM-DD') : null,
-            page: 1,
-          }));
-        }}
-        clearOptions={() => {
-          setParams(initialParams);
-        }}
       />
 
       <CustomTable
         pagination={{ currentPage: params.page, limit: params.limit }}
-        count={tableData?.pagination?.total || 0}
+        count={pagination?.total || 0}
         columns={columns}
-        data={tableData?.data || []}
-        isLoading={loading}
-        onPageChange={(page) =>
-          setParams((prev) => ({
-            ...prev,
-            page,
-          }))
-        }
-        setLimit={(limit) =>
-          setParams((prev) => ({
-            ...prev,
-            limit: Number(limit) || prev.limit,
-            page: 1,
-          }))
-        }
+        data={tableData}
+        isLoading={isLoadingGet}
+        onPageChange={(page) => setParams((prev) => ({ ...prev, page }))}
+        setLimit={(limit) => setParams((prev) => ({ ...prev, limit: Number(limit), page: 1 }))}
         onSortChange={handleSortChange}
         wrapClasses="inventory-table-wrap"
       />
@@ -222,7 +165,7 @@ const Center = () => {
       {deleteModalOpen && (
         <CustomActionModal
           isDelete
-          isLoading={USE_MOCK ? false : isLoadingDelete}
+          isLoading={isLoadingDelete}
           showModal={deleteModalOpen}
           closeModal={() => setDeleteModalOpen(false)}
           message={`Are you sure you want to delete this ${deleteModalOpen?.center_name}?`}

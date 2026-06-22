@@ -1,7 +1,6 @@
 import Gateway from '../config/gateway';
 
 const getCountries = () => Gateway.get('users/country');
-const getMissions = () => Gateway.get('users/mission');
 const getMissionsByCountry = (countryId) => Gateway.get(`users/mission_by_country/${countryId}`);
 const getCentersByMission = (mission_id) => Gateway.post(`users/centers-by-mission`,{mission_id});
 const postData = (payload) => {
@@ -22,7 +21,6 @@ const changeStatus = (payload) => Gateway.post('employee/change_status', payload
 
 export default {
   getCountries,
-  getMissions,
   getMissionsByCountry,
   getCentersByMission,
   

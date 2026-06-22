@@ -187,7 +187,7 @@ export default function EmployeeAddEditModal({ showModal, closeModal, onRefreshE
 
     const designationOptions = useMemo(
         () =>
-            (designationData?.data || []).map((x) => ({
+            (designationData || []).map((x) => ({
                 label: x.employee_designation,
                 value: String(x.employee_designation_id),
             })),

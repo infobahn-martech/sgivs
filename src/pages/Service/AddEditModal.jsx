@@ -22,11 +22,18 @@ function normalizeServiceTypeName(raw) {
 }
 
 function feeRequired(fieldLabel) {
-  return z.preprocess(
-    (v) => (v === '' || v === null || v === undefined ? undefined : Number(v)),
-    z
-      .number({ invalid_type_error: `${fieldLabel} is required` })
-      .min(0, `${fieldLabel} must be 0 or more`)
+  return z.preprocess((value) => {
+    if (value === '' || value === null || value === undefined) {
+      return undefined;
+    }
+
+    const num = Number(value);
+    return Number.isNaN(num) ? undefined : num;
+  },
+    z.number({
+      required_error: `${fieldLabel} is required`,
+      invalid_type_error: `${fieldLabel} is required`,
+    }).min(0, `${fieldLabel} must be 0 or more`)
   );
 }
 
@@ -71,11 +78,11 @@ const serviceTypesRef = { current: [] };
 
 const serviceFormSchema = z
   .object({
-    service_name: z.string().nonempty('Name is required'),
+    service_name: z.string().nonempty('Service Name is required'),
     service_type_id: z.string().nonempty('Service Type is required'),
     govt_fee: feeRequired('Govt Fee'),
     icwf_fee: feeRequired('ICWF Fee'),
-    service_fee: feeRequired('Service Fee'),
+    service_fee: feeRequired('SGIVS Service Fee'),
     urgent_fee: optionalFeeField('Urgent Fee').optional(),
     tatkal_fee: optionalFeeField('Tatkal Fee').optional(),
   })
@@ -131,8 +138,10 @@ export function AddEditModal({ showModal, closeModal, onRefreshService }) {
     },
   });
 
-  const { postData, patchData, isLoading, getAllServiceType, serviceTypes } =
-    useServiceReducer((state) => state);
+  const {
+    postData, patchData, isLoading,
+    getAllServiceType, serviceTypes, isLoadingServiceTypes
+  } = useServiceReducer((state) => state);
 
   const selectedServiceTypeId = watch('service_type_id');
 
@@ -293,25 +302,25 @@ export function AddEditModal({ showModal, closeModal, onRefreshService }) {
       <div className="row">
         <div className="col-sm-6">
           <div className="form-group forms-custom">
-            <label className="label">
-              Select Service Type<span className="text-danger">*</span>
+            <label className="form-label">
+              Select Service Type <span className="text-danger">*</span>
             </label>
 
             <CustomSelect
               options={serviceTypeOptions}
               value={
                 serviceTypeOptions.find(
-                  (option) => option.value === String(selectedServiceTypeId || '')
-                ) || null
+                  (option) => option.value === String(selectedServiceTypeId || '')) || null
               }
               onChange={(selected) =>
                 setValue('service_type_id', selected?.value || '', {
                   shouldValidate: true,
+                  shouldDirty: true,
+                  shouldTouch: true,
                 })
               }
-              placeholder="Select Service Type"
+              placeholder={isLoadingServiceTypes ? 'Loading...' : 'Select Service Type'}
               className="form-select form-control"
-              isDisabled={isLoading}
             />
 
             {errors.service_type_id && (
@@ -322,8 +331,8 @@ export function AddEditModal({ showModal, closeModal, onRefreshService }) {
 
         <div className="col-sm-6">
           <div className="form-group forms-custom">
-            <label className="label">
-              Service Name<span className="text-danger">*</span>
+            <label className="form-label">
+              Service Name <span className="text-danger">*</span>
             </label>
             <input
               type="text"
@@ -340,8 +349,8 @@ export function AddEditModal({ showModal, closeModal, onRefreshService }) {
 
         <div className="col-sm-6">
           <div className="form-group forms-custom">
-            <label className="label">
-              Govt Fee<span className="text-danger">*</span>
+            <label className="form-label">
+              Govt Fee <span className="text-danger">*</span>
             </label>
             <input
               type="number"
@@ -360,8 +369,8 @@ export function AddEditModal({ showModal, closeModal, onRefreshService }) {
 
         <div className="col-sm-6">
           <div className="form-group forms-custom">
-            <label className="label">
-              ICWF Fee<span className="text-danger">*</span>
+            <label className="form-label">
+              ICWF Fee <span className="text-danger">*</span>
             </label>
             <input
               type="number"
@@ -380,8 +389,8 @@ export function AddEditModal({ showModal, closeModal, onRefreshService }) {
 
         <div className="col-sm-6">
           <div className="form-group forms-custom">
-            <label className="label">
-              Service Fee<span className="text-danger">*</span>
+            <label className="form-label">
+              SGIVS Service Fee <span className="text-danger">*</span>
             </label>
             <input
               type="number"
@@ -401,8 +410,8 @@ export function AddEditModal({ showModal, closeModal, onRefreshService }) {
         {showUrgentFee && (
           <div className="col-sm-6">
             <div className="form-group forms-custom">
-              <label className="label">
-                Urgent Fee<span className="text-danger">*</span>
+              <label className="form-label">
+                Urgent Fee <span className="text-danger">*</span>
               </label>
               <input
                 type="number"
@@ -423,8 +432,8 @@ export function AddEditModal({ showModal, closeModal, onRefreshService }) {
         {showTatkalFee && (
           <div className="col-sm-6">
             <div className="form-group forms-custom">
-              <label className="label">
-                Tatkal Fee<span className="text-danger">*</span>
+              <label className="form-label">
+                Tatkal Fee <span className="text-danger">*</span>
               </label>
               <input
                 type="number"

@@ -22,7 +22,7 @@ const useDesignationReducer = create((set) => ({
         successMessage: data?.response?.data?.message ?? data?.message,
         isLoading: false,
       });
-      cb & cb();
+      cb && cb();
     } catch (err) {
       const { error } = useAlertReducer.getState();
       set({
@@ -43,7 +43,7 @@ const useDesignationReducer = create((set) => ({
         successMessage: data?.response?.data?.message ?? data?.message,
         isLoading: false,
       });
-      cb & cb();
+      cb && cb();
     } catch (err) {
       const { error } = useAlertReducer.getState();
       set({
@@ -61,7 +61,7 @@ const useDesignationReducer = create((set) => ({
       set({
         designationData: data?.data,
         // successMessage: data?.response?.data?.message ?? data?.message,
-        agination: data?.pagination ?? null,
+        pagination: data?.pagination ?? null,
         isLoadingGet: false,
       });
     } catch (err) {
@@ -93,7 +93,7 @@ const useDesignationReducer = create((set) => ({
         successMessage: data?.response?.data?.message ?? data?.message,
         isLoadingDelete: false,
       });
-      cb & cb();
+      cb && cb();
     } catch (err) {
       const { error } = useAlertReducer.getState();
       set({
