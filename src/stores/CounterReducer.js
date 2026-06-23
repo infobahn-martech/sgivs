@@ -12,6 +12,7 @@ const useCounterReducer = create((set) => ({
   counterData: null,
   centers: [],
   counters: [],
+  pagination: null,
 
   postData: async (payload, cb) => {
     try {
@@ -23,7 +24,7 @@ const useCounterReducer = create((set) => ({
         successMessage: data?.response?.data?.message ?? data?.message,
         isLoading: false,
       });
-      cb & cb();
+      cb && cb();
     } catch (err) {
       const { error } = useAlertReducer.getState();
       set({
@@ -33,20 +34,18 @@ const useCounterReducer = create((set) => ({
       error(err?.response?.data?.message ?? err.message);
     }
   },
+
   patchData: async (payload, cb) => {
     try {
       set({ isLoading: true });
-
-      const { data } = await counterService.patchData(payload); // Updated call
-
+      const { data } = await counterService.patchData(payload); 
       const { success } = useAlertReducer.getState();
       success(data?.response?.data?.message ?? data?.message);
-
       set({
         successMessage: data?.response?.data?.message ?? data?.message,
         isLoading: false,
       });
-      cb & cb();
+      cb && cb();
     } catch (err) {
       const { error } = useAlertReducer.getState();
       set({
@@ -61,10 +60,10 @@ const useCounterReducer = create((set) => ({
     try {
       set({ isLoadingGet: true, successMessage: '' });
       const { data } = await counterService.getData(params);
-      const datas = data;
       set({
-        counterData: datas?.data,
+        counterData: data?.data,
         // successMessage: data?.response?.data?.message ?? data?.message,
+        pagination: data?.pagination ?? null,
         isLoadingGet: false,
       });
     } catch (err) {
@@ -76,6 +75,7 @@ const useCounterReducer = create((set) => ({
       error(err?.response?.data?.message ?? err.message);
     }
   },
+
   getAllCenter: async () => {
     try {
       set({ isLoadingGet: true });
@@ -91,7 +91,6 @@ const useCounterReducer = create((set) => ({
       });
     }
   },
-
 
   getAllCounter: async (id) => {
     try {
@@ -109,6 +108,7 @@ const useCounterReducer = create((set) => ({
       });
     }
   },
+
   clearCounterData: () => {
     set({
       counters: [],
@@ -116,6 +116,7 @@ const useCounterReducer = create((set) => ({
       successMessage: '',
     });
   },
+
   deleteData: async (id, cb) => {
     try {
       set({ isLoadingDelete: true });
@@ -126,7 +127,7 @@ const useCounterReducer = create((set) => ({
         successMessage: data?.response?.data?.message ?? data?.message,
         isLoadingDelete: false,
       });
-      cb & cb();
+      cb && cb();
     } catch (err) {
       const { error } = useAlertReducer.getState();
       set({

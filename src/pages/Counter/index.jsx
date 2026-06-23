@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Tooltip } from 'react-tooltip';
-import moment from 'moment';
 
 import '../../assets/scss/usermanagement.scss';
 
@@ -9,51 +8,60 @@ import editIcon from '../../assets/images/edit.svg';
 
 import CommonHeader from '../../components/common/CommonHeader';
 import CustomTable from '../../components/common/CustomTable';
-import { formatDate } from '../../config/config';
 import { AddEditModal } from './AddEditModal';
 import { debounce } from 'lodash';
 import CustomActionModal from '../../components/common/CustomActionModal';
 import useCounterReducer from '../../stores/CounterReducer';
 
 const CounterManagement = () => {
-  // ✅ Toggle mock/static data
-  const USE_MOCK = false;
 
   const {
-    getData,
-    counterData,
-    isLoadingGet,
-    deleteData,
-    isLoadingDelete,
+    getData, counterData, isLoadingGet, pagination,
+    deleteData, isLoadingDelete,
   } = useCounterReducer((state) => state);
 
-  console.log('counterData', counterData);
-
-  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [modal, setModal] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
 
   const initialParams = {
     search: '',
     page: 1,
     limit: 10,
-    fromDate: null,
-    toDate: null,
-    sortBy: 'createdAt',
+    sortBy: 'counter_id',
     sortOrder: 'DESC',
   };
 
   const [params, setParams] = useState(initialParams);
 
   const onRefreshCounter = () => {
-    if (!USE_MOCK) getData(params);
+    getData(params);
     setModal(false);
     setDeleteModalOpen(false);
   };
 
-  // ✅ Call API only if not mock
   useEffect(() => {
-    if (!USE_MOCK) getData(params);
+    getData(params);
   }, [params]);
+
+  // ✅ stable debounce
+  const debouncedSearch = useMemo(
+    () =>
+      debounce((searchValue) => {
+        setParams((prevParams) => ({
+          ...prevParams,
+          search: searchValue,
+          page: 1,
+        }));
+      }, 500),
+    []
+  );
+
+  // ✅ cleanup debounce on unmount
+  useEffect(() => {
+    return () => {
+      debouncedSearch.cancel();
+    };
+  }, [debouncedSearch]);
 
   const handleSortChange = (selector) => {
     setParams((prevParams) => ({
@@ -61,6 +69,14 @@ const CounterManagement = () => {
       sortBy: selector,
       sortOrder: prevParams.sortOrder === 'ASC' ? 'DESC' : 'ASC',
     }));
+  };
+
+  const handleDelete = () => {
+    if (deleteModalOpen?.counter_id) {
+      deleteData(deleteModalOpen?.counter_id, () => {
+        onRefreshCounter();
+      });
+    }
   };
 
   const renderAction = (row) => {
@@ -85,7 +101,6 @@ const CounterManagement = () => {
     );
   };
 
-  // ✅ Replace table fields with: Center Name + Counter
   const columns = [
     {
       name: 'Center Name',
@@ -100,12 +115,6 @@ const CounterManagement = () => {
       sort: true,
     },
     {
-      name: 'Created Date',
-      selector: 'createdAt',
-      cell: (row) => <span>{formatDate(row?.createdAt)}</span>,
-      sort: true,
-    },
-    {
       name: 'Action',
       disableViewClick: true,
       contentClass: 'action-wrap',
@@ -113,34 +122,6 @@ const CounterManagement = () => {
       cell: (row) => renderAction(row),
     },
   ];
-
-  // ✅ stable debounce
-  const debouncedSearch = useMemo(
-    () =>
-      debounce((searchValue) => {
-        setParams((prevParams) => ({
-          ...prevParams,
-          search: searchValue,
-          page: 1,
-        }));
-      }, 500),
-    []
-  );
-
-  const handleDelete = () => {
-    if (USE_MOCK) {
-      setDeleteModalOpen(false);
-      return;
-    }
-
-    if (deleteModalOpen?.id) {
-      deleteData(deleteModalOpen?.id, () => {
-        onRefreshCounter();
-      });
-    }
-  };
-
-  const loading = isLoadingGet;
 
   return (
     <>
@@ -151,29 +132,17 @@ const CounterManagement = () => {
           action: () => setModal(true),
         }}
         hideFilter
-        submitFilter={(filters) => {
-          const { fromDate, toDate, ...rest } = filters;
-
-          setParams({
-            ...params,
-            ...rest,
-            fromDate: fromDate ? moment(fromDate).format('YYYY-MM-DD') : null,
-            toDate: toDate ? moment(toDate).format('YYYY-MM-DD') : null,
-            page: 1,
-          });
-        }}
-        clearOptions={() => setParams(initialParams)}
         onSearch={debouncedSearch}
       />
 
       <CustomTable
         pagination={{ currentPage: params.page, limit: params.limit }}
-        count={counterData?.length || 0}
+        count={pagination?.total ?? 0}
         columns={columns}
-        data={counterData || []}
-        isLoading={loading}
-        onPageChange={(page) => setParams({ ...params, page })}
-        setLimit={(limit) => setParams({ ...params, limit })}
+        data={counterData ?? []}
+        isLoading={isLoadingGet}
+        onPageChange={(page) => setParams((prev) => ({ ...prev, page }))}
+        setLimit={(limit) => setParams((prev) => ({ ...prev, limit: Number(limit), page: 1 }))}
         onSortChange={handleSortChange}
         wrapClasses="inventory-table-wrap"
       />
@@ -189,10 +158,10 @@ const CounterManagement = () => {
       {deleteModalOpen && (
         <CustomActionModal
           isDelete
-          isLoading={USE_MOCK ? false : isLoadingDelete}
+          isLoading={isLoadingDelete}
           showModal={deleteModalOpen}
           closeModal={() => setDeleteModalOpen(false)}
-          message={`Are you sure you want to delete this ${deleteModalOpen?.counterName || deleteModalOpen?.name || ''}?`}
+          message={`Are you sure you want to delete this ${deleteModalOpen?.counterName || ''}?`}
           onCancel={() => setDeleteModalOpen(false)}
           onSubmit={handleDelete}
         />

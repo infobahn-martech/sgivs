@@ -1,6 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { Tooltip } from 'react-tooltip';
-import moment from 'moment';
 
 import '../../assets/scss/usermanagement.scss';
 

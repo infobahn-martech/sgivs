@@ -135,7 +135,7 @@ export function AddEditModal({ showModal, closeModal, onRefreshCenter }) {
       </h4>
       <button
         type="button"
-        class="btn-close"
+        className="btn-close"
         data-bs-dismiss="modal"
         aria-label="Close"
         onClick={closeModal}

@@ -42,7 +42,6 @@ const useCenterReducer = create((set) => ({
       set({ isLoading: true });
       // Payload: { center_id, country_id, mission_id, center_name }
       const { data } = await centerService.patchData(payload);
-
       const { success } = useAlertReducer.getState();
       success(data?.response?.data?.message ?? data?.message);
       cb && cb();

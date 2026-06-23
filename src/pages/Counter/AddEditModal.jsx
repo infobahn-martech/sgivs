@@ -12,14 +12,14 @@ const schema = z.object({
   counter_name: z
     .string()
     .nonempty('Counter Name is required')
-    .max(20, 'Counter Name must be 20 characters or less'),
+    .max(50, 'Counter Name must be 50 characters or less'),
   center_id: z.string().nonempty('Center is required'),
 });
 
 export function AddEditModal({ showModal, closeModal, onRefreshCounter }) {
 
-  console.log("showModal", showModal);
   const {
+    register,
     handleSubmit,
     formState: { errors },
     setValue,
@@ -77,12 +77,8 @@ export function AddEditModal({ showModal, closeModal, onRefreshCounter }) {
   const centerOptions = useMemo(() => {
     const list = Array.isArray(centers) ? centers : [];
     return list.map((item) => ({
-      label:
-        item?.name ||
-        item?.center_name ||
-        item?.centerName ||
-        `Center ${item?.id || item?.center_id}`,
-      value: String(item?.id || item?.center_id),
+      label: item?.center_name,
+      value: String(item?.center_id),
     }));
   }, [centers]);
 
@@ -120,8 +116,8 @@ export function AddEditModal({ showModal, closeModal, onRefreshCounter }) {
       <div className="row">
         <div className="col-sm-6">
           <div className="form-group forms-custom">
-            <label htmlFor="center_id" className="label">
-              Select Center<span className="text-danger">*</span>
+            <label htmlFor="center_id" className="form-label">
+              Select Center <span className="text-danger">*</span>
             </label>
 
             <CustomSelect
@@ -132,9 +128,9 @@ export function AddEditModal({ showModal, closeModal, onRefreshCounter }) {
                 ) || null
               }
               onChange={(selected) => {
-                setValue('center_id', selected?.value || '', { shouldValidate: true });
+                setValue('center_id', selected?.value || '', { shouldValidate: true, shouldDirty: true });
               }}
-              placeholder={isLoadingGet ? 'Loading centers...' : 'Select Center'}
+              placeholder={isLoadingGet ? 'Loading...' : 'Select Center'}
               showIndicator={false}
               className="form-select form-control"
             />
@@ -145,8 +141,8 @@ export function AddEditModal({ showModal, closeModal, onRefreshCounter }) {
 
         <div className="col-sm-6">
           <div className="form-group forms-custom">
-            <label htmlFor="counter_name" className="label">
-              Counter Name<span className="text-danger">*</span>
+            <label htmlFor="counter_name" className="form-label">
+              Counter Name <span className="text-danger">*</span>
             </label>
 
             <input
