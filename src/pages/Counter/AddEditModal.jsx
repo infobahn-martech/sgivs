@@ -55,15 +55,7 @@ export function AddEditModal({ showModal, closeModal, onRefreshCounter }) {
         'counter_name',
         showModal?.counter_name || showModal?.counterName || showModal?.name || ''
       );
-
-      setValue(
-        'center_id',
-        String(
-          showModal?.center_id ||
-          showModal?.centerId ||
-          showModal?.center?.id ||
-          ''
-        )
+      setValue('center_id', String(showModal?.center_id ||'')
       );
     } else {
       reset({
@@ -150,7 +142,7 @@ export function AddEditModal({ showModal, closeModal, onRefreshCounter }) {
               id="counter_name"
               className="form-control"
               autoComplete="off"
-              maxLength={20}
+              maxLength={50}
               placeholder="Enter counter name"
               value={watch('counter_name') || ''}
               onChange={(e) =>
